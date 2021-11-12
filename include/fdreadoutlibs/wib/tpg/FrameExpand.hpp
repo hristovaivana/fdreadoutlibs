@@ -6,8 +6,8 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#ifndef FDREADOUTLIBS_INCLUDE_WIB_TPG_FRAMEEXPAND_HPP_
-#define FDREADOUTLIBS_INCLUDE_WIB_TPG_FRAMEEXPAND_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_TPG_FRAMEEXPAND_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_TPG_FRAMEEXPAND_HPP_
 
 #include "TPGConstants.hpp"
 #include "detdataformats/wib/WIBFrame.hpp"
@@ -16,8 +16,6 @@
 #include <array>
 #include <immintrin.h>
 
-namespace dunedaq {
-namespace fdreadoutlibs {
 namespace swtpg {
 
 struct MessageCollectionADCs
@@ -141,7 +139,7 @@ print256_as16_dec(__m256i var);
 // of expanding all channels and then picking out just the collection
 // ones.
 RegisterArray<2>
-expand_segment_collection(const dunedaq::detdataformats::ColdataBlock& block);
+expand_segment_collection(const dunedaq::detdataformats::wib::ColdataBlock& block);
 
 //==============================================================================
 // Take the raw memory containing 12-bit ADCs in the shuffled WIB
@@ -149,7 +147,7 @@ expand_segment_collection(const dunedaq::detdataformats::ColdataBlock& block);
 // 256-bit register holds 21-and-a-bit 12-bit values: we expand 16 of
 // them into 16-bit values
 inline __m256i
-expand_two_segments(const dunedaq::detdataformats::ColdataSegment* __restrict__ first_segment)
+expand_two_segments(const dunedaq::detdataformats::wib::ColdataSegment* __restrict__ first_segment)
 {
   const __m256i* __restrict__ segments_start = reinterpret_cast<const __m256i*>(first_segment); // NOLINT
   __m256i raw = _mm256_lddqu_si256(segments_start);
@@ -236,7 +234,7 @@ expand_two_segments(const dunedaq::detdataformats::ColdataSegment* __restrict__ 
 }
 
 inline RegisterArray<5>
-get_block_divided_adcs(const dunedaq::detdataformats::ColdataBlock& __restrict__ block)
+get_block_divided_adcs(const dunedaq::detdataformats::wib::ColdataBlock& __restrict__ block)
 {
   // First expand all of the channels into `expanded_all`
   __m256i expanded_all[4];
@@ -322,7 +320,7 @@ get_block_divided_adcs(const dunedaq::detdataformats::ColdataBlock& __restrict__
 // induction channels.  There are 6 collection registers followed by
 // 10 induction registers
 inline FrameRegisters
-get_frame_divided_adcs(const dunedaq::detdataformats::WIBFrame* __restrict__ frame)
+get_frame_divided_adcs(const dunedaq::detdataformats::wib::WIBFrame* __restrict__ frame)
 {
   // First, get all items block-by-block. Each block produces
   // registers that are not full, so we will "compress" them when we
@@ -421,7 +419,7 @@ get_frame_divided_adcs(const dunedaq::detdataformats::WIBFrame* __restrict__ fra
 // 0-11 entries of the register, and leave 4 invalid values at the end of each
 // register
 inline RegisterArray<2>
-get_block_collection_adcs(const dunedaq::detdataformats::ColdataBlock& __restrict__ block)
+get_block_collection_adcs(const dunedaq::detdataformats::wib::ColdataBlock& __restrict__ block)
 {
   // First expand all of the channels into `expanded_all`
   __m256i expanded_all[4];
@@ -467,7 +465,7 @@ get_block_collection_adcs(const dunedaq::detdataformats::ColdataBlock& __restric
 
 //==============================================================================
 inline RegisterArray<4>
-get_block_all_adcs(const dunedaq::detdataformats::ColdataBlock& __restrict__ block)
+get_block_all_adcs(const dunedaq::detdataformats::wib::ColdataBlock& __restrict__ block)
 {
   RegisterArray<4> expanded_all;
   for (int j = 0; j < 4; ++j) {
@@ -479,7 +477,7 @@ get_block_all_adcs(const dunedaq::detdataformats::ColdataBlock& __restrict__ blo
 //==============================================================================
 //
 inline RegisterArray<REGISTERS_PER_FRAME>
-get_frame_collection_adcs(const dunedaq::detdataformats::WIBFrame* __restrict__ frame)
+get_frame_collection_adcs(const dunedaq::detdataformats::wib::WIBFrame* __restrict__ frame)
 {
   // Each coldata block has 24 collection channels, so we have to
   // put it in two registers, using 12 of the 16 slots in each
@@ -534,7 +532,7 @@ get_frame_collection_adcs(const dunedaq::detdataformats::WIBFrame* __restrict__ 
 
 //==============================================================================
 inline RegisterArray<16>
-get_frame_all_adcs(const dunedaq::detdataformats::WIBFrame* __restrict__ frame)
+get_frame_all_adcs(const dunedaq::detdataformats::wib::WIBFrame* __restrict__ frame)
 {
   RegisterArray<16> adcs;
   for (int i = 0; i < 4; ++i) {
@@ -553,8 +551,8 @@ expand_message_adcs(const SUPERCHUNK_CHAR_STRUCT& __restrict__ ucs)
 {
   MessageRegisters adcs;
   for (size_t iframe = 0; iframe < FRAMES_PER_MSG; ++iframe) {
-    const dunedaq::detdataformats::WIBFrame* frame =
-      reinterpret_cast<const dunedaq::detdataformats::WIBFrame*>(&ucs) + iframe; // NOLINT
+    const dunedaq::detdataformats::wib::WIBFrame* frame =
+      reinterpret_cast<const dunedaq::detdataformats::wib::WIBFrame*>(&ucs) + iframe; // NOLINT
     FrameRegisters frame_regs = get_frame_divided_adcs(frame);
     for (size_t iblock = 0; iblock < REGISTERS_PER_FRAME; ++iblock) {
       // Arrange it so that adjacent times are adjacent in
@@ -583,8 +581,8 @@ expand_message_adcs_inplace(const dunedaq::fdreadoutlibs::types::WIB_SUPERCHUNK_
                             MessageRegistersInduction* __restrict__ induction_registers)
 {
   for (size_t iframe = 0; iframe < FRAMES_PER_MSG; ++iframe) {
-    const dunedaq::detdataformats::WIBFrame* frame =
-      reinterpret_cast<const dunedaq::detdataformats::WIBFrame*>(ucs) + iframe; // NOLINT
+    const dunedaq::detdataformats::wib::WIBFrame* frame =
+      reinterpret_cast<const dunedaq::detdataformats::wib::WIBFrame*>(ucs) + iframe; // NOLINT
     FrameRegisters frame_regs = get_frame_divided_adcs(frame);
     for (size_t iblock = 0; iblock < REGISTERS_PER_FRAME; ++iblock) {
       // Arrange it so that adjacent times are adjacent in
@@ -618,7 +616,7 @@ expand_message_adcs_inplace(const dunedaq::fdreadoutlibs::types::WIB_SUPERCHUNK_
 // split into registers containing only collection or only induction
 // channels.  There are 6 collection registers followed by 10
 // induction registers
-// FrameRegisters get_frame_divided_adcs(const dunedaq::detdataformats::WIBFrame* __restrict__ frame);
+// FrameRegisters get_frame_divided_adcs(const dunedaq::detdataformats::wib::WIBFrame* __restrict__ frame);
 
 //==============================================================================
 
@@ -637,12 +635,12 @@ expand_message_adcs_inplace(const dunedaq::fdreadoutlibs::types::WIB_SUPERCHUNK_
 
 //==============================================================================
 // Expand all the collection channels into 6 AVX2 registers
-// RegisterArray<REGISTERS_PER_FRAME> get_frame_collection_adcs(const dunedaq::detdataformats::WIBFrame* __restrict__
+// RegisterArray<REGISTERS_PER_FRAME> get_frame_collection_adcs(const dunedaq::detdataformats::wib::WIBFrame* __restrict__
 // frame);
 
 //==============================================================================
 // As above, for all collection and induction ADCs
-// RegisterArray<16> get_frame_all_adcs(const dunedaq::detdataformats::WIBFrame* __restrict__ frame);
+// RegisterArray<16> get_frame_all_adcs(const dunedaq::detdataformats::wib::WIBFrame* __restrict__ frame);
 
 //==============================================================================
 int
@@ -660,7 +658,5 @@ induction_index_to_channel(int index);
 // MessageRegisters expand_message_adcs(const SUPERCHUNK_CHAR_STRUCT& __restrict__ ucs);
 
 } // namespace swtpg
-}
-}
 
-#endif // FDREADOUTLIBS_INCLUDE_WIB_TPG_FRAMEEXPAND_HPP_
+#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_TPG_FRAMEEXPAND_HPP_

@@ -6,8 +6,8 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#ifndef FDREADOUTLIBS_INCLUDE_WIB_TPG_PROCESSNAIVE_HPP_
-#define FDREADOUTLIBS_INCLUDE_WIB_TPG_PROCESSNAIVE_HPP_
+#ifndef READOUT_SRC_WIB_TPG_PROCESSNAIVE_HPP_
+#define READOUT_SRC_WIB_TPG_PROCESSNAIVE_HPP_
 
 #include "FrameExpand.hpp"
 #include "ProcessingInfo.hpp"
@@ -17,8 +17,6 @@
 #include <inttypes.h>
 #include <limits>
 
-namespace dunedaq {
-namespace fdreadoutlibs {
 namespace swtpg {
 
 void
@@ -166,7 +164,5 @@ process_window_naive(ProcessingInfo<NREGISTERS>& info)
 }
 
 } // namespace swtpg
-}
-}
 
-#endif // FDREADOUTLIBS_INCLUDE_WIB_TPG_PROCESSNAIVE_HPP_
+#endif // READOUT_SRC_WIB_TPG_PROCESSNAIVE_HPP_

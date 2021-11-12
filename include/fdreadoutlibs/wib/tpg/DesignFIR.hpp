@@ -9,15 +9,13 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#ifndef FDREADOUTLIBS_INCLUDE_WIB_TPG_DESIGNFIR_HPP_
-#define FDREADOUTLIBS_INCLUDE_WIB_TPG_DESIGNFIR_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_TPG_DESIGNFIR_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_TPG_DESIGNFIR_HPP_
 
 #include <cmath>
 #include <cstdint>
 #include <vector>
 
-namespace dunedaq {
-namespace fdreadoutlibs {
 namespace swtpg {
 
 // constexpr double pi() { return 3.1416; }
@@ -40,8 +38,5 @@ std::vector<int16_t>
 firwin_int(int N, double cutoff, const int multiplier);
 
 } // namespace swtpg
-}
-}
 
-
-#endif // FDREADOUTLIBS_INCLUDE_WIB_TPG_DESIGNFIR_HPP_
+#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_TPG_DESIGNFIR_HPP_

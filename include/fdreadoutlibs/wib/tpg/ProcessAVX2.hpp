@@ -6,8 +6,8 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#ifndef FDREADOUTLIBS_INCLUDE_WIB_TPG_PROCESSAVX2_HPP_
-#define FDREADOUTLIBS_INCLUDE_WIB_TPG_PROCESSAVX2_HPP_
+#ifndef READOUT_SRC_WIB_TPG_PROCESSAVX2_HPP_
+#define READOUT_SRC_WIB_TPG_PROCESSAVX2_HPP_
 
 #include "FrameExpand.hpp"
 #include "ProcessingInfo.hpp"
@@ -15,8 +15,6 @@
 
 #include <immintrin.h>
 
-namespace dunedaq {
-namespace fdreadoutlibs {
 namespace swtpg {
 
 inline void
@@ -375,7 +373,5 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info)
 } // NOLINT(readability/fn_size)
 
 } // namespace swtpg
-}
-}
 
-#endif // FDREADOUTLIBS_INCLUDE_WIB_TPG_PROCESSAVX2_HPP_
+#endif // READOUT_SRC_WIB_TPG_PROCESSAVX2_HPP_

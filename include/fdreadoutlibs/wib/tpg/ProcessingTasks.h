@@ -5,7 +5,7 @@
 
 //#include "NetioWIBRecords.hh"
 
-#include "fdreadoutlibs/wib/tpg/frame_expand.h"
+#include "frame_expand.h"
 
 #include <chrono>
 

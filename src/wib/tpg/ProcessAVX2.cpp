@@ -7,4 +7,3 @@
  */
 
 #include "fdreadoutlibs/wib/tpg/ProcessAVX2.hpp"
-

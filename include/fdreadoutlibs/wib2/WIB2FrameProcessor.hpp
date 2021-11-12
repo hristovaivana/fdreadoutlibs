@@ -5,17 +5,16 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#ifndef FDREADOUTLIBS_INCLUDE_WIB2_WIB2FRAMEPROCESSOR_HPP_
-#define FDREADOUTLIBS_INCLUDE_WIB2_WIB2FRAMEPROCESSOR_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_WIB2FRAMEPROCESSOR_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_WIB2FRAMEPROCESSOR_HPP_
 
-#include "logging/Logging.hpp"
-
-#include "readout/ReadoutLogging.hpp"
-#include "readout/ReadoutIssues.hpp"
-#include "readout/FrameErrorRegistry.hpp"
-#include "readout/models/TaskRawDataProcessorModel.hpp"
+#include "readoutlibs/ReadoutIssues.hpp"
+#include "readoutlibs/models/TaskRawDataProcessorModel.hpp"
 
 #include "detdataformats/wib2/WIB2Frame.hpp"
+#include "logging/Logging.hpp"
+#include "readoutlibs/FrameErrorRegistry.hpp"
+#include "readoutlibs/ReadoutLogging.hpp"
 #include "fdreadoutlibs/FDReadoutTypes.hpp"
 
 #include <atomic>
@@ -23,23 +22,24 @@
 #include <memory>
 #include <string>
 
-using dunedaq::readout::logging::TLVL_BOOKKEEPING;
+using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-class WIB2FrameProcessor : public readout::TaskRawDataProcessorModel<fdreadoutlibs::types::WIB2_SUPERCHUNK_STRUCT>
+class WIB2FrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>
 {
+
 public:
-  using inherited = readout::TaskRawDataProcessorModel<fdreadoutlibs::types::WIB2_SUPERCHUNK_STRUCT>;
-  using frameptr = fdreadoutlibs::types::WIB2_SUPERCHUNK_STRUCT*;
-  using wib2frameptr = dunedaq::detdataformats::WIB2Frame*;
+  using inherited = readoutlibs::TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>;
+  using frameptr = types::WIB2_SUPERCHUNK_STRUCT*;
+  using wib2frameptr = dunedaq::detdataformats::wib2::WIB2Frame*;
   using timestamp_t = std::uint64_t; // NOLINT(build/unsigned)
 
-  explicit WIB2FrameProcessor(std::unique_ptr<readout::FrameErrorRegistry>& error_registry)
-    : readout::TaskRawDataProcessorModel<fdreadoutlibs::types::WIB2_SUPERCHUNK_STRUCT>(error_registry)
+  explicit WIB2FrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
+    : TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>(error_registry)
   {
-    readout::TaskRawDataProcessorModel<fdreadoutlibs::types::WIB2_SUPERCHUNK_STRUCT>::add_preprocess_task(
+    TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_preprocess_task(
       std::bind(&WIB2FrameProcessor::timestamp_check, this, std::placeholders::_1));
     // m_tasklist.push_back( std::bind(&WIB2FrameProcessor::frame_error_check, this, std::placeholders::_1) );
   }
@@ -61,8 +61,8 @@ protected:
     if (inherited::m_emulator_mode) {         // emulate perfectly incrementing timestamp
       uint64_t ts_next = m_previous_ts + 384; // NOLINT(build/unsigned)
       for (unsigned int i = 0; i < 12; ++i) { // NOLINT(build/unsigned)
-        auto wf = reinterpret_cast<dunedaq::detdataformats::WIB2Frame*>(((uint8_t*)fp) + i * 468); // NOLINT
-        auto& wfh = wf->header; // const_cast<dunedaq::detdataformats::WIB2Frame::Header*>(wf->get_wib_header());
+        auto wf = reinterpret_cast<dunedaq::detdataformats::wib2::WIB2Frame*>(((uint8_t*)fp) + i * 468); // NOLINT
+        auto& wfh = wf->header; // const_cast<dunedaq::detdataformats::wib2::WIB2Frame::Header*>(wf->get_wib_header());
         // wfh->set_timestamp(ts_next);
         wfh.timestamp_1 = ts_next;
         wfh.timestamp_2 = ts_next >> 32;
@@ -71,13 +71,13 @@ protected:
     }
 
     // Acquire timestamp
-    auto wfptr = reinterpret_cast<dunedaq::detdataformats::WIB2Frame*>(fp); // NOLINT
+    auto wfptr = reinterpret_cast<dunedaq::detdataformats::wib2::WIB2Frame*>(fp); // NOLINT
     m_current_ts = wfptr->get_timestamp();
 
     // Check timestamp
     if (m_current_ts - m_previous_ts != 384) {
       ++m_ts_error_ctr;
-      m_error_registry->add_error(readout::FrameErrorRegistry::FrameError(m_previous_ts + 384, m_current_ts));
+      m_error_registry->add_error("MISSING_FRAMES", readoutlibs::FrameErrorRegistry::ErrorInterval(m_previous_ts + 384, m_current_ts));
       if (m_first_ts_missmatch) { // log once
         TLOG_DEBUG(TLVL_BOOKKEEPING) << "First timestamp MISSMATCH! -> | previous: " << std::to_string(m_previous_ts)
                                      << " current: " + std::to_string(m_current_ts);
@@ -111,4 +111,4 @@ private:
 } // namespace fdreadoutlibs
 } // namespace dunedaq
 
-#endif // FDREADOUTLIBS_INCLUDE_WIB2_WIB2FRAMEPROCESSOR_HPP_
+#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_WIB2FRAMEPROCESSOR_HPP_

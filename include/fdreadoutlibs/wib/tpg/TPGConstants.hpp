@@ -5,15 +5,13 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#ifndef FDREADOUTLIBS_INCLUDE_WIB_TPG_TPGCONSTANTS_HPP_
-#define FDREADOUTLIBS_INCLUDE_WIB_TPG_TPGCONSTANTS_HPP_
+#ifndef READOUT_SRC_WIB_TPG_TPGCONSTANTS_HPP_
+#define READOUT_SRC_WIB_TPG_TPGCONSTANTS_HPP_
 
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
 
-namespace dunedaq {
-namespace fdreadoutlibs {
 namespace swtpg {
 
 const constexpr std::size_t SUPERCHUNK_FRAME_SIZE = 5568; // for 12: 5568  for 6: 2784
@@ -46,7 +44,5 @@ const constexpr std::size_t SAMPLES_PER_REGISTER = 16;
 const constexpr std::size_t COLLECTION_ADCS_SIZE = BYTES_PER_REGISTER * REGISTERS_PER_FRAME * FRAMES_PER_MSG;
 
 } // namespace swtpg
-}
-}
 
-#endif // FDREADOUTLIBS_INCLUDE_WIB_TPG_TPGCONSTANTS_HPP_
+#endif // READOUT_SRC_WIB_TPG_TPGCONSTANTS_HPP_

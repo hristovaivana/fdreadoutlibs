@@ -13,8 +13,6 @@
 
 #include <vector>
 
-namespace dunedaq {
-namespace fdreadoutlibs {
 namespace swtpg {
 
 //#define PI 3.1416
@@ -24,7 +22,7 @@ hamming(int M)
 {
   std::vector<double> ret;
   for (int n = 0; n < M; ++n) {
-    ret.push_back(0.54 - 0.46 * cos(2.0 * pi() * n / (M - 1)));
+    ret.push_back(0.54 - 0.46 * cos(2.0 * swtpg::pi() * n / (M - 1)));
   }
   return ret;
 }
@@ -70,5 +68,3 @@ firwin_int(int N, double cutoff, const int multiplier)
 }
 
 } // namespace swtpg
-}
-}

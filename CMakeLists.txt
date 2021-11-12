@@ -9,7 +9,7 @@ find_package(ers REQUIRED)
 find_package(appfwk REQUIRED)
 find_package(logging REQUIRED)
 find_package(opmonlib REQUIRED)
-find_package(readout REQUIRED)
+find_package(readoutlibs REQUIRED)
 find_package(daqdataformats REQUIRED)
 find_package(detdataformats REQUIRED)
 find_package(dfmessages REQUIRED)
@@ -32,7 +32,7 @@ set(FDREADOUTLIBS_DEPENDENCIES
   logging::logging
 #dunedaq
   appfwk::appfwk
-  readout::readout
+  readoutlibs::readoutlibs
   opmonlib::opmonlib
   daqdataformats::daqdataformats
   detdataformats::detdataformats
@@ -44,23 +44,15 @@ set(FDREADOUTLIBS_DEPENDENCIES
 ##############################################################################
 # Extra options and tweaks
 set(FDREADOUTLIBS_USE_INTRINSICS ON)
-set(FDREADOUTLIBS_USE_LIBNUMA OFF)
 
 if(${FDREADOUTLIBS_USE_INTRINSICS})
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
 endif()
 
-message("Intrinsics: " ${FDREADOUTLIBS_USE_INTRINSICS})
-message("CXX: " ${CMAKE_CXX_FLAGS})
-
-if(${FDREADOUTLIBS_USE_LIBNUMA})
-  list(APPEND FDREADOUTLIBS_DEPENDENCIES numa)
-  add_compile_definitions(WITH_LIBNUMA_SUPPORT)
-endif()
-
 ##############################################################################
 # Main library
 daq_add_library(
+  *.cpp
   wib/tpg/*.cpp
   LINK_LIBRARIES ${FDREADOUTLIBS_DEPENDENCIES}
 )
