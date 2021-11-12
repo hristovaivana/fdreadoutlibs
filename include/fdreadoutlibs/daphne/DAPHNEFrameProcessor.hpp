@@ -5,42 +5,42 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#ifndef FDREADOUTLIBS_INCLUDE_DAPHNE_DAPHNEFRAMEPROCESSOR_HPP_
-#define FDREADOUTLIBS_INCLUDE_DAPHNE_DAPHNEFRAMEPROCESSOR_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DAPHNE_DAPHNEFRAMEPROCESSOR_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DAPHNE_DAPHNEFRAMEPROCESSOR_HPP_
 
 #include "logging/Logging.hpp"
 
-#include "detdataformats/daphne/DAPHNEFrame.hpp"
-
-#include "readout/ReadoutLogging.hpp"
-#include "readout/ReadoutIssues.hpp"
-#include "readout/FrameErrorRegistry.hpp"
-#include "readout/models/TaskRawDataProcessorModel.hpp"
+#include "readoutlibs/FrameErrorRegistry.hpp"
+#include "readoutlibs/ReadoutLogging.hpp"
+#include "readoutlibs/ReadoutIssues.hpp"
+#include "readoutlibs/models/TaskRawDataProcessorModel.hpp"
 
 #include "fdreadoutlibs/FDReadoutTypes.hpp"
+#include "detdataformats/daphne/DAPHNEFrame.hpp"
 
 #include <atomic>
 #include <functional>
 #include <memory>
 #include <string>
 
-using dunedaq::readout::logging::TLVL_BOOKKEEPING;
+using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-class DAPHNEFrameProcessor : public readout::TaskRawDataProcessorModel<fdreadoutlibs::types::DAPHNE_SUPERCHUNK_STRUCT>
+class DAPHNEFrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::DAPHNE_SUPERCHUNK_STRUCT>
 {
+
 public:
-  using inherited = readout::TaskRawDataProcessorModel<fdreadoutlibs::types::DAPHNE_SUPERCHUNK_STRUCT>;
-  using frameptr = fdreadoutlibs::types::DAPHNE_SUPERCHUNK_STRUCT*;
-  using daphneframeptr = dunedaq::detdataformats::DAPHNEFrame*;
+  using inherited = readoutlibs::TaskRawDataProcessorModel<types::DAPHNE_SUPERCHUNK_STRUCT>;
+  using frameptr = types::DAPHNE_SUPERCHUNK_STRUCT*;
+  using daphneframeptr = dunedaq::detdataformats::daphne::DAPHNEFrame*;
   using timestamp_t = std::uint64_t; // NOLINT(build/unsigned)
 
-  explicit DAPHNEFrameProcessor(std::unique_ptr<readout::FrameErrorRegistry>& error_registry)
-    : readout::TaskRawDataProcessorModel<fdreadoutlibs::types::DAPHNE_SUPERCHUNK_STRUCT>(error_registry)
+  explicit DAPHNEFrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
+    : readoutlibs::TaskRawDataProcessorModel<types::DAPHNE_SUPERCHUNK_STRUCT>(error_registry)
   {
-    readout::TaskRawDataProcessorModel<fdreadoutlibs::types::DAPHNE_SUPERCHUNK_STRUCT>::add_preprocess_task(
+    readoutlibs::TaskRawDataProcessorModel<types::DAPHNE_SUPERCHUNK_STRUCT>::add_preprocess_task(
       std::bind(&DAPHNEFrameProcessor::timestamp_check, this, std::placeholders::_1));
     // m_tasklist.push_back( std::bind(&DAPHNEFrameProcessor::frame_error_check, this, std::placeholders::_1) );
   }
@@ -63,15 +63,15 @@ protected:
     if (inherited::m_emulator_mode) { // emulate perfectly incrementing timestamp
       // RS warning : not fixed rate!
       if (m_first_ts_fake) {
-        fp->fake_timestamp(m_previous_ts, 16);
+        fp->fake_timestamps(m_previous_ts, 16);
         m_first_ts_fake = false;
       } else {
-        fp->fake_timestamp(m_previous_ts + 192, 16);
+        fp->fake_timestamps(m_previous_ts + 192, 16);
       }
     }
 
     // Acquire timestamp
-    m_current_ts = fp->get_timestamp();
+    m_current_ts = fp->get_first_timestamp();
 
     // Check timestamp
     // RS warning : not fixed rate!
@@ -105,4 +105,4 @@ private:
 } // namespace fdreadoutlibs
 } // namespace dunedaq
 
-#endif // FDREADOUTLIBS_INCLUDE_DAPHNE_DAPHNEFRAMEPROCESSOR_HPP_
+#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DAPHNE_DAPHNEFRAMEPROCESSOR_HPP_

@@ -5,19 +5,19 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#ifndef FDREADOUTLIBS_INCLUDE_DAPHNE_DAPHNELISTREQUESTHANDLER_HPP_
-#define FDREADOUTLIBS_INCLUDE_DAPHNE_DAPHNELISTREQUESTHANDLER_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DAPHNE_DAPHNELISTREQUESTHANDLER_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DAPHNE_DAPHNELISTREQUESTHANDLER_HPP_
 
 #include "logging/Logging.hpp"
 
-#include "readout/FrameErrorRegistry.hpp"
-#include "readout/ReadoutLogging.hpp"
-#include "readout/ReadoutIssues.hpp"
-#include "readout/models/DefaultRequestHandlerModel.hpp"
-#include "readout/models/SkipListLatencyBufferModel.hpp"
+#include "readoutlibs/FrameErrorRegistry.hpp"
+#include "readoutlibs/ReadoutLogging.hpp"
+#include "readoutlibs/ReadoutIssues.hpp"
+#include "readoutlibs/models/DefaultRequestHandlerModel.hpp"
+#include "readoutlibs/models/SkipListLatencyBufferModel.hpp"
 
-#include "detdataformats/daphne/DAPHNEFrame.hpp"
 #include "fdreadoutlibs/FDReadoutTypes.hpp"
+#include "detdataformats/daphne/DAPHNEFrame.hpp"
 
 #include <atomic>
 #include <deque>
@@ -30,25 +30,25 @@
 #include <utility>
 #include <vector>
 
-using dunedaq::readout::logging::TLVL_WORK_STEPS;
+using dunedaq::readoutlibs::logging::TLVL_WORK_STEPS;
 
 namespace dunedaq {
 namespace fdreadoutlibs {
 
 class DAPHNEListRequestHandler
-  : public readout::DefaultRequestHandlerModel<fdreadoutlibs::types::DAPHNE_SUPERCHUNK_STRUCT,
-                                      readout::SkipListLatencyBufferModel<fdreadoutlibs::types::DAPHNE_SUPERCHUNK_STRUCT>>
+  : public readoutlibs::DefaultRequestHandlerModel<types::DAPHNE_SUPERCHUNK_STRUCT,
+                                      readoutlibs::SkipListLatencyBufferModel<types::DAPHNE_SUPERCHUNK_STRUCT>>
 {
 public:
-  using inherited = readout::DefaultRequestHandlerModel<fdreadoutlibs::types::DAPHNE_SUPERCHUNK_STRUCT,
-                                               readout::SkipListLatencyBufferModel<fdreadoutlibs::types::DAPHNE_SUPERCHUNK_STRUCT>>;
-  using SkipListAcc = typename folly::ConcurrentSkipList<fdreadoutlibs::types::DAPHNE_SUPERCHUNK_STRUCT>::Accessor;
-  using SkipListSkip = typename folly::ConcurrentSkipList<fdreadoutlibs::types::DAPHNE_SUPERCHUNK_STRUCT>::Skipper;
+  using inherited = readoutlibs::DefaultRequestHandlerModel<types::DAPHNE_SUPERCHUNK_STRUCT,
+                                               readoutlibs::SkipListLatencyBufferModel<types::DAPHNE_SUPERCHUNK_STRUCT>>;
+  using SkipListAcc = typename folly::ConcurrentSkipList<types::DAPHNE_SUPERCHUNK_STRUCT>::Accessor;
+  using SkipListSkip = typename folly::ConcurrentSkipList<types::DAPHNE_SUPERCHUNK_STRUCT>::Skipper;
 
-  DAPHNEListRequestHandler(std::unique_ptr<readout::SkipListLatencyBufferModel<fdreadoutlibs::types::DAPHNE_SUPERCHUNK_STRUCT>>& latency_buffer,
-                           std::unique_ptr<readout::FrameErrorRegistry>& error_registry)
-    : readout::DefaultRequestHandlerModel<fdreadoutlibs::types::DAPHNE_SUPERCHUNK_STRUCT,
-                                 readout::SkipListLatencyBufferModel<fdreadoutlibs::types::DAPHNE_SUPERCHUNK_STRUCT>>(latency_buffer,
+  DAPHNEListRequestHandler(std::unique_ptr<readoutlibs::SkipListLatencyBufferModel<types::DAPHNE_SUPERCHUNK_STRUCT>>& latency_buffer,
+                           std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
+    : DefaultRequestHandlerModel<types::DAPHNE_SUPERCHUNK_STRUCT,
+                                 readoutlibs::SkipListLatencyBufferModel<types::DAPHNE_SUPERCHUNK_STRUCT>>(latency_buffer,
                                                                                               error_registry)
   {
     TLOG_DEBUG(TLVL_WORK_STEPS) << "DAPHNEListRequestHandler created...";
@@ -68,10 +68,10 @@ protected:
       auto tail = acc.last();
       auto head = acc.first();
       if (tail && head) {
-        // auto tailptr = reinterpret_cast<const detdataformats::DAPHNEFrame*>(tail); // NOLINT
-        // auto headptr = reinterpret_cast<const detdataformats::DAPHNEFrame*>(head); // NOLINT
-        tailts = (*tail).get_timestamp(); // tailptr->get_timestamp();
-        headts = (*head).get_timestamp(); // headptr->get_timestamp();
+        // auto tailptr = reinterpret_cast<const detdataformats::daphne::DAPHNEFrame*>(tail); // NOLINT
+        // auto headptr = reinterpret_cast<const detdataformats::daphne::DAPHNEFrame*>(head); // NOLINT
+        tailts = (*tail).get_first_timestamp(); // tailptr->get_timestamp();
+        headts = (*head).get_first_timestamp(); // headptr->get_timestamp();
         TLOG_DEBUG(TLVL_WORK_STEPS) << "Cleanup REQUEST with "
                                     << "Oldest stored TS=" << headts << " "
                                     << "Newest stored TS=" << tailts;
@@ -86,8 +86,8 @@ protected:
               ++removed_ctr;
             }
             head = acc.first();
-            // headptr = reinterpret_cast<const detdataformats::DAPHNEFrame*>(head);
-            headts = (*head).get_timestamp(); // headptr->get_timestamp();
+            // headptr = reinterpret_cast<const detdataformats::daphne::DAPHNEFrame*>(head);
+            headts = (*head).get_first_timestamp(); // headptr->get_timestamp();
             timediff = tailts - headts;
           }
           inherited::m_pops_count += removed_ctr;
@@ -111,4 +111,4 @@ private:
 } // namespace fdreadoutlibs
 } // namespace dunedaq
 
-#endif // FDREADOUTLIBS_INCLUDE_DAPHNE_DAPHNELISTREQUESTHANDLER_HPP_
+#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DAPHNE_DAPHNELISTREQUESTHANDLER_HPP_
