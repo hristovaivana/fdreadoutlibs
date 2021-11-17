@@ -69,11 +69,6 @@ public:
     , m_ind_primfind_dest(nullptr)
     , m_ind_taps_p(nullptr)
   {
-    // Setup pre-processing pipeline
-    TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::add_preprocess_task(
-      std::bind(&WIBFrameProcessor::timestamp_check, this, std::placeholders::_1));
-    TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::add_preprocess_task(
-      std::bind(&WIBFrameProcessor::frame_error_check, this, std::placeholders::_1));
   }
 
   ~WIBFrameProcessor()
@@ -237,7 +232,22 @@ public:
         std::bind(&WIBFrameProcessor::find_collection_hits, this, std::placeholders::_1));
     }
 
+    // Setup pre-processing pipeline
+    TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::add_preprocess_task(
+      std::bind(&WIBFrameProcessor::timestamp_check, this, std::placeholders::_1));
+    TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::add_preprocess_task(
+      std::bind(&WIBFrameProcessor::frame_error_check, this, std::placeholders::_1));
+
+
     TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::conf(cfg);
+  }
+
+  void scrap(const nlohmann::json& args) override
+  {
+    m_tphandler.reset();
+    m_induction_items_to_process.reset();
+
+    TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::scrap(args);
   }
 
   void get_info(opmonlib::InfoCollector& ci, int level)

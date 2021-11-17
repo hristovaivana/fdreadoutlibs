@@ -39,9 +39,14 @@ public:
   explicit WIB2FrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
     : TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>(error_registry)
   {
+  }
+
+  void conf(const nlohmann::json& args) override
+  {
     TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_preprocess_task(
       std::bind(&WIB2FrameProcessor::timestamp_check, this, std::placeholders::_1));
     // m_tasklist.push_back( std::bind(&WIB2FrameProcessor::frame_error_check, this, std::placeholders::_1) );
+    TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::conf(args);
   }
 
 protected:

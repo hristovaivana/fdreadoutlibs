@@ -42,8 +42,13 @@ namespace dunedaq {
       explicit RAWWIBTriggerPrimitiveProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
           : TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>(error_registry)
       {
+      }
+    
+      void conf(const nlohmann::json& args) override
+      {
         TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>::add_preprocess_task(
             std::bind(&RAWWIBTriggerPrimitiveProcessor::tp_stitch, this, std::placeholders::_1));
+        TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>::conf(args);
       }
 
       void init(const nlohmann::json& args) override

@@ -61,7 +61,13 @@ public:
 
   void init(const nlohmann::json& args) override { inherited::init(args); }
 
-  void conf(const nlohmann::json& cfg) override { inherited::conf(cfg); }
+  void conf(const nlohmann::json& cfg) override { 
+    // Setup pre-processing pipeline
+    readoutlibs::TaskRawDataProcessorModel<types::SSP_FRAME_STRUCT>::add_preprocess_task(
+      std::bind(&SSPFrameProcessor::timestamp_check, this, std::placeholders::_1));
+
+    inherited::conf(cfg); 
+  }
 
   void get_info(opmonlib::InfoCollector& /*ci*/, int /*level*/) {}
 
