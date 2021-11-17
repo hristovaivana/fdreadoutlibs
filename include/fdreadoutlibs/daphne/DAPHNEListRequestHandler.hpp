@@ -11,13 +11,13 @@
 #include "logging/Logging.hpp"
 
 #include "readoutlibs/FrameErrorRegistry.hpp"
-#include "readoutlibs/ReadoutLogging.hpp"
 #include "readoutlibs/ReadoutIssues.hpp"
+#include "readoutlibs/ReadoutLogging.hpp"
 #include "readoutlibs/models/DefaultRequestHandlerModel.hpp"
 #include "readoutlibs/models/SkipListLatencyBufferModel.hpp"
 
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
 #include "detdataformats/daphne/DAPHNEFrame.hpp"
+#include "fdreadoutlibs/FDReadoutTypes.hpp"
 
 #include <atomic>
 #include <deque>
@@ -36,20 +36,24 @@ namespace dunedaq {
 namespace fdreadoutlibs {
 
 class DAPHNEListRequestHandler
-  : public readoutlibs::DefaultRequestHandlerModel<types::DAPHNE_SUPERCHUNK_STRUCT,
-                                      readoutlibs::SkipListLatencyBufferModel<types::DAPHNE_SUPERCHUNK_STRUCT>>
+  : public readoutlibs::DefaultRequestHandlerModel<
+      types::DAPHNE_SUPERCHUNK_STRUCT,
+      readoutlibs::SkipListLatencyBufferModel<types::DAPHNE_SUPERCHUNK_STRUCT>>
 {
 public:
-  using inherited = readoutlibs::DefaultRequestHandlerModel<types::DAPHNE_SUPERCHUNK_STRUCT,
-                                               readoutlibs::SkipListLatencyBufferModel<types::DAPHNE_SUPERCHUNK_STRUCT>>;
+  using inherited =
+    readoutlibs::DefaultRequestHandlerModel<types::DAPHNE_SUPERCHUNK_STRUCT,
+                                            readoutlibs::SkipListLatencyBufferModel<types::DAPHNE_SUPERCHUNK_STRUCT>>;
   using SkipListAcc = typename folly::ConcurrentSkipList<types::DAPHNE_SUPERCHUNK_STRUCT>::Accessor;
   using SkipListSkip = typename folly::ConcurrentSkipList<types::DAPHNE_SUPERCHUNK_STRUCT>::Skipper;
 
-  DAPHNEListRequestHandler(std::unique_ptr<readoutlibs::SkipListLatencyBufferModel<types::DAPHNE_SUPERCHUNK_STRUCT>>& latency_buffer,
-                           std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
+  DAPHNEListRequestHandler(
+    std::unique_ptr<readoutlibs::SkipListLatencyBufferModel<types::DAPHNE_SUPERCHUNK_STRUCT>>& latency_buffer,
+    std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
     : DefaultRequestHandlerModel<types::DAPHNE_SUPERCHUNK_STRUCT,
-                                 readoutlibs::SkipListLatencyBufferModel<types::DAPHNE_SUPERCHUNK_STRUCT>>(latency_buffer,
-                                                                                              error_registry)
+                                 readoutlibs::SkipListLatencyBufferModel<types::DAPHNE_SUPERCHUNK_STRUCT>>(
+        latency_buffer,
+        error_registry)
   {
     TLOG_DEBUG(TLVL_WORK_STEPS) << "DAPHNEListRequestHandler created...";
   }

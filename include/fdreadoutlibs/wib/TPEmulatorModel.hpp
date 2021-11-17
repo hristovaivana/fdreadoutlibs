@@ -89,7 +89,8 @@ public:
       m_geoid.system_type = daqdataformats::GeoID::SystemType::kTPC;
       ;
 
-      m_file_source = std::make_unique<readoutlibs::FileSourceBuffer>(m_link_conf.input_limit, RAW_WIB_TP_SUBFRAME_SIZE);
+      m_file_source =
+        std::make_unique<readoutlibs::FileSourceBuffer>(m_link_conf.input_limit, RAW_WIB_TP_SUBFRAME_SIZE);
 
       try {
         m_file_source->read(m_link_conf.tp_data_filename);
@@ -133,29 +134,28 @@ public:
   }
 
 protected:
-  void unpack_tpframe_version_2(int& nhits, int& offset) {
+  void unpack_tpframe_version_2(int& nhits, int& offset)
+  {
 
     auto& source = m_file_source->get();
-    RawWIBTp* rwtps = 
-           static_cast<RawWIBTp*>( malloc( 
-           sizeof(TpHeader) + nhits * sizeof(TpData)
-           ));
-    m_payload_wrapper.rwtp.release( );
-    m_payload_wrapper.rwtp.reset( rwtps );
+    RawWIBTp* rwtps = static_cast<RawWIBTp*>(malloc(sizeof(TpHeader) + nhits * sizeof(TpData)));
+    m_payload_wrapper.rwtp.release();
+    m_payload_wrapper.rwtp.reset(rwtps);
 
     m_payload_wrapper.rwtp->set_nhits(nhits);
     ::memcpy(static_cast<void*>(m_payload_wrapper.rwtp.get()),
              static_cast<void*>(source.data() + offset),
              m_payload_wrapper.rwtp->get_frame_size());
-  } 
-  void unpack_tpframe_version_1(int& offset) 
+  }
+  void unpack_tpframe_version_1(int& offset)
   {
     auto& source = m_file_source->get();
-   
+
     // Count number of subframes in a TP frame
     int n = 1;
     while (reinterpret_cast<types::TpSubframe*>(((uint8_t*)source.data()) // NOLINT
-           + offset + (n-1)*RAW_WIB_TP_SUBFRAME_SIZE)->word3 != 0xDEADBEEF) {
+                                                + offset + (n - 1) * RAW_WIB_TP_SUBFRAME_SIZE)
+             ->word3 != 0xDEADBEEF) {
       n++;
     }
 
@@ -164,27 +164,23 @@ protected:
     tmpbuffer.reserve(bsize);
     int nhits = n - 2;
 
-    // add header block 
-    ::memcpy(static_cast<void*>(tmpbuffer.data() + 0),
-             static_cast<void*>(source.data() + offset),
-             RAW_WIB_TP_SUBFRAME_SIZE);
+    // add header block
+    ::memcpy(
+      static_cast<void*>(tmpbuffer.data() + 0), static_cast<void*>(source.data() + offset), RAW_WIB_TP_SUBFRAME_SIZE);
 
-    // add pedinfo block 
+    // add pedinfo block
     ::memcpy(static_cast<void*>(tmpbuffer.data() + RAW_WIB_TP_SUBFRAME_SIZE),
-             static_cast<void*>(source.data() + offset + (n-1)*RAW_WIB_TP_SUBFRAME_SIZE),
+             static_cast<void*>(source.data() + offset + (n - 1) * RAW_WIB_TP_SUBFRAME_SIZE),
              RAW_WIB_TP_SUBFRAME_SIZE);
 
-    // add TP hits 
-    ::memcpy(static_cast<void*>(tmpbuffer.data() + 2*RAW_WIB_TP_SUBFRAME_SIZE),
+    // add TP hits
+    ::memcpy(static_cast<void*>(tmpbuffer.data() + 2 * RAW_WIB_TP_SUBFRAME_SIZE),
              static_cast<void*>(source.data() + offset + RAW_WIB_TP_SUBFRAME_SIZE),
-             nhits*RAW_WIB_TP_SUBFRAME_SIZE);
+             nhits * RAW_WIB_TP_SUBFRAME_SIZE);
 
-    RawWIBTp* rwtps = 
-           static_cast<RawWIBTp*>( malloc( 
-           sizeof(TpHeader) + nhits * sizeof(TpData)
-           ));
-    m_payload_wrapper.rwtp.release( );
-    m_payload_wrapper.rwtp.reset( rwtps );
+    RawWIBTp* rwtps = static_cast<RawWIBTp*>(malloc(sizeof(TpHeader) + nhits * sizeof(TpData)));
+    m_payload_wrapper.rwtp.release();
+    m_payload_wrapper.rwtp.reset(rwtps);
     m_payload_wrapper.rwtp->set_nhits(nhits);
 
     ::memcpy(static_cast<void*>(m_payload_wrapper.rwtp.get()),
@@ -194,7 +190,7 @@ protected:
     // old format lacks number of hits
     m_payload_wrapper.rwtp->set_nhits(nhits); // explicitly set number of hits in new format
   }
- 
+
   void run_produce()
   {
     TLOG_DEBUG(TLVL_WORK_STEPS) << "Data generation thread " << m_this_link_number << " started";
@@ -225,13 +221,12 @@ protected:
       uint16_t padding = m_payload_wrapper.rwtp->get_padding_3(); // NOLINT
 
       if (padding == 48879) { // padding hex is BEEF, new TP format
-       
+
         unpack_tpframe_version_2(nhits, offset);
 
       } else { // old TP format
 
         unpack_tpframe_version_1(offset);
-
       }
 
       offset += m_payload_wrapper.rwtp->get_frame_size();
@@ -248,7 +243,7 @@ protected:
       ++m_packet_count_tot;
       m_rate_limiter->limit();
     }
-    TLOG_DEBUG(TLVL_WORK_STEPS) << "Data generation thread " << m_this_link_number << " finished";   
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "Data generation thread " << m_this_link_number << " finished";
   }
 
 private:

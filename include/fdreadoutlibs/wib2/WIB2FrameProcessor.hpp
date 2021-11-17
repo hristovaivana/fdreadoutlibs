@@ -12,10 +12,10 @@
 #include "readoutlibs/models/TaskRawDataProcessorModel.hpp"
 
 #include "detdataformats/wib2/WIB2Frame.hpp"
+#include "fdreadoutlibs/FDReadoutTypes.hpp"
 #include "logging/Logging.hpp"
 #include "readoutlibs/FrameErrorRegistry.hpp"
 #include "readoutlibs/ReadoutLogging.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
 
 #include <atomic>
 #include <functional>
@@ -38,8 +38,7 @@ public:
 
   explicit WIB2FrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
     : TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>(error_registry)
-  {
-  }
+  {}
 
   void conf(const nlohmann::json& args) override
   {
@@ -82,7 +81,8 @@ protected:
     // Check timestamp
     if (m_current_ts - m_previous_ts != 384) {
       ++m_ts_error_ctr;
-      m_error_registry->add_error("MISSING_FRAMES", readoutlibs::FrameErrorRegistry::ErrorInterval(m_previous_ts + 384, m_current_ts));
+      m_error_registry->add_error("MISSING_FRAMES",
+                                  readoutlibs::FrameErrorRegistry::ErrorInterval(m_previous_ts + 384, m_current_ts));
       if (m_first_ts_missmatch) { // log once
         TLOG_DEBUG(TLVL_BOOKKEEPING) << "First timestamp MISSMATCH! -> | previous: " << std::to_string(m_previous_ts)
                                      << " current: " + std::to_string(m_current_ts);

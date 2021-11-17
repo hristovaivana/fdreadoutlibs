@@ -11,12 +11,12 @@
 #include "logging/Logging.hpp"
 
 #include "readoutlibs/FrameErrorRegistry.hpp"
-#include "readoutlibs/ReadoutLogging.hpp"
 #include "readoutlibs/ReadoutIssues.hpp"
+#include "readoutlibs/ReadoutLogging.hpp"
 #include "readoutlibs/models/TaskRawDataProcessorModel.hpp"
 
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
 #include "detdataformats/daphne/DAPHNEFrame.hpp"
+#include "fdreadoutlibs/FDReadoutTypes.hpp"
 
 #include <atomic>
 #include <functional>
@@ -39,8 +39,7 @@ public:
 
   explicit DAPHNEFrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
     : readoutlibs::TaskRawDataProcessorModel<types::DAPHNE_SUPERCHUNK_STRUCT>(error_registry)
-  {
-  }
+  {}
 
   void conf(const nlohmann::json& args) override
   {

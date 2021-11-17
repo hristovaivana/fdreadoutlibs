@@ -11,16 +11,16 @@
 #include "appfwk/DAQModuleHelper.hpp"
 #include "logging/Logging.hpp"
 
-#include "readoutlibs/ReadoutIssues.hpp"
 #include "readoutlibs/FrameErrorRegistry.hpp"
+#include "readoutlibs/ReadoutIssues.hpp"
 #include "readoutlibs/ReadoutLogging.hpp"
 #include "readoutlibs/models/TaskRawDataProcessorModel.hpp"
 
 #include "trigger/TPSet.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
 #include "detdataformats/wib/WIBFrame.hpp"
+#include "fdreadoutlibs/FDReadoutTypes.hpp"
 
 #include <atomic>
 #include <functional>
@@ -32,7 +32,8 @@ using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-class SWWIBTriggerPrimitiveProcessor : public readoutlibs::TaskRawDataProcessorModel<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>
+class SWWIBTriggerPrimitiveProcessor
+  : public readoutlibs::TaskRawDataProcessorModel<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>
 {
 
 public:

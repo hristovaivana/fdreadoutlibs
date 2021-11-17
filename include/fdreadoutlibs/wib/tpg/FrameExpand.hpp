@@ -635,8 +635,8 @@ expand_message_adcs_inplace(const dunedaq::fdreadoutlibs::types::WIB_SUPERCHUNK_
 
 //==============================================================================
 // Expand all the collection channels into 6 AVX2 registers
-// RegisterArray<REGISTERS_PER_FRAME> get_frame_collection_adcs(const dunedaq::detdataformats::wib::WIBFrame* __restrict__
-// frame);
+// RegisterArray<REGISTERS_PER_FRAME> get_frame_collection_adcs(const dunedaq::detdataformats::wib::WIBFrame*
+// __restrict__ frame);
 
 //==============================================================================
 // As above, for all collection and induction ADCs

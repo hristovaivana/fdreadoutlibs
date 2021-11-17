@@ -11,18 +11,18 @@
 #include "appfwk/DAQModuleHelper.hpp"
 #include "logging/Logging.hpp"
 
+#include "readoutlibs/FrameErrorRegistry.hpp"
 #include "readoutlibs/ReadoutIssues.hpp"
 #include "readoutlibs/ReadoutLogging.hpp"
-#include "readoutlibs/FrameErrorRegistry.hpp"
 #include "readoutlibs/models/IterableQueueModel.hpp"
 #include "readoutlibs/models/TaskRawDataProcessorModel.hpp"
-#include "readoutlibs/utils/ReusableThread.hpp"
 #include "readoutlibs/readoutconfig/Nljs.hpp"
 #include "readoutlibs/readoutinfo/InfoNljs.hpp"
+#include "readoutlibs/utils/ReusableThread.hpp"
 
-#include "fdreadoutlibs/wib/WIBTPHandler.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
 #include "detdataformats/wib/WIBFrame.hpp"
+#include "fdreadoutlibs/FDReadoutTypes.hpp"
+#include "fdreadoutlibs/wib/WIBTPHandler.hpp"
 #include "trigger/TPSet.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 
@@ -68,8 +68,7 @@ public:
     , m_coll_taps_p(nullptr)
     , m_ind_primfind_dest(nullptr)
     , m_ind_taps_p(nullptr)
-  {
-  }
+  {}
 
   ~WIBFrameProcessor()
   {
@@ -222,10 +221,11 @@ public:
     if (config.enable_software_tpg) {
       m_sw_tpg_enabled = true;
 
-      m_tphandler.reset(new WIBTPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, m_geoid));
+      m_tphandler.reset(
+        new WIBTPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, m_geoid));
 
-      m_induction_items_to_process =
-        std::make_unique<readoutlibs::IterableQueueModel<InductionItemToProcess>>(200000, false, 0, true, 64); // 64 byte aligned
+      m_induction_items_to_process = std::make_unique<readoutlibs::IterableQueueModel<InductionItemToProcess>>(
+        200000, false, 0, true, 64); // 64 byte aligned
 
       // Setup parallel post-processing
       TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::add_postprocess_task(
@@ -237,7 +237,6 @@ public:
       std::bind(&WIBFrameProcessor::timestamp_check, this, std::placeholders::_1));
     TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::add_preprocess_task(
       std::bind(&WIBFrameProcessor::frame_error_check, this, std::placeholders::_1));
-
 
     TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::conf(cfg);
   }
@@ -252,7 +251,7 @@ public:
 
   void get_info(opmonlib::InfoCollector& ci, int level)
   {
-      readoutlibs::readoutinfo::RawDataProcessorInfo info;
+    readoutlibs::readoutinfo::RawDataProcessorInfo info;
 
     if (m_tphandler != nullptr) {
       info.num_tps_sent = m_tphandler->get_and_reset_num_sent_tps();
@@ -313,7 +312,8 @@ protected:
     // Check timestamp
     if (m_current_ts - m_previous_ts != 300) {
       ++m_ts_error_ctr;
-      m_error_registry->add_error("MISSING_FRAMES", readoutlibs::FrameErrorRegistry::ErrorInterval(m_previous_ts + 300, m_current_ts));
+      m_error_registry->add_error("MISSING_FRAMES",
+                                  readoutlibs::FrameErrorRegistry::ErrorInterval(m_previous_ts + 300, m_current_ts));
       if (m_first_ts_missmatch) { // log once
         TLOG_DEBUG(TLVL_BOOKKEEPING) << "First timestamp MISSMATCH! -> | previous: " << std::to_string(m_previous_ts)
                                      << " current: " + std::to_string(m_current_ts);
@@ -385,7 +385,7 @@ protected:
       return;
 
     auto wfptr = reinterpret_cast<dunedaq::detdataformats::wib::WIBFrame*>((uint8_t*)fp); // NOLINT
-    uint64_t timestamp = wfptr->get_wib_header()->get_timestamp();                // NOLINT(build/unsigned)
+    uint64_t timestamp = wfptr->get_wib_header()->get_timestamp();                        // NOLINT(build/unsigned)
 
     swtpg::MessageRegistersCollection collection_registers;
 
@@ -607,8 +607,8 @@ private:
   std::atomic<uint64_t> m_frames_processed{ 0 };  // NOLINT(build/unsigned)
   daqdataformats::GeoID m_geoid;
 
-  std::atomic<uint64_t> m_new_hits{ 0 };    // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_new_tps{ 0 };     // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_new_hits{ 0 }; // NOLINT(build/unsigned)
+  std::atomic<uint64_t> m_new_tps{ 0 };  // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_tps_dropped{ 0 };
 
   std::chrono::time_point<std::chrono::high_resolution_clock> m_t0;

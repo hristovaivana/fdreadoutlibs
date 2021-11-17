@@ -24,10 +24,10 @@ class WIBTPHandler
 {
 public:
   explicit WIBTPHandler(appfwk::DAQSink<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>& tp_sink,
-                     appfwk::DAQSink<trigger::TPSet>& tpset_sink,
-                     uint64_t tp_timeout,		// NOLINT(build/unsigned)
-                     uint64_t tpset_window_size,	// NOLINT(build/unsigned)
-                     daqdataformats::GeoID geoId)
+                        appfwk::DAQSink<trigger::TPSet>& tpset_sink,
+                        uint64_t tp_timeout,        // NOLINT(build/unsigned)
+                        uint64_t tpset_window_size, // NOLINT(build/unsigned)
+                        daqdataformats::GeoID geoId)
     : m_tp_sink(tp_sink)
     , m_tpset_sink(tpset_sink)
     , m_tp_timeout(tp_timeout)
@@ -95,9 +95,9 @@ public:
 private:
   appfwk::DAQSink<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>& m_tp_sink;
   appfwk::DAQSink<trigger::TPSet>& m_tpset_sink;
-  uint64_t m_tp_timeout; 	    // NOLINT(build/unsigned)
-  uint64_t m_tpset_window_size;     // NOLINT(build/unsigned)
-  uint64_t m_next_tpset_seqno = 0;  // NOLINT(build/unsigned)
+  uint64_t m_tp_timeout;           // NOLINT(build/unsigned)
+  uint64_t m_tpset_window_size;    // NOLINT(build/unsigned)
+  uint64_t m_next_tpset_seqno = 0; // NOLINT(build/unsigned)
   daqdataformats::GeoID m_geoid;
 
   std::atomic<size_t> m_sent_tps{ 0 };    // NOLINT(build/unsigned)
