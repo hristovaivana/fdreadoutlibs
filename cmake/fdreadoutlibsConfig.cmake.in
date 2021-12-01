@@ -13,7 +13,7 @@ find_dependency(detdataformats)
 find_dependency(trigger)
 find_dependency(triggeralgs)
 find_dependency(folly)
-
+find_dependency(Boost COMPONENTS iostreams)
 
 if (EXISTS ${CMAKE_SOURCE_DIR}/@PROJECT_NAME@)
 
