@@ -11,6 +11,7 @@ find_package(logging REQUIRED)
 find_package(opmonlib REQUIRED)
 find_package(readoutlibs REQUIRED)
 find_package(daqdataformats REQUIRED)
+find_package(detchannelmaps REQUIRED)
 find_package(detdataformats REQUIRED)
 find_package(trigger REQUIRED)
 find_package(triggeralgs REQUIRED)
@@ -36,6 +37,7 @@ set(FDREADOUTLIBS_DEPENDENCIES
   detdataformats::detdataformats
   trigger::trigger
   triggeralgs::triggeralgs
+  detchannelmaps::detchannelmaps
 )
 
 ##############################################################################
