@@ -6,8 +6,8 @@
  * received with this code.
  */
 
-#ifndef READOUT_SRC_WIB_TPG_REGISTERTOCHANNELNUMBER_HPP_
-#define READOUT_SRC_WIB_TPG_REGISTERTOCHANNELNUMBER_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_TPG_REGISTERTOCHANNELNUMBER_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_TPG_REGISTERTOCHANNELNUMBER_HPP_
 
 #include "detchannelmaps/TPCChannelMap.hpp"
 #include "detdataformats/wib/WIBFrame.hpp"
@@ -95,4 +95,4 @@ get_register_to_offline_channel_map(const dunedaq::detdataformats::wib::WIBFrame
 
 } // namespace swtpg
 
-#endif // READOUT_SRC_WIB_TPG_REGISTERTOCHANNELNUMBER_HPP_
+#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_TPG_REGISTERTOCHANNELNUMBER_HPP_
