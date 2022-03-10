@@ -239,8 +239,8 @@ public:
     // Setup pre-processing pipeline
     TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::add_preprocess_task(
       std::bind(&WIBFrameProcessor::timestamp_check, this, std::placeholders::_1));
-    TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::add_preprocess_task(
-      std::bind(&WIBFrameProcessor::frame_error_check, this, std::placeholders::_1));
+    //TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::add_preprocess_task(
+      //std::bind(&WIBFrameProcessor::frame_error_check, this, std::placeholders::_1));
 
     TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::conf(cfg);
   }
