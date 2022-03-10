@@ -153,7 +153,7 @@ static_assert(sizeof(struct dunedaq::detdataformats::wib::WIBFrame)*12 == WIB_SU
  * @brief For WIB2 the numbers are different.
  * 12[WIB2 frames] x 468[Bytes] = 5616[Bytes]
  * */
-const constexpr std::size_t WIB2_SUPERCHUNK_SIZE = 5616; // for 12: 5616
+const constexpr std::size_t WIB2_SUPERCHUNK_SIZE = 5664; // for 12: 5664
 struct WIB2_SUPERCHUNK_STRUCT
 {
   using FrameType = dunedaq::detdataformats::wib2::WIB2Frame;
@@ -179,11 +179,11 @@ struct WIB2_SUPERCHUNK_STRUCT
     frame->header.timestamp_2 = ts >> 32;
   }
 
-  void fake_timestamps(uint64_t first_timestamp, uint64_t offset = 25) // NOLINT(build/unsigned)
+  void fake_timestamps(uint64_t first_timestamp, uint64_t offset = 32) // NOLINT(build/unsigned)
   {
     uint64_t ts_next = first_timestamp; // NOLINT(build/unsigned)
     for (unsigned int i = 0; i < 12; ++i) {
-      auto w2f = reinterpret_cast<dunedaq::detdataformats::wib2::WIB2Frame*>(((uint8_t*)(&data)) + i * 468); // NOLINT
+      auto w2f = reinterpret_cast<dunedaq::detdataformats::wib2::WIB2Frame*>(((uint8_t*)(&data)) + i * 472); // NOLINT
       w2f->header.timestamp_1 = ts_next;
       w2f->header.timestamp_2 = ts_next >> 32;
       ts_next += offset;
@@ -205,11 +205,11 @@ struct WIB2_SUPERCHUNK_STRUCT
     return reinterpret_cast<FrameType*>(data + WIB2_SUPERCHUNK_SIZE); // NOLINT
   }
 
-  size_t get_payload_size() { return 5616; }
+  size_t get_payload_size() { return 5664; }
 
   size_t get_num_frames() { return 12; }
 
-  size_t get_frame_size() { return 468; }
+  size_t get_frame_size() { return 472; }
 
   static const constexpr daqdataformats::GeoID::SystemType system_type = daqdataformats::GeoID::SystemType::kTPC;
   static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTPCData;
