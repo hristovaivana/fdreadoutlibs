@@ -415,9 +415,16 @@ protected:
     auto wfptr = reinterpret_cast<dunedaq::detdataformats::wib::WIBFrame*>((uint8_t*)fp); // NOLINT
     uint64_t timestamp = wfptr->get_wib_header()->get_timestamp();                        // NOLINT(build/unsigned)
 
+    // First, expand the frame ADCs into 16-bit values in AVX2
+    // registers. They're split into "collection" and "induction"
+    // channels: this classification is correct for ProtoDUNE-I data,
+    // but not for the VD coldbox, where the channel map is very
+    // different. In the VD coldbox case, all that the division into
+    // "collection" and "induction" registers does is split the
+    // channels into two groups so we can process some of them on one
+    // thread, and some on another, since a single thread can't keep
+    // up with all channels
     swtpg::MessageRegistersCollection collection_registers;
-
-    // InductionItemToProcess* ind_item = &m_dummy_induction_item;
     InductionItemToProcess ind_item;
     expand_message_adcs_inplace(fp, &collection_registers, &ind_item.registers);
 
@@ -433,9 +440,11 @@ protected:
       TLOG() << "Got first item, fiber/crate/slot=" << m_fiber_no << "/" << m_crate_no << "/" << m_slot_no;
     }
 
+    // Signal to the induction thread that there's an item ready
     m_induction_item_to_process = &ind_item;
     m_induction_item_ready.store(true);
 
+    // Find the hits in the "collection" registers
     m_coll_tpg_pi->input = &collection_registers;
     *m_coll_primfind_dest = swtpg::MAGIC;
     swtpg::process_window_avx2(*m_coll_tpg_pi);
@@ -454,7 +463,10 @@ protected:
       m_first_coll = false;
     }
 
-    // Wait for the induction item to be done
+    // Wait for the induction item to be done. We have to spin here,
+    // and not sleep, because we only have 6 microseconds to process
+    // each superchunk. It appears that anything that makes a system
+    // call or puts the thread to sleep causes too much latency
     while (m_induction_item_ready.load()) {
       // std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
@@ -488,10 +500,18 @@ protected:
     while (m_run_marker.load()) {
       // There must be a nicer way to write this
       while (!m_induction_item_ready.load()) {
-        // PAR 2022-03-11 For reasons that I don't quite understand,
-        // anything other than a busy-loop here causes everything to
-        // back up, so no sleeping here. Maybe _mm_pause() is helpful,
-        // dunno.
+        // PAR 2022-03-16 Empirically, we can't sleep here, or wait on
+        // a condition variable: that causes everything to back up. I
+        // think the reason is that we're processing superchunks
+        // without any buffering, so we have to be done in 6
+        // microseconds. When we put the thread to sleep, we don't
+        // wake up quickly enough, and problems ensue.
+        //
+        // It would probably be nicer to have the collection and
+        // induction threads talk to each other via a queue, so we get
+        // buffering and can relax the latency requirement, but then
+        // we would have to think carefully about how we pass hits to
+        // m_tp_handler. So we do it this way and spin-wait
         
         // std::this_thread::sleep_for(std::chrono::microseconds(1));
         _mm_pause();
@@ -500,7 +520,8 @@ protected:
       if(!m_run_marker.load()) break;
       
       find_induction_hits(m_induction_item_to_process);
-      
+
+      // Signal back to the collection thread that we're done
       m_induction_item_ready.store(false);
       ++n_items;
     }
