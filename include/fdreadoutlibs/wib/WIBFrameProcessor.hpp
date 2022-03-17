@@ -445,7 +445,22 @@ protected:
       m_slot_no = wfptr->get_wib_header()->slot_no;
 
       TLOG() << "Got first item, fiber/crate/slot=" << m_fiber_no << "/" << m_crate_no << "/" << m_slot_no;
-    }
+
+      std::stringstream ss;
+      ss << "Collection channels are:\n";
+      for(size_t i=0; i<swtpg::COLLECTION_REGISTERS_PER_FRAME*swtpg::SAMPLES_PER_REGISTER; ++i){
+        ss << i << "\t" << m_register_channel_map.collection[i] << "\n";
+      }
+      TLOG_DEBUG(2) << ss.str();
+
+      std::stringstream ss2;
+      ss2 << "Induction channels are:\n";
+      for(size_t i=0; i<swtpg::INDUCTION_REGISTERS_PER_FRAME*swtpg::SAMPLES_PER_REGISTER; ++i){
+        ss2 << i << "\t" << m_register_channel_map.induction[i] << "\n";
+      }
+      TLOG_DEBUG(2) << ss2.str();
+
+    } // end if (m_first_coll)
 
     // Signal to the induction thread that there's an item ready
     m_induction_item_to_process = &ind_item;
