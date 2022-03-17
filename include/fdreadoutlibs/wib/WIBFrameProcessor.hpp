@@ -210,7 +210,7 @@ public:
       auto runtime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_t0).count();
       TLOG() << "Ran for " << runtime << "ms. Found " << m_num_hits_coll << " collection hits and " << m_num_hits_ind << " induction hits";
     }
-    
+
   }
 
   void init(const nlohmann::json& args) override
@@ -242,7 +242,7 @@ public:
       m_sw_tpg_enabled = true;
 
       m_channel_map = dunedaq::detchannelmaps::make_map(config.channel_map_name);
-            
+
       m_tphandler.reset(
         new WIBTPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, m_geoid));
 
@@ -437,7 +437,7 @@ protected:
 
     if (m_first_coll) {
       m_register_channel_map = swtpg::get_register_to_offline_channel_map(wfptr, m_channel_map);
-      
+
       m_coll_tpg_pi->setState(collection_registers);
 
       m_fiber_no = wfptr->get_wib_header()->fiber_no;
@@ -494,11 +494,11 @@ protected:
     m_ind_tpg_pi->input = &induction_item_to_process->registers;
     *m_ind_primfind_dest = swtpg::MAGIC;
     swtpg::process_window_avx2(*m_ind_tpg_pi);
-    
+
     m_first_ind = false;
-    
+
   }
-  
+
   // Stage: induction hit finding port
   void find_induction_hits_thread()
   {
@@ -520,13 +520,13 @@ protected:
         // buffering and can relax the latency requirement, but then
         // we would have to think carefully about how we pass hits to
         // m_tp_handler. So we do it this way and spin-wait
-        
+
         // std::this_thread::sleep_for(std::chrono::microseconds(1));
         _mm_pause();
         if(!m_run_marker.load()) break;
       }
       if(!m_run_marker.load()) break;
-      
+
       find_induction_hits(m_induction_item_to_process);
 
       // Signal back to the collection thread that we're done
@@ -635,13 +635,13 @@ protected:
 
     return nhits;
   }
-  
+
 private:
   bool m_sw_tpg_enabled;
 
   InductionItemToProcess* m_induction_item_to_process;
   std::atomic<bool> m_induction_item_ready{false};
-  
+
   size_t m_num_msg = 0;
   size_t m_num_push_fail = 0;
 
@@ -697,7 +697,7 @@ private:
   int16_t* m_ind_taps_p;
   std::unique_ptr<swtpg::ProcessingInfo<swtpg::INDUCTION_REGISTERS_PER_FRAME>> m_ind_tpg_pi;
   std::thread m_induction_thread;
-  
+
   std::unique_ptr<appfwk::DAQSink<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>> m_tp_sink;
   std::unique_ptr<appfwk::DAQSink<trigger::TPSet>> m_tpset_sink;
   std::unique_ptr<appfwk::DAQSink<detdataformats::wib::WIBFrame>> m_err_frame_sink;
