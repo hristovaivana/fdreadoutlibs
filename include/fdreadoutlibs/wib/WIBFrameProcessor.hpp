@@ -615,8 +615,6 @@ protected:
           //
           // TLOG() << "Hit: " << hit_start << " " << offline_channel;
 
-          // if (should_send) {
-          //
           triggeralgs::TriggerPrimitive trigprim;
           trigprim.time_start = tp_t_begin;
           trigprim.time_peak = (tp_t_begin + tp_t_end) / 2;
@@ -639,9 +637,6 @@ protected:
             m_tps_dropped++;
           }
 
-          //} else {
-
-          //}
           m_new_tps++;
           ++nhits;
         }
