@@ -35,6 +35,16 @@ public:
     , m_geoid(geoId)
   {}
 
+  void set_run_number(daqdataformats::run_number_t run_number)
+  {
+    m_run_number = run_number;
+  }
+
+  daqdataformats::run_number_t get_run_number()
+  {
+    return m_run_number;
+  }
+  
   bool add_tp(triggeralgs::TriggerPrimitive trigprim, uint64_t currentTime) // NOLINT(build/unsigned)
   {
     if (trigprim.time_start + m_tp_timeout > currentTime) {
@@ -49,6 +59,7 @@ public:
   {
     if (!m_tp_buffer.empty() && m_tp_buffer.top().time_start + m_tpset_window_size + m_tp_timeout < currentTime) {
       trigger::TPSet tpset;
+      tpset.run_number = m_run_number;
       tpset.start_time = (m_tp_buffer.top().time_start / m_tpset_window_size) * m_tpset_window_size;
       tpset.end_time = tpset.start_time + m_tpset_window_size;
       tpset.seqno = m_next_tpset_seqno++; // NOLINT(runtime/increment_decrement)
@@ -95,6 +106,7 @@ public:
 private:
   appfwk::DAQSink<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>& m_tp_sink;
   appfwk::DAQSink<trigger::TPSet>& m_tpset_sink;
+  daqdataformats::run_number_t m_run_number{ daqdataformats::TypeDefaults::s_invalid_run_number };
   uint64_t m_tp_timeout;           // NOLINT(build/unsigned)
   uint64_t m_tpset_window_size;    // NOLINT(build/unsigned)
   uint64_t m_next_tpset_seqno = 0; // NOLINT(build/unsigned)

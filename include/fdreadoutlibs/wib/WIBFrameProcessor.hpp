@@ -24,6 +24,7 @@
 #include "detdataformats/wib/WIBFrame.hpp"
 #include "fdreadoutlibs/FDReadoutTypes.hpp"
 #include "fdreadoutlibs/wib/WIBTPHandler.hpp"
+#include "rcif/cmd/Nljs.hpp"
 #include "trigger/TPSet.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 
@@ -90,8 +91,13 @@ public:
 
   void start(const nlohmann::json& args) override
   {
+    
     // Reset software TPG resources
     if (m_sw_tpg_enabled) {
+
+      rcif::cmd::StartParams start_params = args.get<rcif::cmd::StartParams>();
+      m_tphandler->set_run_number(start_params.run);
+  
       m_tphandler->reset();
       m_tps_dropped = 0;
 
