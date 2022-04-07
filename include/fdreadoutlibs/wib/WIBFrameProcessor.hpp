@@ -491,6 +491,7 @@ protected:
     // each superchunk. It appears that anything that makes a system
     // call or puts the thread to sleep causes too much latency
     while (m_induction_item_ready.load()) {
+      _mm_pause();
       // std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
 
@@ -517,7 +518,9 @@ protected:
   // Stage: induction hit finding port
   void find_induction_hits_thread()
   {
-    pthread_setname_np(pthread_self(), "find-ind-hits");
+    std::stringstream thread_name;
+    thread_name << "ind-hits-" << m_geoid.region_id << "-" << m_geoid.element_id;
+    pthread_setname_np(pthread_self(), thread_name.str().c_str());
 
     size_t n_items=0;
     while (m_run_marker.load()) {
