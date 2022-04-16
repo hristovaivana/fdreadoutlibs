@@ -80,175 +80,37 @@ public:
     fclose(m_output_file);
   }
 
-  void tp_dump_frame() {
-    if (m_enable_raw_dump) {
-  fwrite(&m_payload_wrapper.rwtp->m_head, 1, sizeof(dunedaq::detdataformats::wib::TpHeader),
-         m_output_file);
-  for (int i=0; i<m_payload_wrapper.rwtp->get_nhits(); i++) {
-    fwrite(&m_payload_wrapper.rwtp->m_blocks[i], 1,
-           sizeof(dunedaq::detdataformats::wib::TpData), m_output_file);
-  }
-}
-}
-
-void unpack_tpframe_version_1(frame_ptr fr, int& offset)
-{
-auto& srcbuffer = fr->get_raw_tp_frame_chunk();
-
-// Count number of subframes in a TP frame
-int n = 1;
-while (reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data()) // NOLINT
-       + offset + (n-1)*RAW_WIB_TP_SUBFRAME_SIZE)->word3 != 0xDEADBEEF) {
-  n++;
-}
-
-int bsize = n * RAW_WIB_TP_SUBFRAME_SIZE;
-std::vector<char> tmpbuffer;
-tmpbuffer.reserve(bsize);
-int nhits = n - 2;
-
-// add header block 
-::memcpy(static_cast<void*>(tmpbuffer.data() + 0),
-         static_cast<void*>(srcbuffer.data() + offset),
-         RAW_WIB_TP_SUBFRAME_SIZE);
-
-// add pedinfo block 
-::memcpy(static_cast<void*>(tmpbuffer.data() + RAW_WIB_TP_SUBFRAME_SIZE),
-         static_cast<void*>(srcbuffer.data() + offset + (n-1)*RAW_WIB_TP_SUBFRAME_SIZE),
-         RAW_WIB_TP_SUBFRAME_SIZE);
-
-// add TP hits 
-::memcpy(static_cast<void*>(tmpbuffer.data() + 2*RAW_WIB_TP_SUBFRAME_SIZE),
-         static_cast<void*>(srcbuffer.data() + offset + RAW_WIB_TP_SUBFRAME_SIZE),
-         nhits*RAW_WIB_TP_SUBFRAME_SIZE);
-
-dunedaq::detdataformats::wib::RawWIBTp* rwtps =
-       static_cast<dunedaq::detdataformats::wib::RawWIBTp*>( malloc(
-       sizeof(dunedaq::detdataformats::wib::TpHeader) + nhits * sizeof(dunedaq::detdataformats::wib::TpData)
-       ));
-m_payload_wrapper.rwtp.release( );
-m_payload_wrapper.rwtp.reset( rwtps );
-m_payload_wrapper.rwtp->set_nhits(nhits);
-
-::memcpy(static_cast<void*>(&m_payload_wrapper.rwtp->m_head),
-         static_cast<void*>(tmpbuffer.data() + 0),
-         2*RAW_WIB_TP_SUBFRAME_SIZE);
-
-for (int i=0; i<nhits; i++) {
-  ::memcpy(static_cast<void*>(&m_payload_wrapper.rwtp->m_blocks[i]),
-           static_cast<void*>(tmpbuffer.data() + (2+i)*RAW_WIB_TP_SUBFRAME_SIZE),
-           RAW_WIB_TP_SUBFRAME_SIZE);
-}
-
-// old format lacks number of hits
-m_payload_wrapper.rwtp->set_nhits(nhits); // explicitly set number of hits in new format
-
-int debug_nhits = m_payload_wrapper.rwtp->get_nhits();
-uint16_t debug_padding = m_payload_wrapper.rwtp->get_padding_3(); // NOLINT
-//TLOG() << "Number of hits, padding " << debug_nhits << ", " << debug_padding; 
-TLOG_DEBUG(TLVL_WORK_STEPS) << "Number of hits, padding " << debug_nhits << ", " << debug_padding;
-
-// raw recording 
-tp_dump_frame();
-
-// stitch TP hits
-tp_stitch(std::move(&m_payload_wrapper));
-}
-
-void unpack_tpframe_version_2(frame_ptr fr, int& nhits, int& offset)
-{
-  auto& srcbuffer = fr->get_raw_tp_frame_chunk();
-
-  dunedaq::detdataformats::wib::RawWIBTp* rwtps =
-         static_cast<dunedaq::detdataformats::wib::RawWIBTp*>( malloc(
-         sizeof(dunedaq::detdataformats::wib::TpHeader) + nhits * sizeof(dunedaq::detdataformats::wib::TpData)
-         ));
-  m_payload_wrapper.rwtp.release( );
-  m_payload_wrapper.rwtp.reset( rwtps );
-
-  m_payload_wrapper.rwtp->set_nhits(nhits);
-
-  ::memcpy(static_cast<void*>(&m_payload_wrapper.rwtp->m_head),
-           static_cast<void*>(srcbuffer.data() + offset),
-           2*RAW_WIB_TP_SUBFRAME_SIZE);
-
-  for (int i=0; i<nhits; i++) {
-    ::memcpy(static_cast<void*>(&m_payload_wrapper.rwtp->m_blocks[i]),
-             static_cast<void*>(srcbuffer.data() + offset + (2+i)*RAW_WIB_TP_SUBFRAME_SIZE),
-             RAW_WIB_TP_SUBFRAME_SIZE);
-  }
-
-  int debug_nhits = m_payload_wrapper.rwtp->get_nhits();
-  uint16_t debug_padding = m_payload_wrapper.rwtp->get_padding_3(); // NOLINT
-  //TLOG() << "Number of hits, padding " << debug_nhits << ", " << debug_padding; 
-  TLOG_DEBUG(TLVL_WORK_STEPS) << "Number of hits, padding " << debug_nhits << ", " << debug_padding;
-
-  // raw recording 
-  tp_dump_frame();
-
-  // stitch TP hits
-  tp_stitch(std::move(&m_payload_wrapper));
-}
-
-void tp_unpack(frame_ptr fr)
-{
-  auto& srcbuffer = fr->get_raw_tp_frame_chunk();
-  int num_elem = fr->get_raw_tp_frame_chunksize();
-
-  if (num_elem == 0) {
-    TLOG_DEBUG(TLVL_WORK_STEPS) << "No raw WIB TP elements to read from buffer! ";
-    return;
-  }
-  if (num_elem % RAW_WIB_TP_SUBFRAME_SIZE != 0) {
-    TLOG_DEBUG(TLVL_WORK_STEPS) << "Raw WIB TP elements not multiple of subframe size (3)! ";
-    return;
-  }
-
-  int offset = 0;
-  while (offset <= num_elem) {
-
-    if (offset == num_elem) break;
-
-    // Create next TP frame
-    m_payload_wrapper.rwtp.reset(new types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT::FrameType());
-    ::memcpy(static_cast<void*>(&m_payload_wrapper.rwtp->m_head),
-             static_cast<void*>(srcbuffer.data() + offset),
-             m_payload_wrapper.rwtp->get_header_size());
-    int nhits = m_payload_wrapper.rwtp->get_nhits();
-    uint16_t padding = m_payload_wrapper.rwtp->get_padding_3(); // NOLINT
-
-    if (padding == 48879) { // padding hex is BEEF, new TP format
-      TLOG_DEBUG(TLVL_WORK_STEPS) << "Unpack raw WIB TP frame version 2.";
-      unpack_tpframe_version_2(fr, nhits, offset);
-
-    } else { // old TP format
-      TLOG_DEBUG(TLVL_WORK_STEPS) << "Unpack raw WIB TP frame version 1.";
-      unpack_tpframe_version_1(fr, offset);
-    }
-
-    offset += m_payload_wrapper.rwtp->get_frame_size();
-  }
-}
-
-
-  void tp_stitch(frame_ptr fr)
+  void tp_dump_frame() 
   {
-    auto& rwtp = fr->rwtp;
+    if (m_enable_raw_dump) {
+      fwrite(&rwtp->m_head, 1, sizeof(dunedaq::detdataformats::wib::TpHeader),
+        m_output_file);
+      for (int i=0; i<rwtp->get_nhits(); i++) {
+        fwrite(&rwtp->m_blocks[i], 1,
+               sizeof(dunedaq::detdataformats::wib::TpData), m_output_file);
+      }
+    }
+  }
+
+  void tp_stitch()
+  {
     m_frames++;
     int nhits = rwtp->get_nhits();
     uint64_t ts_0 = rwtp->get_timestamp(); // NOLINT
-    rwtp->set_timestamp(ts_0); // NOLINT
+    //rwtp->set_timestamp(ts_0); // NOLINT
     uint8_t m_channel_no = rwtp->m_head.m_wire_no; // NOLINT
     uint8_t m_fiber_no = rwtp->m_head.m_fiber_no; // NOLINT
     for (int i = 0; i < nhits; ++i) {
-      TLOG_DEBUG(TLVL_WORK_STEPS) << "Processing raw TP hit " << i << " out of " << nhits << " hits in this frame.";
-      //TLOG() << "Processing raw TP hit " << i << " out of " << nhits << " hits in this frame.";
+      TLOG_DEBUG(TLVL_WORK_STEPS) << "Processing raw TP hit " << i << " out of " << nhits << " hits in this   frame.";
+      //TLOG() << "TODO ivana.hristova@stfc.ac.uk 2022-04-08: Processing raw TP hit " 
+      //       << i << " out of " << nhits << " hits in this frame. " 
+      //       << "on wire " << m_channel_no << " at " << ts_0;
       //TLOG() << "Processing raw TP hit " << i << " out of " << nhits << " hits in this frame.";
       triggeralgs::TriggerPrimitive trigprim;
       trigprim.time_start = ts_0 + rwtp->m_blocks[i].m_start_time * m_time_tick;
       trigprim.time_peak = ts_0 + rwtp->m_blocks[i].m_peak_time * m_time_tick;
       trigprim.time_over_threshold = rwtp->m_blocks[i].m_end_time * m_time_tick - trigprim.time_start;
-      trigprim.channel = m_channel_no; // TODO: get offline channel number Mar-02-2022 Ivana Hristova ivana.hristova@stfc.ac.uk
+      trigprim.channel = m_channel_no; // TODO: get offline channel number Mar-02-2022 Ivana Hristova ivana.  hristova@stfc.ac.uk
       trigprim.adc_integral = rwtp->m_blocks[i].m_sum_adc;
       trigprim.adc_peak = rwtp->m_blocks[i].m_peak_adc;
       trigprim.detid =
@@ -298,6 +160,188 @@ void tp_unpack(frame_ptr fr)
   }
 
 
+void unpack_tpframe_version_1(frame_ptr fr)
+{
+  auto& srcbuffer = fr->get_data();
+  int num_elem = fr->get_raw_tp_frame_chunksize();
+
+  if (num_elem == 0) {
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "No raw WIB TP elements to read from buffer! ";
+    return;
+  }
+  if (num_elem % RAW_WIB_TP_SUBFRAME_SIZE != 0) {
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "Raw WIB TP elements not multiple of subframe size (3)! ";
+    return;
+  }
+
+  int offset = 0;
+  rwtp = std::make_unique<detdataformats::wib::RawWIBTp>();
+  while (offset <= num_elem) {
+
+    if (offset == num_elem) break;
+
+    // Count number of subframes in a TP frame
+    int n = 1;
+    while (reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data()) // NOLINT
+           + offset + (n-1)*RAW_WIB_TP_SUBFRAME_SIZE)->word3 != 0xDEADBEEF) {
+      n++;
+    }
+
+    int bsize = n * RAW_WIB_TP_SUBFRAME_SIZE;
+    std::vector<char> tmpbuffer;
+    tmpbuffer.reserve(bsize);
+    int nhits = n - 2;
+
+    // add header block 
+    ::memcpy(static_cast<void*>(tmpbuffer.data() + 0),
+             static_cast<void*>(srcbuffer.data() + offset),
+             RAW_WIB_TP_SUBFRAME_SIZE);
+
+    // add pedinfo block 
+    ::memcpy(static_cast<void*>(tmpbuffer.data() + RAW_WIB_TP_SUBFRAME_SIZE),
+             static_cast<void*>(srcbuffer.data() + offset + (n-1)*RAW_WIB_TP_SUBFRAME_SIZE),
+             RAW_WIB_TP_SUBFRAME_SIZE);
+
+    // add TP hits 
+    ::memcpy(static_cast<void*>(tmpbuffer.data() + 2*RAW_WIB_TP_SUBFRAME_SIZE),
+             static_cast<void*>(srcbuffer.data() + offset + RAW_WIB_TP_SUBFRAME_SIZE),
+             nhits*RAW_WIB_TP_SUBFRAME_SIZE);
+
+    dunedaq::detdataformats::wib::RawWIBTp* rwtps =
+           static_cast<dunedaq::detdataformats::wib::RawWIBTp*>( malloc(
+           sizeof(dunedaq::detdataformats::wib::TpHeader) + nhits * sizeof(dunedaq::detdataformats::wib::     TpData)
+           ));
+    rwtp.release( );
+    rwtp.reset( rwtps );
+    rwtp->set_nhits(nhits);
+
+    ::memcpy(static_cast<void*>(&rwtp->m_head),
+             static_cast<void*>(tmpbuffer.data() + 0),
+             2*RAW_WIB_TP_SUBFRAME_SIZE);
+
+    for (int i=0; i<nhits; i++) {
+      ::memcpy(static_cast<void*>(&rwtp->m_blocks[i]),
+               static_cast<void*>(tmpbuffer.data() + (2+i)*RAW_WIB_TP_SUBFRAME_SIZE),
+               RAW_WIB_TP_SUBFRAME_SIZE);
+    }
+
+    // old format lacks number of hits
+    rwtp->set_nhits(nhits); // explicitly set number of hits in new format
+
+    int debug_nhits = rwtp->get_nhits();
+    uint16_t debug_padding = rwtp->get_padding_3(); // NOLINT
+    uint16_t debug_wire = rwtp->m_head.m_wire_no; // NOLINT
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "Number of hits, padding, wire " << debug_nhits << ", " << debug_padding   << ", " << debug_wire;
+
+    // raw recording 
+    tp_dump_frame();
+
+    // stitch TP hits
+    tp_stitch();
+    offset += (2+nhits)*RAW_WIB_TP_SUBFRAME_SIZE;
+  }
+}
+
+void unpack_tpframe_version_2(frame_ptr fr)
+{
+  auto& srcbuffer = fr->get_data();
+  int num_elem = fr->get_raw_tp_frame_chunksize();
+
+  if (num_elem == 0) {
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "No raw WIB TP elements to read from buffer! ";
+    return;
+  }
+  if (num_elem % RAW_WIB_TP_SUBFRAME_SIZE != 0) {
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "Raw WIB TP elements not multiple of subframe size (3)! ";
+    return;
+  }
+
+  int offset = 0;
+  while (offset <= num_elem) {
+
+    if (offset == num_elem) break;
+
+    ::memcpy(static_cast<void*>(&rwtp->m_head),
+             static_cast<void*>(srcbuffer.data() + offset),
+             2*RAW_WIB_TP_SUBFRAME_SIZE);
+    int nhits = rwtp->get_nhits();
+
+    dunedaq::detdataformats::wib::RawWIBTp* rwtps =
+          static_cast<dunedaq::detdataformats::wib::RawWIBTp*>( malloc(
+          (2+nhits)*RAW_WIB_TP_SUBFRAME_SIZE
+          ));
+    rwtp.release( );
+    rwtp.reset( rwtps );
+    rwtp->set_nhits(nhits);
+    int check_nhits = rwtp->get_nhits();
+
+    ::memcpy(static_cast<void*>(&rwtp->m_head),
+             static_cast<void*>(srcbuffer.data() + offset),
+             2*RAW_WIB_TP_SUBFRAME_SIZE);
+
+    for (int i=0; i<nhits; i++) {
+      ::memcpy(static_cast<void*>(&rwtp->m_blocks[i]),
+               static_cast<void*>(srcbuffer.data() + offset + (2+i)*RAW_WIB_TP_SUBFRAME_SIZE),
+               RAW_WIB_TP_SUBFRAME_SIZE);
+    }
+
+    int debug_nhits = rwtp->get_nhits();
+    uint16_t debug_padding = rwtp->get_padding_3(); // NOLINT
+    uint16_t debug_wire = rwtp->m_head.m_wire_no; // NOLINT
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "Number of hits, padding, wire " << debug_nhits << ", " << debug_padding   << ", " << debug_wire;
+
+    // raw recording 
+    tp_dump_frame();
+
+    // stitch TP hits
+    tp_stitch();
+    offset += (2+nhits)*RAW_WIB_TP_SUBFRAME_SIZE;
+  }
+}
+
+void tp_unpack(frame_ptr fr) 
+{
+  rwtp = std::make_unique<detdataformats::wib::RawWIBTp>();
+
+  if (m_tpframe_version == 0) { 
+
+    auto& srcbuffer = fr->get_data();
+    int num_elem = fr->get_raw_tp_frame_chunksize();
+
+    if (num_elem == 0) {
+      TLOG_DEBUG(TLVL_WORK_STEPS) << "No raw WIB TP elements to read from buffer! ";
+      return;
+    }   
+    if (num_elem % RAW_WIB_TP_SUBFRAME_SIZE != 0) {
+      TLOG_DEBUG(TLVL_WORK_STEPS) << "Raw WIB TP elements not multiple of subframe size (3)! ";
+      return;
+    }
+
+    ::memcpy(static_cast<void*>(&rwtp->m_head),
+             static_cast<void*>(srcbuffer.data()),
+             rwtp->get_header_size());
+    int nhits = rwtp->get_nhits();
+    uint16_t padding = rwtp->get_padding_3(); // NOLINT
+
+    if (padding == 48879) { // padding hex is BEEF, new TP format
+      m_tpframe_version = 2;
+      tp_unpack(fr);
+    } else { // old TP format
+      m_tpframe_version = 1;
+      tp_unpack(fr);
+    }
+  } else if (m_tpframe_version == 1) {
+    TLOG_DEBUG(TLVL_WORK_STEPS)  << "Unpack raw WIB TP frame version 1.";
+    unpack_tpframe_version_1(fr);
+  } else if (m_tpframe_version == 2) {
+    TLOG_DEBUG(TLVL_WORK_STEPS)  << "Unpack raw WIB TP frame version 2.";
+    unpack_tpframe_version_2(fr);
+  } else {
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "Unknown raw WIB TP frame version! ";
+    return;
+  }
+}
+
 protected:
   timestamp_t m_current_ts = 0;
   timestamp_t m_nhits = 0;
@@ -310,6 +354,9 @@ private:
   // unpacking
   static const constexpr std::size_t RAW_WIB_TP_SUBFRAME_SIZE = 12;
   types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT m_payload_wrapper;
+  using FrameType = dunedaq::detdataformats::wib::RawWIBTp;
+  std::unique_ptr<FrameType> rwtp = nullptr;
+  int m_tpframe_version;
 
   // recording, dump raw WIB TP frames
   FILE* m_output_file;

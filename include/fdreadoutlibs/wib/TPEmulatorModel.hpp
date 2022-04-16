@@ -134,6 +134,7 @@ public:
   }
 
 protected:
+/*
   void unpack_tpframe_version_2(int& nhits, int& offset) {
 
     auto& source = m_file_source->get();
@@ -271,6 +272,54 @@ protected:
       m_payload_wrapper.set_raw_tp_frame_chunk(tmpbuffer);
 
       offset += m_payload_wrapper.rwtp->get_frame_size();
+
+      // queue in to actual DAQSink
+      try {
+        m_raw_data_sink->push(std::move(m_payload_wrapper), m_sink_queue_timeout_ms);
+      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+        // std::runtime_error("Queue timed out...");
+      }
+
+      // Count packet and limit rate if needed.
+      ++m_packet_count;
+      ++m_packet_count_tot;
+      m_rate_limiter->limit();
+    }
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "Data generation thread " << m_this_link_number << " finished";
+  }
+*/
+    void run_produce()
+  {
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "Data generation thread " << m_this_link_number << " started";
+
+    int offset = 0;
+    auto& source = m_file_source->get();
+    int num_elem = m_file_source->num_elements(); // bytes 
+
+    if (num_elem == 0) {
+      TLOG_DEBUG(TLVL_WORK_STEPS) << "No raw WIB TP elements to read from buffer! Sleeping...";
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      num_elem = m_file_source->num_elements();
+    }
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "Raw WIB TP bytes to read from buffer: " << num_elem * static_cast<int>(RAW_WIB_TP_SUBFRAME_SIZE);
+    while (m_run_marker.load()) {
+      // Which element to push to the buffer
+      if (offset == num_elem * static_cast<int>(RAW_WIB_TP_SUBFRAME_SIZE)) { // NOLINT(build/unsigned)
+        offset = 0;
+        //TLOG() << "TPEmulatorModel Number of TP frames " << m_tp_frames;
+        //TLOG() << "TPEmulatorModel Number of TP hits " << m_tp_hits;
+        m_tp_frames = 0;
+        m_tp_hits = 0;
+      }
+      int bsize = num_elem * static_cast<int>(RAW_WIB_TP_SUBFRAME_SIZE);
+      std::vector<char> tmpbuffer;
+      tmpbuffer.reserve(bsize);
+      ::memcpy(static_cast<void*>(tmpbuffer.data()),
+               static_cast<void*>(source.data() + offset),
+               bsize);
+      m_payload_wrapper.set_raw_tp_frame_chunk(tmpbuffer);
+
+      offset += bsize;
 
       // queue in to actual DAQSink
       try {

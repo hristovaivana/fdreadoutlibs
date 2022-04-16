@@ -431,51 +431,48 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
   RAW_WIB_TRIGGERPRIMITIVE_STRUCT()
   {
     m_raw_tp_frame_chunksize = 0;
+    m_first_timestamp = 0;
   }
 
-  using FrameType = dunedaq::detdataformats::wib::RawWIBTp;
+  using FrameType = RAW_WIB_TRIGGERPRIMITIVE_STRUCT;
 
-  std::unique_ptr<FrameType> rwtp = nullptr;
+  std::unique_ptr<dunedaq::detdataformats::wib::RawWIBTp> rwtp = nullptr; // TODO 2020-04-15: keep for backward compatibility; used in lxlibs/test/apps/test_tp_elinkhandler_app.cxx
 
   // latency buffer 
   bool operator<(const RAW_WIB_TRIGGERPRIMITIVE_STRUCT& other) const 
   {
-    // FIXME RS, IH 2022-02-28  rwtp should never be nullptr
-    if (rwtp == nullptr) return true;
-    return rwtp->get_timestamp() < other.rwtp->get_timestamp(); 
+    return this->get_first_timestamp() < other.get_first_timestamp();
   }
-
+  
+  uint64_t get_timestamp() const  // NOLINT(build/unsigned)
+  {
+    return get_first_timestamp();
+  }
   uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
   {
-    // FIXME RS, IH 2022-02-28  rwtp should never be nullptr
-    return rwtp == nullptr ? 0 : rwtp->get_timestamp();
+    return m_first_timestamp;
   }
   void set_first_timestamp(uint64_t ts) // NOLINT(build/unsigned)
   {
-    // FIXME RS, IH 2022-28-02  rwtp should never be nullptr
-    if (rwtp != nullptr) {
-      rwtp->set_timestamp(ts);
-    }
+    m_first_timestamp = ts;
   }
   void fake_timestamps(uint64_t first_timestamp, uint64_t /*offset = 25*/) // NOLINT(build/unsigned)
   {
-    if (rwtp != nullptr) {
-      rwtp->set_timestamp(first_timestamp);
-    }
+    m_first_timestamp = first_timestamp;
   }
 
   FrameType* begin()
   {
-    return rwtp.get(); // NOLINT
+    return reinterpret_cast<FrameType*>(m_raw_tp_frame_chunk.data()); // NOLINT
   }
   FrameType* end()
   {
-    return rwtp.get() + get_payload_size(); // NOLINT
+    return reinterpret_cast<FrameType*>(m_raw_tp_frame_chunk.data()+m_raw_tp_frame_chunksize); // NOLINT
   }
 
   static const constexpr daqdataformats::GeoID::SystemType system_type = daqdataformats::GeoID::SystemType::kTPC;
   static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTPCData;
-  static const constexpr uint64_t expected_tick_difference = 25; // 2 MHz@50MHz clock // NOLINT(build/unsigned)
+  static const constexpr uint64_t expected_tick_difference = 0; // 2 MHz@50MHz clock // NOLINT(build/unsigned)
   //static const constexpr size_t frame_size = TP_SIZE;
   //static const constexpr size_t element_size = TP_SIZE;
   static const constexpr uint64_t tick_dist = 25; // 2 MHz@50MHz clock // NOLINT(build/unsigned)
@@ -483,7 +480,7 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
 
   // raw WIB TP frames are variable size
   size_t get_payload_size() {
-    return rwtp->get_frame_size();
+    return m_raw_tp_frame_chunksize;
   }
 
   size_t get_num_frames() {
@@ -491,7 +488,7 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
   }
 
   size_t get_frame_size() {
-    return rwtp->get_frame_size();
+    return m_raw_tp_frame_chunksize;
   }
 
   void set_raw_tp_frame_chunk(std::vector<char>& source)
@@ -502,11 +499,8 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
              static_cast<void*>(source.data()),
              bsize);
     m_raw_tp_frame_chunksize = bsize;
-  }
 
-  std::vector<std::uint8_t>& get_raw_tp_frame_chunk() // NOLINT(build/unsigned)
-  {
-    return std::ref(m_raw_tp_frame_chunk);
+    //unpack_timestamp(); // TODO 2022-04-15: slows down readout; timestamp really needed here?
   }
 
   std::vector<std::uint8_t>& get_data()  // NOLINT(build/unsigned)
@@ -514,25 +508,34 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
     return std::ref(m_raw_tp_frame_chunk);
   }
 
-  int get_raw_tp_frame_chunksize()
-  {
-    if (m_raw_tp_frame_chunksize == 0) {
-      //TLOG() << "Got raw WIB TP chunk size from buffer: " << get_data().size() << "." << std::endl;
-      return get_data().size();
-    } else {
-      //TLOG() << "Retrieved raw WIB TP chunk size: " << m_raw_tp_frame_chunksize << "." << std::endl;
-      return m_raw_tp_frame_chunksize;
-    }
-  }
   void set_data_size(const int& bytes)
   {
     m_raw_tp_frame_chunksize = bytes;
+
+    //unpack_timestamp(); // TODO 2022-04-15: slows down readout; timestamp not really needed here? 
+  }
+  int get_raw_tp_frame_chunksize()
+  {
+    return m_raw_tp_frame_chunksize;
   }
 
+private:
+void unpack_timestamp() {
+    std::unique_ptr<detdataformats::wib::RawWIBTp> rwtp = 
+                    std::make_unique<detdataformats::wib::RawWIBTp>();
+    ::memcpy(static_cast<void*>(&rwtp->m_head),
+             static_cast<void*>(m_raw_tp_frame_chunk.data()),
+             2*RAW_WIB_TP_SUBFRAME_SIZE); 
+    m_first_timestamp = rwtp->m_head.get_timestamp();
+} 
 
 private:
   std::vector<std::uint8_t> m_raw_tp_frame_chunk;  // NOLINT(build/unsigned)
   int m_raw_tp_frame_chunksize;
+
+  uint64_t m_first_timestamp;
+  static const constexpr std::size_t RAW_WIB_TP_SUBFRAME_SIZE = 12;
+
 };
 
 struct TpSubframe
