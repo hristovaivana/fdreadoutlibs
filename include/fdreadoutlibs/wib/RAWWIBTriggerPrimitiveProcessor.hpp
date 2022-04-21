@@ -51,10 +51,7 @@ public:
 
   void conf(const nlohmann::json& args) override
   {
-    TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>::add_preprocess_task(
-                std::bind(&RAWWIBTriggerPrimitiveProcessor::tp_unpack, this, std::placeholders::_1));
     TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>::conf(args);
-
   }
 
   void init(const nlohmann::json& args) override
@@ -72,12 +69,6 @@ public:
   void stop(const nlohmann::json& /*args*/) override
   {
   }
-
-
-void tp_unpack(frame_ptr /*fr*/) 
-{
-  TLOG_DEBUG(TLVL_WORK_STEPS) << "Placeholder for raw WIB TP post-processing! ";
-}
 
 private:
   using source_t = appfwk::DAQSource<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>;
