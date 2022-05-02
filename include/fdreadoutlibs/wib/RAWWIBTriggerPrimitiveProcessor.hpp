@@ -9,6 +9,7 @@
 #define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_RAWWIBTRIGGERPRIMITIVEPROCESSOR_HPP_
 
 #include "appfwk/DAQModuleHelper.hpp"
+#include "iomanager/IOManager.hpp"
 #include "readoutlibs/ReadoutIssues.hpp"
 #include "readoutlibs/models/TaskRawDataProcessorModel.hpp"
 
@@ -57,9 +58,10 @@ public:
   void init(const nlohmann::json& args) override
   {
     try {
-      auto queue_index = appfwk::queue_index(args, {});
+      iomanager::IOManager iom;	    
+      auto queue_index = appfwk::connection_index(args, {});
       if (queue_index.find("tp") != queue_index.end()) {
-        m_tp_source.reset(new appfwk::DAQSource<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>(queue_index["tp"].inst));
+        m_tp_source = iom.get_receiver<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>(queue_index["tp"]);
       }
     } catch (const ers::Issue& excpt) {
       // error
@@ -71,8 +73,8 @@ public:
   }
 
 private:
-  using source_t = appfwk::DAQSource<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>;
-  std::unique_ptr<source_t> m_tp_source;
+  using source_t = iomanager::ReceiverConcept<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>;
+  std::shared_ptr<source_t> m_tp_source;
 
   // info
   std::chrono::time_point<std::chrono::high_resolution_clock> m_t0;

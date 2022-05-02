@@ -9,6 +9,7 @@
 #define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_WIBTPHANDLER_HPP_
 
 #include "appfwk/DAQModuleHelper.hpp"
+#include "iomanager/Sender.hpp"
 #include "readoutlibs/ReadoutIssues.hpp"
 #include "trigger/TPSet.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
@@ -23,8 +24,8 @@ namespace fdreadoutlibs {
 class WIBTPHandler
 {
 public:
-  explicit WIBTPHandler(appfwk::DAQSink<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>& tp_sink,
-                        appfwk::DAQSink<trigger::TPSet>& tpset_sink,
+  explicit WIBTPHandler(iomanager::SenderConcept<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>& tp_sink,
+                        iomanager::SenderConcept<trigger::TPSet>& tpset_sink,
                         uint64_t tp_timeout,        // NOLINT(build/unsigned)
                         uint64_t tpset_window_size, // NOLINT(build/unsigned)
                         daqdataformats::GeoID geoId)
@@ -71,9 +72,9 @@ public:
         types::SW_WIB_TRIGGERPRIMITIVE_STRUCT* tp_readout_type =
           reinterpret_cast<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT*>(&tp); // NOLINT
         try {
-          m_tp_sink.push(*tp_readout_type);
+          m_tp_sink.send(*tp_readout_type, std::chrono::milliseconds(10));
           m_sent_tps++;
-        } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+        } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
           ers::error(readoutlibs::CannotWriteToQueue(ERS_HERE, m_geoid, "m_tp_sink"));
         }
         tpset.objects.emplace_back(std::move(tp));
@@ -81,9 +82,9 @@ public:
       }
 
       try {
-        m_tpset_sink.push(std::move(tpset));
+        m_tpset_sink.send(tpset, std::chrono::milliseconds(10));
         m_sent_tpsets++;
-      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+      } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
         ers::error(readoutlibs::CannotWriteToQueue(ERS_HERE, m_geoid, "m_tpset_sink"));
       }
     }
@@ -104,8 +105,8 @@ public:
   size_t get_and_reset_num_sent_tpsets() { return m_sent_tpsets.exchange(0); }
 
 private:
-  appfwk::DAQSink<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>& m_tp_sink;
-  appfwk::DAQSink<trigger::TPSet>& m_tpset_sink;
+  iomanager::SenderConcept<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>& m_tp_sink;
+  iomanager::SenderConcept<trigger::TPSet>& m_tpset_sink;
   daqdataformats::run_number_t m_run_number{ daqdataformats::TypeDefaults::s_invalid_run_number };
   uint64_t m_tp_timeout;           // NOLINT(build/unsigned)
   uint64_t m_tpset_window_size;    // NOLINT(build/unsigned)

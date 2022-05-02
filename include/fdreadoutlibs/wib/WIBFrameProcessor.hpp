@@ -9,6 +9,7 @@
 #define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_WIBFRAMEPROCESSOR_HPP_
 
 #include "appfwk/DAQModuleHelper.hpp"
+#include "iomanager/Sender.hpp"
 #include "logging/Logging.hpp"
 
 #include "readoutlibs/FrameErrorRegistry.hpp"
@@ -217,15 +218,16 @@ public:
 
   void init(const nlohmann::json& args) override
   {
+    iomanager::IOManager iom;
     try {
-      auto queue_index = appfwk::queue_index(args, {});
+      auto queue_index = appfwk::connection_index(args, {});
       if (queue_index.find("tp_out") != queue_index.end()) {
-        m_tp_sink.reset(new appfwk::DAQSink<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>(queue_index["tp_out"].inst));
+        m_tp_sink = iom.get_sender<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>(queue_index["tp_out"]);
       }
       if (queue_index.find("tpset_out") != queue_index.end()) {
-        m_tpset_sink.reset(new appfwk::DAQSink<trigger::TPSet>(queue_index["tpset_out"].inst));
+        m_tpset_sink = iom.get_sender<trigger::TPSet>(queue_index["tpset_out"]);
       }
-      m_err_frame_sink.reset(new appfwk::DAQSink<detdataformats::wib::WIBFrame>(queue_index["errored_frames"].inst));
+      m_err_frame_sink = iom.get_sender<detdataformats::wib::WIBFrame>(queue_index["errored_frames"]);
     } catch (const ers::Issue& excpt) {
       throw readoutlibs::ResourceQueueError(ERS_HERE, "tp queue", "DefaultRequestHandlerModel", excpt);
     }
@@ -410,7 +412,7 @@ protected:
             m_error_occurrence_counters[j]++;
             if (!m_current_frame_pushed) {
               try {
-                m_err_frame_sink->push(*wf);
+                m_err_frame_sink->send(*wf, std::chrono::milliseconds(10));
                 m_current_frame_pushed = true;
               } catch (const ers::Issue& excpt) {
                 ers::warning(readoutlibs::CannotWriteToQueue(ERS_HERE, m_geoid, "Errored frame queue", excpt));
@@ -725,9 +727,9 @@ private:
   std::unique_ptr<swtpg::ProcessingInfo<swtpg::INDUCTION_REGISTERS_PER_FRAME>> m_ind_tpg_pi;
   std::thread m_induction_thread;
 
-  std::unique_ptr<appfwk::DAQSink<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>> m_tp_sink;
-  std::unique_ptr<appfwk::DAQSink<trigger::TPSet>> m_tpset_sink;
-  std::unique_ptr<appfwk::DAQSink<detdataformats::wib::WIBFrame>> m_err_frame_sink;
+  std::shared_ptr<iomanager::SenderConcept<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>> m_tp_sink;
+  std::shared_ptr<iomanager::SenderConcept<trigger::TPSet>> m_tpset_sink;
+  std::shared_ptr<iomanager::SenderConcept<detdataformats::wib::WIBFrame>> m_err_frame_sink;
 
   std::unique_ptr<WIBTPHandler> m_tphandler;
 
