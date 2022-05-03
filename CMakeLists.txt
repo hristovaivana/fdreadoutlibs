@@ -6,6 +6,7 @@ find_package(daq-cmake REQUIRED)
 daq_setup_environment()
 
 find_package(ers REQUIRED)
+find_package(iomanager REQUIRED)
 find_package(appfwk REQUIRED)
 find_package(logging REQUIRED)
 find_package(opmonlib REQUIRED)
