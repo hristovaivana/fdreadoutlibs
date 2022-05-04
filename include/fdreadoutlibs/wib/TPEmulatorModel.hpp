@@ -166,7 +166,7 @@ protected:
 
       // queue in to actual iomanager::Sender
       try {
-        m_raw_data_sink->send(m_payload_wrapper, m_sink_queue_timeout_ms);
+        m_raw_data_sink->send(std::move(m_payload_wrapper), m_sink_queue_timeout_ms);
       } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
         // std::runtime_error("Queue timed out...");
       }

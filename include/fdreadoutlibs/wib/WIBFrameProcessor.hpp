@@ -411,7 +411,8 @@ protected:
             m_error_occurrence_counters[j]++;
             if (!m_current_frame_pushed) {
               try {
-                m_err_frame_sink->send(*wf, std::chrono::milliseconds(10));
+                  dunedaq::detdataformats::wib::WIBFrame wf_copy(*wf);
+                m_err_frame_sink->send(std::move(wf_copy), std::chrono::milliseconds(10));
                 m_current_frame_pushed = true;
               } catch (const ers::Issue& excpt) {
                 ers::warning(readoutlibs::CannotWriteToQueue(ERS_HERE, m_geoid, "Errored frame queue", excpt));
