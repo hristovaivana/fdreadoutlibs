@@ -66,7 +66,7 @@ public:
 
   void init(const nlohmann::json& /*args*/) {}
 
-  void set_sink(const std::string& sink_name)
+  void set_sender(const std::string& sink_name)
   {
     if (!m_sink_is_set) {
       iomanager::IOManager iom;	    
