@@ -69,8 +69,7 @@ public:
   void set_sender(const std::string& sink_name)
   {
     if (!m_sink_is_set) {
-      iomanager::IOManager iom;	    
-      m_raw_data_sink = iom.get_sender<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>(sink_name);
+      m_raw_data_sink = get_iom_sender<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>(sink_name);
       m_sink_is_set = true;
     } else {
       // ers::error();

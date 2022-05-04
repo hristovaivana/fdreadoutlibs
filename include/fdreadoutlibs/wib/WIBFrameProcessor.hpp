@@ -218,16 +218,15 @@ public:
 
   void init(const nlohmann::json& args) override
   {
-    iomanager::IOManager iom;
     try {
       auto queue_index = appfwk::connection_index(args, {});
       if (queue_index.find("tp_out") != queue_index.end()) {
-        m_tp_sink = iom.get_sender<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>(queue_index["tp_out"]);
+        m_tp_sink = get_iom_sender<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>(queue_index["tp_out"]);
       }
       if (queue_index.find("tpset_out") != queue_index.end()) {
-        m_tpset_sink = iom.get_sender<trigger::TPSet>(queue_index["tpset_out"]);
+        m_tpset_sink = get_iom_sender<trigger::TPSet>(queue_index["tpset_out"]);
       }
-      m_err_frame_sink = iom.get_sender<detdataformats::wib::WIBFrame>(queue_index["errored_frames"]);
+      m_err_frame_sink = get_iom_sender<detdataformats::wib::WIBFrame>(queue_index["errored_frames"]);
     } catch (const ers::Issue& excpt) {
       throw readoutlibs::ResourceQueueError(ERS_HERE, "tp queue", "DefaultRequestHandlerModel", excpt);
     }

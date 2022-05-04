@@ -57,11 +57,10 @@ public:
 
   void init(const nlohmann::json& args) override
   {
-    try {
-      iomanager::IOManager iom;	    
+    try {  
       auto queue_index = appfwk::connection_index(args, {});
       if (queue_index.find("tp") != queue_index.end()) {
-        m_tp_source = iom.get_receiver<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>(queue_index["tp"]);
+        m_tp_source = get_iom_receiver<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>(queue_index["tp"]);
       }
     } catch (const ers::Issue& excpt) {
       // error
