@@ -8,8 +8,8 @@
 #ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_TPEMULATORMODEL_HPP_
 #define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_TPEMULATORMODEL_HPP_
 
-#include "appfwk/DAQSink.hpp"
-#include "appfwk/DAQSource.hpp"
+#include "iomanager/Sender.hpp"
+#include "iomanager/Receiver.hpp"
 
 #include "logging/Logging.hpp"
 
@@ -43,7 +43,8 @@ namespace fdreadoutlibs {
 class TPEmulatorModel : public readoutlibs::SourceEmulatorConcept
 {
 public:
-  using sink_t = appfwk::DAQSink<detdataformats::wib::RawWIBTp>;
+  using sink_t = iomanager::SenderConcept<detdataformats::wib::RawWIBTp>;
+
 
   // Very bad, use these from readout types, when RAW_WIB_TP is introduced
   static const constexpr std::size_t WIB_FRAME_SIZE = 464;
@@ -65,10 +66,10 @@ public:
 
   void init(const nlohmann::json& /*args*/) {}
 
-  void set_sink(const std::string& sink_name)
+  void set_sender(const std::string& sink_name)
   {
     if (!m_sink_is_set) {
-      m_raw_data_sink = std::make_unique<raw_sink_qt>(sink_name);
+      m_raw_data_sink = get_iom_sender<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>(sink_name);
       m_sink_is_set = true;
     } else {
       // ers::error();
@@ -163,10 +164,10 @@ protected:
 
       offset += bsize;
 
-      // queue in to actual DAQSink
+      // queue in to actual iomanager::Sender
       try {
-        m_raw_data_sink->push(std::move(m_payload_wrapper), m_sink_queue_timeout_ms);
-      } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
+        m_raw_data_sink->send(std::move(m_payload_wrapper), m_sink_queue_timeout_ms);
+      } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
         // std::runtime_error("Queue timed out...");
       }
 
@@ -197,8 +198,8 @@ private:
 
   // RAW SINK
   std::chrono::milliseconds m_sink_queue_timeout_ms;
-  using raw_sink_qt = appfwk::DAQSink<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>;
-  std::unique_ptr<raw_sink_qt> m_raw_data_sink;
+  using raw_sink_qt = iomanager::SenderConcept<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>;
+  std::shared_ptr<raw_sink_qt> m_raw_data_sink;
 
   bool m_sink_is_set = false;
   using module_conf_t = dunedaq::readoutlibs::sourceemulatorconfig::Conf;

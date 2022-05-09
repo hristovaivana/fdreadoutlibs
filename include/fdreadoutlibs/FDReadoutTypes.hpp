@@ -8,8 +8,8 @@
 #ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_FDREADOUTTYPES_HPP_
 #define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_FDREADOUTTYPES_HPP_
 
-#include "appfwk/DAQSink.hpp"
-#include "appfwk/DAQSource.hpp"
+//#include "iomanager/Sender.hpp"
+//#include "iomanager/Receiver.hpp"
 
 #include "daqdataformats/FragmentHeader.hpp"
 #include "daqdataformats/GeoID.hpp"
@@ -23,6 +23,7 @@
 #include <cstdint> // uint_t types
 #include <memory>  // unique_ptr
 #include <vector>
+#include <cstring> // memcpy
 
 namespace dunedaq {
 namespace fdreadoutlibs {
