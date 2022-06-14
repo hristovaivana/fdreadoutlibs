@@ -15,7 +15,7 @@ using namespace dunedaq;
 
 int main()
 {
-  int total_frames = 100 * 64;
+  int total_frames = 10 * 64;
 
   std::ofstream out("frames.bin", std::ios::out | std::ios::binary);
 
