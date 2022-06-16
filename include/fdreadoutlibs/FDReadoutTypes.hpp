@@ -57,23 +57,6 @@ struct TriggerPrimitive
 };
 
 /**
- * @brief A FULLMODE Elink is identified by the following:
- * - card id (physical card ID)
- * - link tag (elink_id * 64 + 2048 * logic_region)
- */
-struct LinkId
-{
-  uint8_t card_id_;   // NOLINT(build/unsigned)
-  uint32_t link_tag_; // NOLINT(build/unsigned)
-};
-
-class Timestamped
-{
-  virtual uint64_t get_timestamp() const = 0; // NOLINT(build/unsigned)
-  virtual void set_timestamp(uint64_t) = 0;   // NOLINT(build/unsigned)
-};
-
-/**
  * @brief SuperChunk concept: The FELIX user payloads are called CHUNKs.
  * There is mechanism in firmware to aggregate WIB frames to a user payload
  * that is called a SuperChunk. Default mode is with 12 frames:
