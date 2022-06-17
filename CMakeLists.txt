@@ -58,28 +58,7 @@ daq_add_library(
 )
 
 ##############################################################################
-# Plugins
-#daq_add_plugin(FakeCardReader duneDAQModule LINK_LIBRARIES readoutmodules)
-#daq_add_plugin(DataLinkHandler duneDAQModule LINK_LIBRARIES readoutmodules ${BOOST_LIBS})
-#daq_add_plugin(DataRecorder duneDAQModule LINK_LIBRARIES readoutmodules ${BOOST_LIBS})
-#daq_add_plugin(FragmentConsumer duneDAQModule LINK_LIBRARIES readoutmodules)
-#daq_add_plugin(TimeSyncConsumer duneDAQModule LINK_LIBRARIES readoutmodules)
 
-##############################################################################
-# Integration tests
-#daq_add_application(readoutmodules_test_ratelimiter test_ratelimiter_app.cxx TEST LINK_LIBRARIES readoutmodules)
-#daq_add_application(readoutmodules_test_lb_allocation test_lb_allocation_app.cxx TEST LINK_LIBRARIES readoutmodules)
-#daq_add_application(readoutmodules_test_bufferedfilewriter test_bufferedfilewriter_app.cxx TEST LINK_LIBRARIES readoutmodules ${BOOST_LIBS})
-#daq_add_application(readoutmodules_test_bufferedfilereader test_bufferedfilereader_app.cxx TEST LINK_LIBRARIES readoutmodules ${BOOST_LIBS})
-#daq_add_application(readoutmodules_test_skiplist test_skiplist_app.cxx TEST LINK_LIBRARIES readoutmodules ${BOOST_LIBS})
-#daq_add_application(readoutmodules_test_fast_expand_wib2frame test_fast_expand_wib2frame_app.cxx TEST LINK_LIBRARIES readoutmodules ${BOOST_LIBS})
-#
-#
-###############################################################################
-## Unit Tests
-#daq_add_unit_test(RawWIBTp_test                LINK_LIBRARIES readoutmodules)
-#daq_add_unit_test(BufferedReadWrite_test       LINK_LIBRARIES readoutmodules ${BOOST_LIBS})
-#daq_add_unit_test(VariableSizeElementQueue_test LINK_LIBRARIES readoutmodules)
 
 ##############################################################################
 # Installation
