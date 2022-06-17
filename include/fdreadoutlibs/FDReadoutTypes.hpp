@@ -193,7 +193,7 @@ struct TDE_AMC_CHUNK
   // static const constexpr size_t fixed_payload_size = 5568;
   static const constexpr daqdataformats::GeoID::SystemType system_type = daqdataformats::GeoID::SystemType::kTPC;
   static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTPCData;
-  static const constexpr uint64_t expected_tick_difference = 25; // 2 MHz@50MHz clock // NOLINT(build/unsigned)
+  static const constexpr uint64_t expected_tick_difference = 1000; // NOLINT(build/unsigned)
 
 };
 
