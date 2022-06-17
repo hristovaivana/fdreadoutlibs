@@ -17,6 +17,7 @@
 #include "detdataformats/ssp/SSPTypes.hpp"
 #include "detdataformats/wib/WIBFrame.hpp"
 #include "detdataformats/wib2/WIB2Frame.hpp"
+#include "detdataformats/tde/TDE16Frame.hpp"
 #include "detdataformats/wib/RawWIBTp.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 
@@ -128,6 +129,72 @@ struct WIB_SUPERCHUNK_STRUCT
   static const constexpr daqdataformats::GeoID::SystemType system_type = daqdataformats::GeoID::SystemType::kTPC;
   static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTPCData;
   static const constexpr uint64_t expected_tick_difference = 25; // 2 MHz@50MHz clock // NOLINT(build/unsigned)
+};
+
+const constexpr std::size_t TDE_AMC_CHUNK_SIZE = 64 * sizeof(dunedaq::detdataformats::tde::TDE16Frame);
+struct TDE_AMC_CHUNK
+{
+  using FrameType = dunedaq::detdataformats::tde::TDE16Frame;
+
+  char data[TDE_AMC_CHUNK_SIZE];
+
+  bool operator<(const TDE_AMC_CHUNK& other) const
+  {
+    auto thisptr = reinterpret_cast<const FrameType*>(&data);        // NOLINT
+    auto otherptr = reinterpret_cast<const FrameType*>(&other.data); // NOLINT
+    return thisptr->get_timestamp() < otherptr->get_timestamp() ? true : false;
+  }
+
+  uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
+  {
+    return reinterpret_cast<const FrameType*>(&data)->get_timestamp(); // NOLINT
+  }
+
+  void set_first_timestamp(uint64_t ts) // NOLINT(build/unsigned)
+  {
+    reinterpret_cast<FrameType*>(&data)->get_tde_header()->set_timestamp(ts); // NOLINT
+  }
+
+  void fake_timestamps(uint64_t first_timestamp, uint64_t) // NOLINT(build/unsigned)
+  {
+    auto tdef = reinterpret_cast<FrameType*>(((uint8_t*)(&data))); // NOLINT
+    for (int i = 0; i < 64; ++i) {
+      auto wfh = const_cast<dunedaq::detdataformats::tde::TDE16Header*>(tdef->get_tde_header());
+      wfh->set_timestamp(first_timestamp);
+      tdef++;
+    }
+  }
+
+  void fake_frame_errors(std::vector<uint16_t>* fake_errors) // NOLINT(build/unsigned)
+  {
+    auto tdef = reinterpret_cast<FrameType*>(((uint8_t*)(&data))); // NOLINT
+    for (int i = 0; i < 64; ++i) {
+      tdef->set_tde_errors((*fake_errors)[i]);
+      tdef++;
+    }
+  }
+
+  size_t get_payload_size() { return 64 * sizeof(FrameType); }
+
+  size_t get_num_frames() { return 64; }
+
+  size_t get_frame_size() { return sizeof(FrameType); }
+
+  FrameType* begin()
+  {
+    return reinterpret_cast<FrameType*>(&data[0]); // NOLINT
+  }
+
+  FrameType* end()
+  {
+    return reinterpret_cast<FrameType*>(data + TDE_AMC_CHUNK_SIZE); // NOLINT
+  }
+
+  // static const constexpr size_t fixed_payload_size = 5568;
+  static const constexpr daqdataformats::GeoID::SystemType system_type = daqdataformats::GeoID::SystemType::kTPC;
+  static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTPCData;
+  static const constexpr uint64_t expected_tick_difference = 25; // 2 MHz@50MHz clock // NOLINT(build/unsigned)
+
 };
 
 static_assert(sizeof(struct dunedaq::detdataformats::wib::WIBFrame)*12 == WIB_SUPERCHUNK_SIZE,
