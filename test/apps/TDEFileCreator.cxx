@@ -10,6 +10,9 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <random>
+#include <algorithm>
 
 using namespace dunedaq;
 
@@ -19,16 +22,29 @@ int main()
 
   std::ofstream out("frames.bin", std::ios::out | std::ios::binary);
 
+  std::random_device rd;
+  std::default_random_engine rng(rd());
+
   for (int batch = 0; batch < total_frames / 64; batch++)
   {
     uint64_t timestamp = batch;
+    std::vector<int> v;
     for (int iframe = 0; iframe < 64; iframe++)
     {
+      v.push_back(iframe);
+    }
+    std::shuffle(v.begin(), v.end(), rng);
+
+    for (int i = 0; i < 64; i++)
+    {
+      int iframe = v[i];
       detdataformats::tde::TDE16Frame fr;
       // Timestamp
       fr.set_timestamp(timestamp);
       // Channel
       fr.get_tde_header()->crate = iframe;
+      fr.get_tde_header()->link = iframe;
+      fr.set_adc_samples(batch,0);
       out.write(reinterpret_cast<char*>(&fr), sizeof(detdataformats::tde::TDE16Frame));
     }
   }
