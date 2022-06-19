@@ -18,34 +18,33 @@ using namespace dunedaq;
 
 int main()
 {
-  int total_frames = 10 * 64;
+  int num_batches = 5;
 
   std::ofstream out("frames.bin", std::ios::out | std::ios::binary);
 
   std::random_device rd;
   std::default_random_engine rng(rd());
 
-  for (int batch = 0; batch < total_frames / 64; batch++)
+  for (int batch = 0; batch < num_batches; batch++)
   {
+    std::vector<detdataformats::tde::TDE16Frame> v;
     uint64_t timestamp = batch;
-    std::vector<int> v;
-    for (int iframe = 0; iframe < 64; iframe++)
+    for (int amc = 0; amc < 12; amc++)
     {
-      v.push_back(iframe);
+      for (int i = 0; i < 64; i++)
+      {
+        detdataformats::tde::TDE16Frame fr;
+        // Timestamp
+        fr.set_timestamp(timestamp);
+        // Channel
+        fr.get_tde_header()->slot = amc;
+        fr.get_tde_header()->link = i;
+        fr.set_adc_samples(batch,0);
+      }
     }
     std::shuffle(v.begin(), v.end(), rng);
-
-    for (int i = 0; i < 64; i++)
-    {
-      int iframe = v[i];
-      detdataformats::tde::TDE16Frame fr;
-      // Timestamp
-      fr.set_timestamp(timestamp);
-      // Channel
-      fr.get_tde_header()->crate = iframe;
-      fr.get_tde_header()->link = iframe;
-      fr.set_adc_samples(batch,0);
-      out.write(reinterpret_cast<char*>(&fr), sizeof(detdataformats::tde::TDE16Frame));
+    for (auto& fr: v) {
+        out.write(reinterpret_cast<char*>(&fr), sizeof(detdataformats::tde::TDE16Frame));
     }
   }
   out.close();
