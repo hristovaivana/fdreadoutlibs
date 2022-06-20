@@ -58,7 +58,9 @@ daq_add_library(
 )
 
 ##############################################################################
+# Apps
 
+daq_add_application(TDEFileCreator TDEFileCreator.cxx TEST LINK_LIBRARIES fdreadoutlibs)
 
 ##############################################################################
 # Installation
