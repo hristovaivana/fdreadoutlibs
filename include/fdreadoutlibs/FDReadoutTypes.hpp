@@ -131,14 +131,14 @@ struct WIB_SUPERCHUNK_STRUCT
   static const constexpr uint64_t expected_tick_difference = 25; // 2 MHz@50MHz clock // NOLINT(build/unsigned)
 };
 
-const constexpr std::size_t TDE_AMC_CHUNK_SIZE = 64 * sizeof(dunedaq::detdataformats::tde::TDE16Frame);
-struct TDE_AMC_CHUNK
+const constexpr std::size_t TDE_AMC_STRUCT_SIZE = 64 * sizeof(dunedaq::detdataformats::tde::TDE16Frame);
+struct TDE_AMC_STRUCT
 {
   using FrameType = dunedaq::detdataformats::tde::TDE16Frame;
 
-  char data[TDE_AMC_CHUNK_SIZE];
+  char data[TDE_AMC_STRUCT_SIZE];
 
-  bool operator<(const TDE_AMC_CHUNK& other) const
+  bool operator<(const TDE_AMC_STRUCT& other) const
   {
     auto thisptr = reinterpret_cast<const FrameType*>(&data);        // NOLINT
     auto otherptr = reinterpret_cast<const FrameType*>(&other.data); // NOLINT
@@ -187,7 +187,7 @@ struct TDE_AMC_CHUNK
 
   FrameType* end()
   {
-    return reinterpret_cast<FrameType*>(data + TDE_AMC_CHUNK_SIZE); // NOLINT
+    return reinterpret_cast<FrameType*>(data + TDE_AMC_STRUCT_SIZE); // NOLINT
   }
 
   // static const constexpr size_t fixed_payload_size = 5568;
