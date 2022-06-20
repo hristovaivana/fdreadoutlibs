@@ -134,6 +134,7 @@ public:
     TLOG_DEBUG(TLVL_WORK_STEPS) << "Starting threads...";
     m_rate_limiter = std::make_unique<RateLimiter>(m_rate_khz / m_link_conf.slowdown);
     // m_stats_thread.set_work(&TDECrateSourceEmulatorModel<ReadoutType>::run_stats, this);
+    m_tde_frame_grouper = std::make_unique<TDEFrameGrouper>();
     m_producer_thread.set_work(&TDECrateSourceEmulatorModel<ReadoutType>::run_produce, this);
   }
 
@@ -193,9 +194,8 @@ protected:
                  sizeof(ReadoutType) * 12);
 
         std::vector<std::vector<detdataformats::tde::TDE16Frame>> v(12, std::vector<detdataformats::tde::TDE16Frame>(64));
-        for (int i = 0; i < 12 * 64; i++) {
-          v[frames[i].get_tde_header()->slot][frames[i].get_tde_header()->link] = frames[i];
-        }
+        m_tde_frame_grouper->group(v, frames);
+
         for (int i = 0; i < 12; i++)
         {
           ReadoutType* payload = reinterpret_cast<ReadoutType*>(v[i].data());
@@ -237,7 +237,6 @@ private:
   std::atomic<bool>& m_run_marker;
 
   // CONFIGURATION
-  uint32_t m_this_apa_number;  // NOLINT(build/unsigned)
   uint32_t m_this_link_number; // NOLINT(build/unsigned)
 
   uint64_t m_time_tick_diff; // NOLINT(build/unsigned)
@@ -263,6 +262,7 @@ private:
 
   std::unique_ptr<RateLimiter> m_rate_limiter;
   std::unique_ptr<FileSourceBuffer> m_file_source;
+  std::unique_ptr<TDEFrameGrouper> m_tde_frame_grouper;
   ErrorBitGenerator m_error_bit_generator;
 
   ReusableThread m_producer_thread;
