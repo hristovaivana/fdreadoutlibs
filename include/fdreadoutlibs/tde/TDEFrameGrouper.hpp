@@ -9,7 +9,8 @@
 #define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_TDE_TDEFRAMEGROUPER_HPP_
 
 #include "detdataformats/tde/TDE16Frame.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+
+#include <vector>
 
 using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 
@@ -21,7 +22,7 @@ class TDEFrameGrouper
 
 public:
 
-  void group(std::vector<std::vector<detdataformats::tde::TDE16Frame>>& v)
+  void group(std::vector<std::vector<detdataformats::tde::TDE16Frame>>& v, detdataformats::tde::TDE16Frame* frames)
   {
     for (int i = 0; i < 12 * 64; i++) {
         v[frames[i].get_tde_header()->slot][frames[i].get_tde_header()->link] = frames[i];

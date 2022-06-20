@@ -25,6 +25,8 @@
 #include "readoutlibs/utils/RateLimiter.hpp"
 #include "readoutlibs/utils/ReusableThread.hpp"
 
+#include "fdreadoutlibs/tde/TDEFrameGrouper.hpp"
+
 #include "detdataformats/tde/TDE16Frame.hpp"
 
 #include "unistd.h"
@@ -40,10 +42,10 @@ using dunedaq::readoutlibs::logging::TLVL_TAKE_NOTE;
 using dunedaq::readoutlibs::logging::TLVL_WORK_STEPS;
 
 namespace dunedaq {
-namespace readoutlibs {
+namespace fdreadoutlibs {
 
 template<class ReadoutType>
-class TDECrateSourceEmulatorModel : public SourceEmulatorConcept
+class TDECrateSourceEmulatorModel : public readoutlibs::SourceEmulatorConcept
 {
 public:
   explicit TDECrateSourceEmulatorModel(std::string name,
@@ -92,12 +94,12 @@ public:
       m_geoid.region_id = m_link_conf.geoid.region;
       m_geoid.system_type = ReadoutType::system_type;
 
-      m_file_source = std::make_unique<FileSourceBuffer>(m_link_conf.input_limit, sizeof(ReadoutType) * 12);
+      m_file_source = std::make_unique<readoutlibs::FileSourceBuffer>(m_link_conf.input_limit, sizeof(ReadoutType) * 12);
       try {
         m_file_source->read(m_link_conf.data_filename);
       } catch (const ers::Issue& ex) {
         ers::fatal(ex);
-        throw ConfigurationError(ERS_HERE, m_geoid, "", ex);
+        throw readoutlibs::ConfigurationError(ERS_HERE, m_geoid, "", ex);
       }
       m_dropouts_length = m_link_conf.random_population_size;
       if (m_dropout_rate == 0.0) {
@@ -111,7 +113,7 @@ public:
 
       m_frame_errors_length = m_link_conf.random_population_size;
       m_frame_error_rate = m_link_conf.emu_frame_error_rate;
-      m_error_bit_generator = ErrorBitGenerator(m_frame_error_rate);
+      m_error_bit_generator = readoutlibs::ErrorBitGenerator(m_frame_error_rate);
       m_error_bit_generator.generate();
 
       m_is_configured = true;
@@ -132,7 +134,7 @@ public:
   {
     m_packet_count_tot = 0;
     TLOG_DEBUG(TLVL_WORK_STEPS) << "Starting threads...";
-    m_rate_limiter = std::make_unique<RateLimiter>(m_rate_khz / m_link_conf.slowdown);
+    m_rate_limiter = std::make_unique<readoutlibs::RateLimiter>(m_rate_khz / m_link_conf.slowdown);
     // m_stats_thread.set_work(&TDECrateSourceEmulatorModel<ReadoutType>::run_stats, this);
     m_tde_frame_grouper = std::make_unique<TDEFrameGrouper>();
     m_producer_thread.set_work(&TDECrateSourceEmulatorModel<ReadoutType>::run_produce, this);
@@ -147,7 +149,7 @@ public:
 
   void get_info(opmonlib::InfoCollector& ci, int /*level*/)
   {
-    sourceemulatorinfo::Info info;
+    readoutlibs::sourceemulatorinfo::Info info;
     info.packets = m_packet_count_tot.load();
     info.new_packets = m_packet_count.exchange(0);
 
@@ -214,7 +216,7 @@ protected:
           try {
           m_raw_data_sender->send(std::move(*payload), m_raw_sender_timeout_ms);
           } catch (ers::Issue& excpt) {
-          ers::warning(CannotWriteToQueue(ERS_HERE, m_geoid, "raw data input queue", excpt));
+            ers::warning(readoutlibs::CannotWriteToQueue(ERS_HERE, m_geoid, "raw data input queue", excpt));
           // std::runtime_error("Queue timed out...");
           }
         }
@@ -247,7 +249,7 @@ private:
   std::atomic<int> m_packet_count{ 0 };
   std::atomic<int> m_packet_count_tot{ 0 };
 
-  sourceemulatorconfig::Conf m_cfg;
+  readoutlibs::sourceemulatorconfig::Conf m_cfg;
 
   // RAW SENDER
   std::chrono::milliseconds m_raw_sender_timeout_ms;
@@ -260,12 +262,12 @@ private:
   using link_conf_t = dunedaq::readoutlibs::sourceemulatorconfig::LinkConfiguration;
   link_conf_t m_link_conf;
 
-  std::unique_ptr<RateLimiter> m_rate_limiter;
-  std::unique_ptr<FileSourceBuffer> m_file_source;
+  std::unique_ptr<readoutlibs::RateLimiter> m_rate_limiter;
+  std::unique_ptr<readoutlibs::FileSourceBuffer> m_file_source;
   std::unique_ptr<TDEFrameGrouper> m_tde_frame_grouper;
-  ErrorBitGenerator m_error_bit_generator;
+  readoutlibs::ErrorBitGenerator m_error_bit_generator;
 
-  ReusableThread m_producer_thread;
+  readoutlibs::ReusableThread m_producer_thread;
 
   std::string m_name;
   bool m_is_configured = false;
@@ -279,7 +281,7 @@ private:
   daqdataformats::GeoID m_geoid;
 };
 
-} // namespace readoutlibs
+} // namespace fdreadoutlibs
 } // namespace dunedaq
 
 #endif // READOUTLIBS_INCLUDE_READOUTLIBS_MODELS_TDECRATESOURCEEMULATORMODEL_HPP_
