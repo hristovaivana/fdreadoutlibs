@@ -68,7 +68,7 @@ public:
       tpset.seqno = m_next_tpset_seqno++; // NOLINT(runtime/increment_decrement)
       tpset.type = trigger::TPSet::Type::kPayload;
       tpset.origin = m_geoid;
-
+      
       while (!m_tp_buffer.empty() && m_tp_buffer.top().time_start < tpset.end_time) {
         triggeralgs::TriggerPrimitive tp = m_tp_buffer.top();
         types::SW_WIB_TRIGGERPRIMITIVE_STRUCT* tp_readout_type =
