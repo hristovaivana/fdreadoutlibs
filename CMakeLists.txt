@@ -53,7 +53,11 @@ endif()
 # Main library
 daq_add_library(
   *.cpp
+  wib/*.cpp
   wib/tpg/*.cpp
+  wib2/*.cpp
+  daphne/*.cpp
+  tde/*.cpp
   LINK_LIBRARIES ${FDREADOUTLIBS_DEPENDENCIES}
 )
 
