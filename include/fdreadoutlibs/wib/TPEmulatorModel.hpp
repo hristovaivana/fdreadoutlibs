@@ -85,9 +85,8 @@ public:
       m_link_conf = link_conf.get<link_conf_t>();
       m_sink_queue_timeout_ms = std::chrono::milliseconds(m_conf.queue_timeout_ms);
 
-      m_geoid.element_id = m_link_conf.geoid.element;
-      m_geoid.region_id = m_link_conf.geoid.region;
-      m_geoid.system_type = daqdataformats::GeoID::SystemType::kTPC;
+      m_sourceid.id = m_link_conf.source_id;
+      m_sourceid.subsystem = daqdataformats::SourceID::Subsystem::kTRG;
       ;
 
       m_file_source =
@@ -97,13 +96,13 @@ public:
         m_file_source->read(m_link_conf.tp_data_filename);
       } catch (const ers::Issue& ex) {
         ers::fatal(ex);
-        throw readoutlibs::ConfigurationError(ERS_HERE, m_geoid, "", ex);
+        throw readoutlibs::ConfigurationError(ERS_HERE, m_sourceid, "", ex);
       }
 
       m_is_configured = true;
     }
     // Configure thread:
-    m_producer_thread.set_name("fakeprod-tp", m_link_conf.geoid.element);
+    m_producer_thread.set_name("fakeprod-tp", m_link_conf.source_id);
   }
 
   bool is_configured() override { return m_is_configured; }
@@ -214,7 +213,7 @@ private:
 
   bool m_is_configured = false;
   double m_rate_khz;
-  daqdataformats::GeoID m_geoid;
+  daqdataformats::SourceID m_sourceid;
 
   types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT m_payload_wrapper;
 
