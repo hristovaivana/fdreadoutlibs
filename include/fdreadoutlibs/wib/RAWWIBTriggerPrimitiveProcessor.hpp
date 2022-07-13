@@ -13,7 +13,7 @@
 #include "readoutlibs/models/TaskRawDataProcessorModel.hpp"
 
 #include "fdreadoutlibs/FDReadoutTypes.hpp"
-#include "detdataformats/wib/RawWIBTp.hpp"
+#include "detdataformats/fwtp/RawTp.hpp"
 #include "logging/Logging.hpp"
 #include "readoutlibs/FrameErrorRegistry.hpp"
 #include "readoutlibs/ReadoutLogging.hpp"
@@ -47,7 +47,7 @@ class RAWWIBTriggerPrimitiveProcessor
 public:
   using inherited = readoutlibs::TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>;
   using frame_ptr = types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT*;
-  using rwtp_ptr = detdataformats::wib::RawWIBTp*;
+  using rwtp_ptr = detdataformats::fwtp::RawTp*;
   using timestamp_t = std::uint64_t; // NOLINT(build/unsigned)
 
   // Channel map function type
@@ -72,6 +72,10 @@ public:
     }
 
     m_channel_map = dunedaq::detchannelmaps::make_map(config.channel_map_name);
+
+    m_stitch_constant = config.fwtp_stitch_constant;
+    m_time_tick = m_stitch_constant/64;
+    TLOG_DEBUG(1) << "TP frame stitching parameters are ( " << m_stitch_constant << ", " << m_time_tick << ")";
   }
 
   void init(const nlohmann::json& args) override
@@ -102,9 +106,13 @@ public:
 
   void stop(const nlohmann::json& /*args*/) override
   {
-    TLOG_DEBUG(TLVL_WORK_STEPS) << "Number of TP frames " << m_tp_frames;
-    TLOG_DEBUG(TLVL_WORK_STEPS) << "Number of TPs stitched " << m_tps_stitched;
-    TLOG_DEBUG(TLVL_WORK_STEPS) << "Number of TPs dropped " << m_tps_dropped;
+    TLOG_DEBUG(1) << "Number of TP frames " << m_tp_frames;
+    TLOG_DEBUG(1) << "Number of TPs stitched " << m_tps_stitched;
+    TLOG_DEBUG(1) << "Number of TPs dropped " << m_tps_dropped; 
+
+    for (int i = 0; i < m_nhits.size(); i++) {
+      TLOG_DEBUG(1) << "Number of frames with hits " << i << ": " << m_nhits[i] << ", " << (double)((double)m_nhits[i]/(double)m_tp_frames) << "\n";
+    }
   }
 
   void scrap(const nlohmann::json& args) override
@@ -141,8 +149,9 @@ void tp_stitch(rwtp_ptr rwtp)
   uint8_t m_slot_no = rwtp->m_head.m_slot_no; // NOLINT
   uint offline_channel = m_channel_map->get_offline_channel_from_crate_slot_fiber_chan(m_crate_no, m_slot_no, m_fiber_no, m_channel_no);
 
-  TLOG(TLVL_WORK_STEPS) << "IRHRI fwTPG enabled -- will loop over " << nhits << " hits" ;
-  TLOG(TLVL_WORK_STEPS) << "IRHRI fwTPG enabled -- offline channel " << offline_channel ;
+  TLOG_DEBUG(TLVL_WORK_STEPS) << "IRHRI fwTPG enabled -- will loop over " << nhits << " hits" ;
+  TLOG_DEBUG(TLVL_WORK_STEPS) << "IRHRI fwTPG enabled -- offline channel " << offline_channel ;
+  m_nhits[nhits] += 1;
   for (int i = 0; i < nhits; i++) {
 
     triggeralgs::TriggerPrimitive trigprim;
@@ -158,10 +167,10 @@ void tp_stitch(rwtp_ptr rwtp)
     trigprim.algorithm = triggeralgs::TriggerPrimitive::Algorithm::kTPCDefault;
     trigprim.version = 1;
 
-    TLOG(TLVL_WORK_STEPS) << "IRHRI tp_stitch time_start " << trigprim.time_start; 
-    TLOG(TLVL_WORK_STEPS) << "IRHRI tp_stitch time_peak " << trigprim.time_peak; 
-    TLOG(TLVL_WORK_STEPS) << "IRHRI tp_stitch time_over_threshold " << trigprim.time_over_threshold; 
-    TLOG(TLVL_WORK_STEPS) << "IRHRI tp_stitch channel " << trigprim.channel; 
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "IRHRI tp_stitch time_start " << trigprim.time_start; 
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "IRHRI tp_stitch time_peak " << trigprim.time_peak; 
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "IRHRI tp_stitch time_over_threshold " << trigprim.time_over_threshold; 
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "IRHRI tp_stitch channel " << trigprim.channel; 
 
     // stitch current hit to previous hit
     if (m_A[m_channel_no][m_fiber_no].size() == 1) {
@@ -186,11 +195,11 @@ void tp_stitch(rwtp_ptr rwtp)
       } else {
         // current hit is not continuation of previous hit
         // add previous hit to TriggerPrimitives
-        if (!m_tphandler->add_tp(std::move(m_A[m_channel_no][m_fiber_no][0]), ts_0)) {
+        if (m_tphandler != nullptr && !m_tphandler->add_tp(std::move(m_A[m_channel_no][m_fiber_no][0]), ts_0)) {
           m_tps_dropped++;
         }
         m_tps_stitched++;
-        m_tphandler->try_sending_tpsets(ts_0); 
+        if (m_tphandler != nullptr) { m_tphandler->try_sending_tpsets(ts_0); } 
         m_A[m_channel_no][m_fiber_no].clear();
         m_T[m_channel_no][m_fiber_no].clear();
       }
@@ -204,19 +213,19 @@ void tp_stitch(rwtp_ptr rwtp)
     if (m_tp_continue == 0 && m_tp_end_time != 63) {
       if (m_A[m_channel_no][m_fiber_no].size() == 1) {
         // the current hit completes one stitched TriggerPrimitive
-        if (!m_tphandler->add_tp(std::move(m_A[m_channel_no][m_fiber_no][0]), ts_0)) {
+        if (m_tphandler != nullptr && !m_tphandler->add_tp(std::move(m_A[m_channel_no][m_fiber_no][0]), ts_0)) {
           m_tps_dropped++;
         }
-        m_tphandler->try_sending_tpsets(ts_0); 
+        if (m_tphandler != nullptr) { m_tphandler->try_sending_tpsets(ts_0); } 
         m_tps_stitched++;
         m_A[m_channel_no][m_fiber_no].clear();
         m_T[m_channel_no][m_fiber_no].clear();
       } else {
         // the current hit is one TriggerTrimitive
-        if (!m_tphandler->add_tp(std::move(trigprim), ts_0)) {
+        if (m_tphandler != nullptr && !m_tphandler->add_tp(std::move(trigprim), ts_0)) {
           m_tps_dropped++;
         }
-        m_tphandler->try_sending_tpsets(ts_0);  
+        if (m_tphandler != nullptr) { m_tphandler->try_sending_tpsets(ts_0); } 
         m_tps_stitched++;      
       }
     } else {
@@ -231,10 +240,10 @@ void tp_stitch(rwtp_ptr rwtp)
         if ( m_tp_continue == 0 && m_tp_end_time == 63 &&
              static_cast<int>(trigprim.time_start) - static_cast<int>(m_T[m_channel_no][m_fiber_no][0])
              <= static_cast<int>(m_stitch_constant)) {
-          if (!m_tphandler->add_tp(std::move(m_A[m_channel_no][m_fiber_no][0]), ts_0)) {
+          if (m_tphandler != nullptr && !m_tphandler->add_tp(std::move(m_A[m_channel_no][m_fiber_no][0]), ts_0)) {
             m_tps_dropped++;
           }
-          m_tphandler->try_sending_tpsets(ts_0); 
+          if (m_tphandler != nullptr) { m_tphandler->try_sending_tpsets(ts_0); }
           m_tps_stitched++;      
           m_A[m_channel_no][m_fiber_no].clear();
           m_T[m_channel_no][m_fiber_no].clear();
@@ -297,10 +306,11 @@ void tp_unpack(frame_ptr fr)
              static_cast<void*>(srcbuffer.data() + offset + RAW_WIB_TP_SUBFRAME_SIZE),
              nhits*RAW_WIB_TP_SUBFRAME_SIZE);
 
+    auto heap_memory_block = malloc(
+         sizeof(dunedaq::detdataformats::fwtp::TpHeader) + 
+         nhits * sizeof(dunedaq::detdataformats::fwtp::TpData));
     rwtp_ptr rwtp =
-         static_cast<dunedaq::detdataformats::wib::RawWIBTp*>( malloc(
-         sizeof(dunedaq::detdataformats::wib::TpHeader) + nhits * sizeof(dunedaq::detdataformats::wib::TpData)
-         ));
+         static_cast<dunedaq::detdataformats::fwtp::RawTp*>(heap_memory_block);
 
     ::memcpy(static_cast<void*>(&rwtp->m_head),
              static_cast<void*>(tmpbuffer.data() + 0),
@@ -318,11 +328,12 @@ void tp_unpack(frame_ptr fr)
     // stitch TP hits
     tp_stitch(rwtp);
     offset += (2+nhits)*RAW_WIB_TP_SUBFRAME_SIZE;
+    free(heap_memory_block);
   }
 }
 
 protected:
-  int m_time_tick = 25;
+  double m_time_tick { 1.0 }; // 
 
 private:
   using source_t = iomanager::ReceiverConcept<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>;
@@ -336,7 +347,8 @@ private:
   std::vector<uint64_t> m_T[256][10]; // NOLINT // keep track of last stitched start time
   std::atomic<uint64_t> m_tps_stitched { 0 }; // NOLINT
   std::atomic<uint64_t> m_tp_frames  { 0 }; // NOLINT
-  uint64_t m_stitch_constant = 1600; // NOLINT  // one packet = 64 * 25 ns
+  uint64_t m_stitch_constant { 1 }; // NOLINT  // number of ticks between WIB-to-TP packets
+  std::vector<int> m_nhits { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
   // interface to DS
   bool m_fw_tpg_enabled;
