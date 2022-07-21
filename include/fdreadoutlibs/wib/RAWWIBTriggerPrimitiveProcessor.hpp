@@ -110,7 +110,7 @@ public:
     TLOG_DEBUG(1) << "Number of TPs stitched " << m_tps_stitched;
     TLOG_DEBUG(1) << "Number of TPs dropped " << m_tps_dropped; 
 
-    for (int i = 0; i < m_nhits.size(); i++) {
+    for (size_t i = 0; i < m_nhits.size(); i++) {
       TLOG_DEBUG(1) << "Number of frames with hits " << i << ": " << m_nhits[i] << ", " << (double)((double)m_nhits[i]/(double)m_tp_frames) << "\n";
     }
   }
