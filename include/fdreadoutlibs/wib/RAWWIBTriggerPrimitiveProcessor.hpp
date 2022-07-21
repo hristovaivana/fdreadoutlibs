@@ -278,7 +278,7 @@ void tp_unpack(frame_ptr fr)
     // Count number of subframes in a TP frame
     int n = 1;
     bool ped_found { false };
-    for (n=1; offset+(n-1)*RAW_WIB_TP_SUBFRAME_SIZE<num_elem; ++n) {
+    for (n=1; offset+(n-1)*RAW_WIB_TP_SUBFRAME_SIZE<(size_t)num_elem; ++n) {
       if (reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data()) // NOLINT
            + offset + (n-1)*RAW_WIB_TP_SUBFRAME_SIZE)->word3 == 0xDEADBEEF) {
         ped_found = true;
