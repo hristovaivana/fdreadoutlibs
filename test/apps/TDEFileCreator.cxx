@@ -25,6 +25,7 @@ int main()
   std::random_device rd;
   std::default_random_engine rng(rd());
 
+
   for (int batch = 0; batch < num_batches; batch++)
   {
     std::vector<detdataformats::tde::TDE16Frame> v;
@@ -40,6 +41,7 @@ int main()
         fr.get_tde_header()->slot = amc;
         fr.get_tde_header()->link = i;
         fr.set_adc_samples(batch,0);
+        v.push_back(fr);
       }
     }
     std::shuffle(v.begin(), v.end(), rng);
