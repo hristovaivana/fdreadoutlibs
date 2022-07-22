@@ -9,8 +9,6 @@
 
 #include <vector>
 
-using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
-
 namespace dunedaq {
 namespace fdreadoutlibs {
 
