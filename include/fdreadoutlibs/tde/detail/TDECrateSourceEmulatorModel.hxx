@@ -41,7 +41,7 @@ TDECrateSourceEmulatorModel<ReadoutType>::conf(const nlohmann::json& args,
       m_file_source->read(m_link_conf.data_filename);
     } catch (const ers::Issue& ex) {
       ers::fatal(ex);
-      throw readoutlibs::ConfigurationError(ERS_HERE, m_geoid, "", ex);
+      throw readoutlibs::ConfigurationError(ERS_HERE, m_sourceid, "", ex);
     }
     m_dropouts_length = m_link_conf.random_population_size;
     if (m_dropout_rate == 0.0) {
@@ -61,7 +61,7 @@ TDECrateSourceEmulatorModel<ReadoutType>::conf(const nlohmann::json& args,
     m_is_configured = true;
   }
   // Configure thread:
-  m_producer_thread.set_name("fakeprod", m_link_conf.geoid.element);
+  m_producer_thread.set_name("fakeprod", m_link_conf.source_id);
 }
 
 template<class ReadoutType>
