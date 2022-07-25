@@ -37,19 +37,25 @@ public:
   using daphneframeptr = dunedaq::detdataformats::daphne::DAPHNEFrame*;
   using timestamp_t = std::uint64_t; // NOLINT(build/unsigned)
 
+  // Constructor
   explicit DAPHNEFrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
     : readoutlibs::TaskRawDataProcessorModel<types::DAPHNE_SUPERCHUNK_STRUCT>(error_registry)
   {}
 
-  void conf(const nlohmann::json& args) override
-  {
-    readoutlibs::TaskRawDataProcessorModel<types::DAPHNE_SUPERCHUNK_STRUCT>::add_preprocess_task(
-      std::bind(&DAPHNEFrameProcessor::timestamp_check, this, std::placeholders::_1));
-    // m_tasklist.push_back( std::bind(&DAPHNEFrameProcessor::frame_error_check, this, std::placeholders::_1) );
-    TaskRawDataProcessorModel<types::DAPHNE_SUPERCHUNK_STRUCT>::conf(args);
-  }
+  // Override config for pipeline setup
+  void conf(const nlohmann::json& args) override;
 
 protected:
+  /**
+   * Pipeline Stage 1.: Check proper timestamp increments in DAPHNE frame
+   * */
+  void timestamp_check(frameptr /*fp*/);
+
+  /**
+   * Pipeline Stage 2.: Check DAPHNE headers for error flags
+   * */
+  void frame_error_check(frameptr /*fp*/);
+
   // Internals
   timestamp_t m_previous_ts = 0;
   timestamp_t m_current_ts = 0;
@@ -57,51 +63,6 @@ protected:
   bool m_first_ts_missmatch = true;
   bool m_problem_reported = false;
   std::atomic<int> m_ts_error_ctr{ 0 };
-
-  /**
-   * Pipeline Stage 1.: Check proper timestamp increments in DAPHNE frame
-   * */
-  void timestamp_check(frameptr fp)
-  {
-    // If EMU data, emulate perfectly incrementing timestamp
-    if (inherited::m_emulator_mode) { // emulate perfectly incrementing timestamp
-      // RS warning : not fixed rate!
-      if (m_first_ts_fake) {
-        fp->fake_timestamps(m_previous_ts, 16);
-        m_first_ts_fake = false;
-      } else {
-        fp->fake_timestamps(m_previous_ts + 192, 16);
-      }
-    }
-
-    // Acquire timestamp
-    m_current_ts = fp->get_first_timestamp();
-
-    // Check timestamp
-    // RS warning : not fixed rate!
-    // if (m_current_ts - m_previous_ts != ???) {
-    //  ++m_ts_error_ctr;
-    //}
-
-    if (m_ts_error_ctr > 1000) {
-      if (!m_problem_reported) {
-        TLOG() << "*** Data Integrity ERROR *** Timestamp continuity is completely broken! "
-               << "Something is wrong with the FE source or with the configuration!";
-        m_problem_reported = true;
-      }
-    }
-
-    m_previous_ts = m_current_ts;
-    m_last_processed_daq_ts = m_current_ts;
-  }
-
-  /**
-   * Pipeline Stage 2.: Check DAPHNE headers for error flags
-   * */
-  void frame_error_check(frameptr /*fp*/)
-  {
-    // check error fields
-  }
 
 private:
 };
