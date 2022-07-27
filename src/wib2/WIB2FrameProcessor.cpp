@@ -38,7 +38,7 @@ WIB2FrameProcessor::timestamp_check(frameptr fp)
   if (inherited::m_emulator_mode) {         // emulate perfectly incrementing timestamp
     uint64_t ts_next = m_previous_ts + 384; // NOLINT(build/unsigned)
     for (unsigned int i = 0; i < 12; ++i) { // NOLINT(build/unsigned)
-      auto wf = reinterpret_cast<dunedaq::detdataformats::wib2::WIB2Frame*>(((uint8_t*)fp) + i * 468); // NOLINT
+      auto wf = reinterpret_cast<dunedaq::detdataformats::wib2::WIB2Frame*>(((uint8_t*)fp) + i * sizeof(dunedaq::detdataformats::wib2::WIB2Frame)); // NOLINT
       auto& wfh = wf->header; // const_cast<dunedaq::detdataformats::wib2::WIB2Frame::Header*>(wf->get_wib_header());
       // wfh->set_timestamp(ts_next);
       wfh.timestamp_1 = ts_next;
