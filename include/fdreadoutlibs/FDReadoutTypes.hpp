@@ -202,7 +202,7 @@ static_assert(sizeof(struct dunedaq::detdataformats::wib::WIBFrame)*12 == WIB_SU
 
 /**
  * @brief For WIB2 the numbers are different.
- * 12[WIB2 frames] x 468[Bytes] = 5616[Bytes]
+ * 12[WIB2 frames] x 472[Bytes] = 5664[Bytes]
  * */
 const constexpr std::size_t WIB2_SUPERCHUNK_SIZE = 5664; // for 12: 5664
 struct WIB2_SUPERCHUNK_STRUCT
