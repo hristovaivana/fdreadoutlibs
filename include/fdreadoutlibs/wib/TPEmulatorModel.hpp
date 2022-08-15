@@ -86,7 +86,7 @@ public:
       m_sink_queue_timeout_ms = std::chrono::milliseconds(m_conf.queue_timeout_ms);
 
       m_sourceid.id = m_link_conf.source_id;
-      m_sourceid.subsystem = daqdataformats::SourceID::Subsystem::kTRG;
+      m_sourceid.subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
       ;
 
       m_file_source =
