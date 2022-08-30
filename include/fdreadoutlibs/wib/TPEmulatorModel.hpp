@@ -46,11 +46,6 @@ public:
   using sink_t = iomanager::SenderConcept<detdataformats::wib::RawWIBTp>;
 
 
-  // Very bad, use these from readout types, when RAW_WIB_TP is introduced
-  static const constexpr std::size_t WIB_FRAME_SIZE = 464;
-  static const constexpr std::size_t FLX_SUPERCHUNK_FACTOR = 12;
-  static const constexpr std::size_t WIB_SUPERCHUNK_SIZE = 5568; // for 12: 5568
-
   // Raw WIB TP
   static const constexpr std::size_t RAW_WIB_TP_SUBFRAME_SIZE = 12;
   // same size for header, tp data, pedinfo: 3 words * 4 bytes/word
