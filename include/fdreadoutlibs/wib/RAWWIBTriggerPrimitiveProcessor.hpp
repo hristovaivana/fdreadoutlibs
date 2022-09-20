@@ -154,6 +154,8 @@ i*/
   {
     readoutlibs::TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>::get_info(ci, level);
 
+    readoutlibs::readoutinfo::RawDataProcessorInfo info;
+
     if (m_tphandler != nullptr) {
       info.num_tps_sent = m_tphandler->get_and_reset_num_sent_tps();
       info.num_tpsets_sent = m_tphandler->get_and_reset_num_sent_tpsets();
@@ -169,7 +171,6 @@ i*/
     }
     m_t0 = now;
 
-    readoutlibs::readoutinfo::RawDataProcessorInfo info;
     ci.add(info);
   }
 
