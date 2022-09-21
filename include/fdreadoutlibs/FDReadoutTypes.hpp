@@ -528,6 +528,8 @@ struct VariableSizePayloadWrapper
   std::unique_ptr<char> data = nullptr;
 };
 
+
+
 // raw WIB TP
 struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
 {
@@ -542,7 +544,11 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
   // latency buffer 
   bool operator<(const RAW_WIB_TRIGGERPRIMITIVE_STRUCT& other) const 
   {
-    return this->get_first_timestamp() < other.get_first_timestamp();
+    const detdataformats::fwtp::TpHeader& head = this->get_header();
+    const detdataformats::fwtp::TpHeader& ohead = other->get_header();
+
+    return std::tie(m_first_timestamp, head.m_crate_no, head.m_slot_no, head.m_fiber_no, head.m_wire_no) < std::tie(o.m_first_timestamp, ohead.m_crate_no, ohead.m_slot_no, ohead.m_fiber_no, ohead.m_wire_no);
+
   }
   
   uint64_t get_timestamp() const  // NOLINT(build/unsigned)
@@ -622,13 +628,20 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
 
 private:
 void unpack_timestamp() {
-    std::unique_ptr<detdataformats::fwtp::RawTp> rwtp = 
-                    std::make_unique<detdataformats::fwtp::RawTp>();
-    ::memcpy(static_cast<void*>(&rwtp->m_head),
-             static_cast<void*>(m_raw_tp_frame_chunk.data()),
-             2*RAW_WIB_TP_SUBFRAME_SIZE); 
-    m_first_timestamp = rwtp->m_head.get_timestamp();
+    // std::unique_ptr<detdataformats::fwtp::RawTp> rwtp = 
+    //                 std::make_unique<detdataformats::fwtp::RawTp>();
+    // ::memcpy(static_cast<void*>(&rwtp->m_head),
+    //          static_cast<void*>(m_raw_tp_frame_chunk.data()),
+    //          2*RAW_WIB_TP_SUBFRAME_SIZE); 
+    // m_first_timestamp = rwtp->m_head.get_timestamp();
+
+    // m_first_timestamp = reinterpret_cast<detdataformats::fwtp::RawTp*>(m_raw_tp_frame_chunk.data())->m_head.get_timestamp()
+    m_first_timestamp = get_header().get_timestamp();
 } 
+
+detdataformats::fwtp::TpHeader get_header() const {
+  return reinterpret_cast<detdataformats::fwtp::RawTp*>(m_raw_tp_frame_chunk.data())->m_head;
+}
 
 private:
   std::vector<std::uint8_t> m_raw_tp_frame_chunk;  // NOLINT(build/unsigned)
