@@ -25,6 +25,7 @@
 #include <memory>  // unique_ptr
 #include <vector>
 #include <cstring> // memcpy
+#include <tuple> // tie
 
 namespace dunedaq {
 namespace fdreadoutlibs {
