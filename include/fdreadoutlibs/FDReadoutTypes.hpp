@@ -546,9 +546,9 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
   bool operator<(const RAW_WIB_TRIGGERPRIMITIVE_STRUCT& other) const 
   {
     const detdataformats::fwtp::TpHeader& head = this->get_header();
-    const detdataformats::fwtp::TpHeader& ohead = other->get_header();
+    const detdataformats::fwtp::TpHeader& ohead = other.get_header();
 
-    return std::tie(m_first_timestamp, head.m_crate_no, head.m_slot_no, head.m_fiber_no, head.m_wire_no) < std::tie(o.m_first_timestamp, ohead.m_crate_no, ohead.m_slot_no, ohead.m_fiber_no, ohead.m_wire_no);
+    return std::tie(m_first_timestamp, head.m_crate_no, head.m_slot_no, head.m_fiber_no, head.m_wire_no) < std::tie(other.m_first_timestamp, ohead.m_crate_no, ohead.m_slot_no, ohead.m_fiber_no, ohead.m_wire_no);
 
   }
   
@@ -640,8 +640,8 @@ void unpack_timestamp() {
     m_first_timestamp = get_header().get_timestamp();
 } 
 
-detdataformats::fwtp::TpHeader get_header() const {
-  return reinterpret_cast<detdataformats::fwtp::RawTp*>(m_raw_tp_frame_chunk.data())->m_head;
+const detdataformats::fwtp::TpHeader& get_header() const {
+  return reinterpret_cast<const detdataformats::fwtp::RawTp*>(m_raw_tp_frame_chunk.data())->m_head;
 }
 
 private:
