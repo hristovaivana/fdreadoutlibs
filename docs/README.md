@@ -25,8 +25,6 @@ Example of `daqconf` configuration file used for testing:
    "opmon_impl": "cern"
 },
 
-
-
 "readout": {
    "enable_software_tpg": true,
    "clock_speed_hz": 62500000,
@@ -34,27 +32,17 @@ Example of `daqconf` configuration file used for testing:
    "readout_sends_tp_fragments": false
 },
 
-
-
 "trigger": {
   "trigger_rate_hz": 10,
   "tpg_channel_map": "HDColdboxChannelMap",
   "enable_tpset_writing" : true
 },
 
-"dataflow" : {
+"dataflow" : {},
 
-},
-
-
-
-
-"dqm" : {
-
-}
-
+"dqm" : {}
 
 }
 ```
-
+NOTE: the swtpg was tested with a single link using a local binary input file (AAA 22-09-2022).
 
