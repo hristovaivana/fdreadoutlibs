@@ -259,8 +259,6 @@ public:
     // Setup pre-processing pipeline
     TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_preprocess_task(
       std::bind(&WIB2FrameProcessor::timestamp_check, this, std::placeholders::_1));
-    //TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_preprocess_task(
-      //std::bind(&WIB2FrameProcessor::frame_error_check, this, std::placeholders::_1));
 
     TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::conf(cfg);
   }
@@ -493,9 +491,8 @@ protected:
 
     unsigned int nhits = add_hits_to_tphandler(m_coll_primfind_dest, timestamp, types::kCollection);
 
-    if (nhits >= 0) {
-       TLOG_DEBUG(0) << "AAA: NON null collection hits: " << nhits << " for ts: " << timestamp;
-    //   TLOG() << *wfptr;
+    if (nhits > 0) {
+       TLOG_DEBUG(0) << "Non null collection hits: " << nhits << " for ts: " << timestamp;
     }
 
     m_num_hits_coll += nhits;
@@ -518,7 +515,7 @@ protected:
     m_num_hits_ind += add_hits_to_tphandler(m_ind_primfind_dest, timestamp, types::kInduction);
 
     if (m_num_hits_ind > 0) {
-       TLOG_DEBUG(2) << "AAA: NON null induction hits: " << m_num_hits_ind << " for ts: " << timestamp;
+       TLOG_DEBUG(2) << "NON null induction hits: " << m_num_hits_ind << " for ts: " << timestamp;
     }
 
 
@@ -606,7 +603,6 @@ protected:
     // in it: for channels which *did* have a hit ending, the value of
     // hit_charge is nonzero.
     while (*primfind_it != swtpg_wib2::MAGIC) {
-      TLOG_DEBUG(0) << "AAAAA: inside primfind at TS " << timestamp;
       // First, get all of the register values (including those with no hit) into local variables
       for (int i = 0; i < 16; ++i) {
         chan[i] = *primfind_it++; // NOLINT(runtime/increment_decrement)
@@ -627,7 +623,6 @@ protected:
       // nonzero value of hit_charge
       for (int i = 0; i < 16; ++i) {
         if (hit_charge[i] && chan[i] != swtpg_wib2::MAGIC) {
-          TLOG_DEBUG(0) << "AAAA: inside hit_charge[i] and chan[i] at TS " << timestamp;
           // This channel had a hit ending here, so we can create and output the hit here
           const uint16_t offline_channel = (coll_or_ind == types::kCollection) ?
             m_register_channel_map.collection[chan[i]] : m_register_channel_map.induction[chan[i]];
@@ -673,8 +668,6 @@ protected:
         }
       }
     }
-    TLOG() << "AAA: nhits " << nhits << " at timestamp " << timestamp;
-
     return nhits;
   }
 
