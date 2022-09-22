@@ -11,3 +11,50 @@ The following frontends and features are provided by this package:
 * *SSP*: Only frame processor
 * *WIB*: Frame processor for `WIB`, software and hardware `WIB` TPs. Implementation of avx based software hit finding (software tpg) for `WIB`
 * *WIB2*: Only frame processor
+
+
+# Test Software TPG on WIB2
+
+To test the execution of the DUNE WIB2 software TPG, first download a raw data file, either by running `wget https://www.dropbox.com/s/9b1xtkjbkfyakij/frames_wib2.bin` or clicking on the [CERNBox link](https://www.dropbox.com/s/9b1xtkjbkfyakij/frames_wib2.bin) and put it into `<work_dir>`                                                                                             
+
+Example of `daqconf` configuration file used for testing:
+
+```
+{
+"boot" : {
+   "opmon_impl": "cern"
+},
+
+
+
+"readout": {
+   "enable_software_tpg": true,
+   "clock_speed_hz": 62500000,
+   "data_file": "./frames_wib2.bin",
+   "readout_sends_tp_fragments": false
+},
+
+
+
+"trigger": {
+  "trigger_rate_hz": 10,
+  "tpg_channel_map": "HDColdboxChannelMap",
+  "enable_tpset_writing" : true
+},
+
+"dataflow" : {
+
+},
+
+
+
+
+"dqm" : {
+
+}
+
+
+}
+```
+
+
