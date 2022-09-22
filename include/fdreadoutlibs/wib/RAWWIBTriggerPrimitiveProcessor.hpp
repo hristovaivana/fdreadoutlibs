@@ -79,6 +79,7 @@ public:
 
     m_stitch_constant = config.fwtp_number_of_ticks * config.fwtp_tick_length;
     m_time_tick = config.fwtp_tick_length;
+    m_enable_fake_timestamp = config.fwtp_fake_timestamp;
     TLOG_DEBUG(15) << "TP frame stitching parameters are ( " << m_stitch_constant << ", " << m_time_tick << ")";
   }
 
@@ -176,15 +177,22 @@ i*/
 
 void tp_stitch(rwtp_ptr rwtp)
 {
-  m_fake_timestamp += 6400; 
   m_tp_frames++;
-  uint64_t ts_0 = rwtp->m_head.get_timestamp(); // NOLINT
-  //uint64_t ts_0 = m_fake_timestamp; // NOLINT
+  uint64_t ts_0;
+  if(m_enable_fake_timestamp == true)
+  {
+    m_fake_timestamp += 6400; 
+    ts_0 = m_fake_timestamp; // NOLINT
+  }
+  else
+  {
+    ts_0 = rwtp->m_head.get_timestamp(); // NOLINT
+  }
   int nhits = rwtp->m_head.get_nhits(); // NOLINT
   uint8_t m_channel_no = rwtp->m_head.m_wire_no; // NOLINT
   uint8_t m_fiber_no = rwtp->m_head.m_fiber_no; // NOLINT
   uint8_t m_crate_no = rwtp->m_head.m_crate_no; // NOLINT
-  uint8_t m_slot_no = rwtp->m_head.m_slot_no; // NOLINT
+  uint8_t m_slot_no = (rwtp->m_head.m_slot_no) & ((uint8_t) 0x7); // NOLINT
   uint offline_channel = m_channel_map->get_offline_channel_from_crate_slot_fiber_chan(m_crate_no, m_slot_no, m_fiber_no, m_channel_no);
  
   if (nhits < 8) { 
@@ -395,6 +403,7 @@ private:
 
   // interface to DS
   bool m_fw_tpg_enabled;
+  bool m_enable_fake_timestamp;
   std::shared_ptr<iomanager::SenderConcept<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>> m_tp_sink;
   std::shared_ptr<iomanager::SenderConcept<trigger::TPSet>> m_tpset_sink;
   std::unique_ptr<WIBTPHandler> m_tphandler;
