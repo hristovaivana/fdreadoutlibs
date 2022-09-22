@@ -34,8 +34,8 @@
 #include <iostream>
 #include <fstream>
 
-using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
-using namespace dunedaq::readoutlibs::logging;
+using dunedaq::readoutlibs::logging::TLVL_WORK_STEPS;
+using dunedaq::readoutlibs::logging::TLVL_TAKE_NOTE;
 
 namespace dunedaq {
 namespace fdreadoutlibs {
@@ -60,22 +60,27 @@ public:
 
   void conf(const nlohmann::json& args) override
   {
+    auto config = args["rawdataprocessorconf"].get<readoutlibs::readoutconfig::RawDataProcessorConf>();
+
     TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>::add_preprocess_task(
                 std::bind(&RAWWIBTriggerPrimitiveProcessor::tp_unpack, this, std::placeholders::_1));
     TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>::conf(args);
 
-    auto config = args["rawdataprocessorconf"].get<readoutlibs::readoutconfig::RawDataProcessorConf>();
     if (config.enable_firmware_tpg) {
       m_fw_tpg_enabled = true;
+      daqdataformats::SourceID tpset_sourceid;
+      tpset_sourceid.id = config.tpset_sourceid;
+      tpset_sourceid.subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
       m_tphandler.reset(
-            new WIBTPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, m_sourceid, config.tpset_topic));
+            new WIBTPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, tpset_sourceid, config.tpset_topic));
     }
 
     m_channel_map = dunedaq::detchannelmaps::make_map(config.channel_map_name);
 
-    m_stitch_constant = config.fwtp_stitch_constant;
-    m_time_tick = m_stitch_constant/64;
-    TLOG_DEBUG(1) << "TP frame stitching parameters are ( " << m_stitch_constant << ", " << m_time_tick << ")";
+    m_stitch_constant = config.fwtp_number_of_ticks * config.fwtp_tick_length;
+    m_time_tick = config.fwtp_tick_length;
+    m_enable_fake_timestamp = config.fwtp_fake_timestamp;
+    TLOG_DEBUG(15) << "TP frame stitching parameters are ( " << m_stitch_constant << ", " << m_time_tick << ")";
   }
 
   void init(const nlohmann::json& args) override
@@ -92,6 +97,22 @@ public:
     } catch (const ers::Issue& excpt) {
       throw readoutlibs::ResourceQueueError(ERS_HERE, "tp queue", "DefaultRequestHandlerModel", excpt);
     }
+
+/*
+    try {
+      auto queue_index = appfwk::connection_index(args, {});
+      if (queue_index.find("tp_out") != queue_index.end()) {
+        m_tp_sink = get_iom_sender<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>(queue_index["tp_out"]);
+      }
+      if (queue_index.find("tpset_out") != queue_index.end()) {
+        m_tpset_sink = get_iom_sender<trigger::TPSet>(queue_index["tpset_out"]);
+      }
+      m_err_frame_sink = get_iom_sender<detdataformats::wib::WIBFrame>(queue_index["errored_frames"]);
+    } catch (const ers::Issue& excpt) {
+      throw readoutlibs::ResourceQueueError(ERS_HERE, "tp queue", "DefaultRequestHandlerModel", excpt);
+    }
+i*/
+
   }
 
   void start(const nlohmann::json& args) override
@@ -100,18 +121,26 @@ public:
       rcif::cmd::StartParams start_params = args.get<rcif::cmd::StartParams>();
       m_tphandler->set_run_number(start_params.run);
       m_tphandler->reset();
-      m_tps_dropped = 0;
     }
+    // Reset stats 
+    m_tps_stitched = 0;
+    m_tp_frames = 0;
+    m_tp_hits = 0;
+    m_tps_dropped = 0;
+    m_sent_tps = 0;
+    std::fill(m_nhits.begin(), m_nhits.end(), 0);
+    m_total_hits_count.exchange(0);
   }
 
   void stop(const nlohmann::json& /*args*/) override
   {
-    TLOG_DEBUG(1) << "Number of TP frames " << m_tp_frames;
-    TLOG_DEBUG(1) << "Number of TPs stitched " << m_tps_stitched;
-    TLOG_DEBUG(1) << "Number of TPs dropped " << m_tps_dropped; 
+    TLOG_DEBUG(20) << "Number of TP frames " << m_tp_frames;
+    TLOG_DEBUG(20) << "Number of TPs stitched " << m_tps_stitched;
+    TLOG_DEBUG(20) << "Number of TPs dropped " << m_tps_dropped; 
 
     for (size_t i = 0; i < m_nhits.size(); i++) {
-      TLOG_DEBUG(1) << "Number of frames with hits " << i << ": " << m_nhits[i] << ", " << (double)((double)m_nhits[i]/(double)m_tp_frames) << "\n";
+      TLOG_DEBUG(20) << "Number of frames with hits " << i << ": " << m_nhits[i] << ", " 
+        << static_cast<double>(static_cast<double>(m_nhits[i])/static_cast<double>(m_tp_frames)) << "\n";
     }
   }
 
@@ -124,6 +153,8 @@ public:
 
   void get_info(opmonlib::InfoCollector& ci, int level)
   {
+    readoutlibs::TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>::get_info(ci, level);
+
     readoutlibs::readoutinfo::RawDataProcessorInfo info;
 
     if (m_tphandler != nullptr) {
@@ -131,27 +162,46 @@ public:
       info.num_tpsets_sent = m_tphandler->get_and_reset_num_sent_tpsets();
       info.num_tps_dropped = m_tps_dropped.exchange(0);
     }
+    auto now = std::chrono::high_resolution_clock::now();
+    if (m_fw_tpg_enabled) {
+      int new_hits = m_total_hits_count.exchange(0);
+      double seconds = std::chrono::duration_cast<std::chrono::microseconds>(now - m_t0).count() / 1000000.;
+      TLOG_DEBUG(TLVL_TAKE_NOTE) << "Hit rate: " << std::to_string(new_hits / seconds / 1000.) << " [kHz]";
+      TLOG_DEBUG(TLVL_TAKE_NOTE) << "Total new hits: " << new_hits;
+      info.rate_tp_hits = new_hits / seconds / 1000.;
+    }
+    m_t0 = now;
 
-    readoutlibs::TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>::get_info(ci, level);
     ci.add(info);
   }
 
 void tp_stitch(rwtp_ptr rwtp)
 {
-  m_fake_timestamp += 6400; 
   m_tp_frames++;
-  uint64_t ts_0 = rwtp->m_head.get_timestamp(); // NOLINT
-  //uint64_t ts_0 = m_fake_timestamp; // NOLINT
+  uint64_t ts_0;
+  if(m_enable_fake_timestamp == true)
+  {
+    m_fake_timestamp += 6400; 
+    ts_0 = m_fake_timestamp; // NOLINT
+  }
+  else
+  {
+    ts_0 = rwtp->m_head.get_timestamp(); // NOLINT
+  }
   int nhits = rwtp->m_head.get_nhits(); // NOLINT
   uint8_t m_channel_no = rwtp->m_head.m_wire_no; // NOLINT
   uint8_t m_fiber_no = rwtp->m_head.m_fiber_no; // NOLINT
   uint8_t m_crate_no = rwtp->m_head.m_crate_no; // NOLINT
-  uint8_t m_slot_no = rwtp->m_head.m_slot_no; // NOLINT
+  uint8_t m_slot_no = (rwtp->m_head.m_slot_no) & ((uint8_t) 0x7); // NOLINT
   uint offline_channel = m_channel_map->get_offline_channel_from_crate_slot_fiber_chan(m_crate_no, m_slot_no, m_fiber_no, m_channel_no);
+ 
+  if (nhits < 8) { 
+    m_nhits[nhits] += 1;
+  }
+  m_total_hits_count += nhits;
 
-  TLOG_DEBUG(TLVL_WORK_STEPS) << "IRHRI fwTPG enabled -- will loop over " << nhits << " hits" ;
-  TLOG_DEBUG(TLVL_WORK_STEPS) << "IRHRI fwTPG enabled -- offline channel " << offline_channel ;
-  m_nhits[nhits] += 1;
+  m_tp_hits += nhits;
+
   for (int i = 0; i < nhits; i++) {
 
     triggeralgs::TriggerPrimitive trigprim;
@@ -166,11 +216,6 @@ void tp_stitch(rwtp_ptr rwtp)
     trigprim.type = triggeralgs::TriggerPrimitive::Type::kTPC;
     trigprim.algorithm = triggeralgs::TriggerPrimitive::Algorithm::kTPCDefault;
     trigprim.version = 1;
-
-    TLOG_DEBUG(TLVL_WORK_STEPS) << "IRHRI tp_stitch time_start " << trigprim.time_start; 
-    TLOG_DEBUG(TLVL_WORK_STEPS) << "IRHRI tp_stitch time_peak " << trigprim.time_peak; 
-    TLOG_DEBUG(TLVL_WORK_STEPS) << "IRHRI tp_stitch time_over_threshold " << trigprim.time_over_threshold; 
-    TLOG_DEBUG(TLVL_WORK_STEPS) << "IRHRI tp_stitch channel " << trigprim.channel; 
 
     // stitch current hit to previous hit
     if (m_A[m_channel_no][m_fiber_no].size() == 1) {
@@ -254,7 +299,6 @@ void tp_stitch(rwtp_ptr rwtp)
 } // NOLINT (exceeding 80 lines)
 
 
-//void unpack_tpframe_version_1(frame_ptr fr)
 void tp_unpack(frame_ptr fr)  
 {
   auto& srcbuffer = fr->get_data();
@@ -269,12 +313,14 @@ void tp_unpack(frame_ptr fr)
     return;
   }
 
-  
+  double dbg_frames = 0;
+  double dbg_microseconds = 0;
   int offset = 0;
   while (offset <= num_elem) {
 
     if (offset == num_elem) break;
-
+ 
+    auto now = std::chrono::high_resolution_clock::now();
     // Count number of subframes in a TP frame
     int n = 1;
     bool ped_found { false };
@@ -321,7 +367,10 @@ void tp_unpack(frame_ptr fr)
                static_cast<void*>(tmpbuffer.data() + (2+i)*RAW_WIB_TP_SUBFRAME_SIZE),
                RAW_WIB_TP_SUBFRAME_SIZE);
     }
-
+    dbg_frames++;
+    dbg_microseconds += std::chrono::duration_cast<std::chrono::microseconds>(now - m_u_t0).count();
+    m_u_t0 = now;   
+ 
     // old format lacks number of hits
     rwtp->set_nhits(nhits); // explicitly set number of hits in new format
 
@@ -347,21 +396,26 @@ private:
   std::vector<uint64_t> m_T[256][10]; // NOLINT // keep track of last stitched start time
   std::atomic<uint64_t> m_tps_stitched { 0 }; // NOLINT
   std::atomic<uint64_t> m_tp_frames  { 0 }; // NOLINT
-  uint64_t m_stitch_constant { 1 }; // NOLINT  // number of ticks between WIB-to-TP packets
-  std::vector<int> m_nhits { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+  std::atomic<int> m_tp_hits { 0 };
+
+  int m_stitch_constant { 2048 }; // number of ticks between WIB-to-TP packets
+  std::vector<int> m_nhits { 0, 0, 0, 0, 0, 0, 0, 0};
 
   // interface to DS
   bool m_fw_tpg_enabled;
+  bool m_enable_fake_timestamp;
   std::shared_ptr<iomanager::SenderConcept<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>> m_tp_sink;
   std::shared_ptr<iomanager::SenderConcept<trigger::TPSet>> m_tpset_sink;
   std::unique_ptr<WIBTPHandler> m_tphandler;
   std::atomic<uint64_t> m_tps_dropped{ 0 }; // NOLINT
   std::shared_ptr<detchannelmaps::TPCChannelMap> m_channel_map;
-  uint64_t m_fake_timestamp{ 0 };
+  uint64_t m_fake_timestamp { 0 }; // NOLINT
 
   // info
   std::atomic<uint64_t> m_sent_tps{ 0 }; // NOLINT(build/unsigned)
   std::chrono::time_point<std::chrono::high_resolution_clock> m_t0;
+  std::chrono::time_point<std::chrono::high_resolution_clock> m_u_t0;
+  std::atomic<int> m_total_hits_count{ 0 };
 };
 
 } // namespace fdreadoutlibs

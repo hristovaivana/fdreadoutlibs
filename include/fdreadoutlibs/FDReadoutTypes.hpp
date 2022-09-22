@@ -520,7 +520,7 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
   }
 
   static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
-  static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kSW_TriggerPrimitive;
+  static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kFW_TriggerPrimitive;
   static const constexpr uint64_t expected_tick_difference = 0; // 2 MHz@50MHz clock // NOLINT(build/unsigned)
   //static const constexpr size_t frame_size = TP_SIZE;
   //static const constexpr size_t element_size = TP_SIZE;
