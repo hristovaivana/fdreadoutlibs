@@ -390,6 +390,58 @@ struct SW_WIB_TRIGGERPRIMITIVE_STRUCT
 static_assert(sizeof(struct SW_WIB_TRIGGERPRIMITIVE_STRUCT) == sizeof(triggeralgs::TriggerPrimitive),
               "Check your assumptions on SW_WIB_TRIGGERPRIMITIVE_STRUCT");
 
+const constexpr std::size_t TP_SIZE_WIB2 = sizeof(triggeralgs::TriggerPrimitive);
+struct SW_WIB2_TRIGGERPRIMITIVE_STRUCT
+{
+  using FrameType = SW_WIB2_TRIGGERPRIMITIVE_STRUCT;
+  // data
+  triggeralgs::TriggerPrimitive tp;
+  // comparable based on start timestamp
+  bool operator<(const SW_WIB2_TRIGGERPRIMITIVE_STRUCT& other) const
+  {
+    return this->tp.time_start < other.tp.time_start;
+  }
+
+  uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
+  {
+    return tp.time_start;
+  }
+
+  void set_first_timestamp(uint64_t ts) // NOLINT(build/unsigned)
+  {
+    tp.time_start = ts;
+  }
+
+  uint64_t get_timestamp() const // NOLINT(build/unsigned)
+  {
+    return tp.time_start;
+  }
+
+  void fake_timestamps(uint64_t first_timestamp, uint64_t /*offset = 25*/) // NOLINT(build/unsigned)
+  {
+    tp.time_start = first_timestamp;
+  }
+
+  FrameType* begin() { return this; }
+
+  FrameType* end() { return (this + 1); } // NOLINT
+
+  size_t get_payload_size() { return TP_SIZE_WIB2; }
+
+  size_t get_num_frames() { return 1; }
+
+  size_t get_frame_size() { return TP_SIZE_WIB2; }
+
+  static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
+  static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kSW_TriggerPrimitive;
+  static const constexpr uint64_t expected_tick_difference = 25; // NOLINT(build/unsigned)
+};
+
+static_assert(sizeof(struct SW_WIB2_TRIGGERPRIMITIVE_STRUCT) == sizeof(triggeralgs::TriggerPrimitive),
+              "Check your assumptions on SW_WIB2_TRIGGERPRIMITIVE_STRUCT");
+
+
+
 const constexpr std::size_t SSP_FRAME_SIZE = 1012;
 struct SSP_FRAME_STRUCT
 {
@@ -593,6 +645,12 @@ struct TpSubframe
   uint32_t word2; // NOLINT(build/unsigned)
   uint32_t word3; // NOLINT(build/unsigned)
 };
+
+enum CollectionOrInduction {
+  kCollection,
+  kInduction
+};
+
 
 } // namespace types
 } // namespace fdreadoutlibs

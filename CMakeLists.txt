@@ -56,6 +56,7 @@ daq_add_library(
   wib/*.cpp
   wib/tpg/*.cpp
   wib2/*.cpp
+  wib2/tpg/*.cpp
   daphne/*.cpp
   tde/*.cpp
   LINK_LIBRARIES ${FDREADOUTLIBS_DEPENDENCIES}
@@ -65,6 +66,8 @@ daq_add_library(
 # Apps
 
 daq_add_application(TDEFileCreator TDEFileCreator.cxx TEST LINK_LIBRARIES fdreadoutlibs)
+daq_add_application(WIB2TestBench WIB2TestBench.cxx TEST LINK_LIBRARIES fdreadoutlibs)
+
 
 ##############################################################################
 # Installation
