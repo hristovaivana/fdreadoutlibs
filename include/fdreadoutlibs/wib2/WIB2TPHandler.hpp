@@ -5,8 +5,8 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_WIBTPHANDLER_HPP_
-#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_WIBTPHANDLER_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_WIB2TPHANDLER_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_WIB2TPHANDLER_HPP_
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "iomanager/Sender.hpp"
@@ -135,4 +135,4 @@ private:
 } // namespace fdreadoutlibs
 } // namespace dunedaq
 
-#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_WIBTPHANDLER_HPP_
+#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_WIB2TPHANDLER_HPP_

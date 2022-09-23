@@ -24,7 +24,7 @@
 #include "detchannelmaps/TPCChannelMap.hpp"
 #include "detdataformats/wib2/WIB2Frame.hpp"
 #include "fdreadoutlibs/FDReadoutTypes.hpp"
-#include "fdreadoutlibs/wib2/WIBTPHandler.hpp"
+#include "fdreadoutlibs/wib2/WIB2TPHandler.hpp"
 #include "rcif/cmd/Nljs.hpp"
 #include "trigger/TPSet.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
