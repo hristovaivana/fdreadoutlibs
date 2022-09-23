@@ -1,12 +1,12 @@
 /**
- * @file WIBTPHandler.hpp Buffer for TPSets
+ * @file WIB2TPHandler.hpp Buffer for TPSets
  *
  * This is part of the DUNE DAQ , copyright 2021.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_WIBTPHANDLER_HPP_
-#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_WIBTPHANDLER_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_WIBTPHANDLER_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_WIBTPHANDLER_HPP_
 
 #include "appfwk/DAQModuleHelper.hpp"
 #include "iomanager/Sender.hpp"
@@ -21,10 +21,10 @@
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-class WIBTPHandler
+class WIB2TPHandler
 {
 public:
-  explicit WIBTPHandler(iomanager::SenderConcept<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>& tp_sink,
+  explicit WIB2TPHandler(iomanager::SenderConcept<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>& tp_sink,
                         iomanager::SenderConcept<trigger::TPSet>& tpset_sink,
                         uint64_t tp_timeout,        // NOLINT(build/unsigned)
                         uint64_t tpset_window_size, // NOLINT(build/unsigned)
@@ -135,4 +135,4 @@ private:
 } // namespace fdreadoutlibs
 } // namespace dunedaq
 
-#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_WIBTPHANDLER_HPP_
+#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_WIBTPHANDLER_HPP_

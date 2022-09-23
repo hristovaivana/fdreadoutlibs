@@ -241,7 +241,7 @@ public:
       m_channel_map = dunedaq::detchannelmaps::make_map(config.channel_map_name);
 
       m_tphandler.reset(
-        new WIBTPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, m_sourceid, config.tpset_topic));
+        new WIB2TPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, m_sourceid, config.tpset_topic));
 
       // m_induction_items_to_process = std::make_unique<readoutlibs::IterableQueueModel<InductionItemToProcess>>(
       //   200000, false, 0, true, 64); // 64 byte aligned
@@ -738,7 +738,7 @@ private:
   std::shared_ptr<iomanager::SenderConcept<trigger::TPSet>> m_tpset_sink;
   std::shared_ptr<iomanager::SenderConcept<detdataformats::wib2::WIB2Frame>> m_err_frame_sink;
 
-  std::unique_ptr<WIBTPHandler> m_tphandler;
+  std::unique_ptr<WIB2TPHandler> m_tphandler;
 
   std::atomic<uint64_t> m_frame_error_count{ 0 }; // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_frames_processed{ 0 };  // NOLINT(build/unsigned)

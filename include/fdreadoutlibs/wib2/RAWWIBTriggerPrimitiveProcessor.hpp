@@ -72,7 +72,7 @@ public:
       tpset_sourceid.id = config.tpset_sourceid;
       tpset_sourceid.subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
       m_tphandler.reset(
-            new WIBTPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, tpset_sourceid, config.tpset_topic));
+            new WIB2TPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, tpset_sourceid, config.tpset_topic));
     }
 
     m_channel_map = dunedaq::detchannelmaps::make_map(config.channel_map_name);
@@ -406,7 +406,7 @@ private:
   bool m_enable_fake_timestamp;
   std::shared_ptr<iomanager::SenderConcept<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>> m_tp_sink;
   std::shared_ptr<iomanager::SenderConcept<trigger::TPSet>> m_tpset_sink;
-  std::unique_ptr<WIBTPHandler> m_tphandler;
+  std::unique_ptr<WIB2TPHandler> m_tphandler;
   std::atomic<uint64_t> m_tps_dropped{ 0 }; // NOLINT
   std::shared_ptr<detchannelmaps::TPCChannelMap> m_channel_map;
   uint64_t m_fake_timestamp { 0 }; // NOLINT

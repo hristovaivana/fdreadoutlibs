@@ -5,8 +5,8 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_TPEMULATORMODEL_HPP_
-#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_TPEMULATORMODEL_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_TPEMULATORMODEL_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_TPEMULATORMODEL_HPP_
 
 #include "iomanager/Sender.hpp"
 #include "iomanager/Receiver.hpp"
@@ -218,4 +218,4 @@ private:
 } // namespace fdreadoutlibs
 } // namespace dunedaq
 
-#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_TPEMULATORMODEL_HPP_
+#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_TPEMULATORMODEL_HPP_
