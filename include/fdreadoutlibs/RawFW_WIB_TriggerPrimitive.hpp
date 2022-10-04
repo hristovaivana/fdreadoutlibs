@@ -34,44 +34,60 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
   // latency buffer 
   bool operator<(const RAW_WIB_TRIGGERPRIMITIVE_STRUCT& other) const 
   {
-    std::cout << "Hey!" << std::endl;
+    // std::cout << "Hey!" << std::endl;
     const detdataformats::fwtp::TpHeader& head = this->get_header();
-    std::cout << "this header" << std::endl;
+    // std::cout << "this header" << std::endl;
     const detdataformats::fwtp::TpHeader& ohead = other.get_header();
-    std::cout << "other header" << std::endl;
-    //bool less = std::tie(m_first_timestamp, head.m_crate_no, head.m_slot_no, head.m_fiber_no, head.m_wire_no) < std::tie(other.m_first_timestamp, ohead.m_crate_no, ohead.m_slot_no, ohead.m_fiber_no, ohead.m_wire_no);
-    if(m_first_timestamp != other.m_first_timestamp)
-    {
-      bool less = m_first_timestamp < other.m_first_timestamp; 
-      std::cout << "ts less operation is :" << less << std::endl;
-      return less; 
-    }
-    if(head.m_crate_no != ohead.m_crate_no)
-    {
-      bool less = head.m_crate_no < ohead.m_crate_no; 
-      std::cout << "crate less operation is :" << less << std::endl;
-      return less; 
-    }
-    if(head.m_slot_no != ohead.m_slot_no)
-    {
-      bool less = head.m_slot_no < ohead.m_slot_no; 
-      std::cout << "slot less operation is :" << less << std::endl;
-      return less; 
-    }
-    if(head.m_fiber_no != ohead.m_fiber_no)
-    {
-      bool less = head.m_fiber_no < ohead.m_fiber_no; 
-      std::cout << "fiber less operation is :" << less << std::endl;
-      return less; 
-    }
-    if(head.m_wire_no != ohead.m_wire_no)
-    {
-      bool less = head.m_wire_no < ohead.m_wire_no; 
-      std::cout << "wire less operation is :" << less << std::endl;
-      return less; 
-    }
-    return false;
+    // std::cout << "other header" << std::endl;
+    // if(m_first_timestamp != other.m_first_timestamp)
+    // {
+    //   bool less = m_first_timestamp < other.m_first_timestamp; 
+    //   std::cout << "ts less operation is :" << less << std::endl;
+    //   return less; 
+    // }
+    // if(head.m_crate_no != ohead.m_crate_no)
+    // {
+    //   bool less = head.m_crate_no < ohead.m_crate_no; 
+    //   std::cout << "crate less operation is :" << less << std::endl;
+    //   return less; 
+    // }
+    // if(head.m_slot_no != ohead.m_slot_no)
+    // {
+    //   bool less = head.m_slot_no < ohead.m_slot_no; 
+    //   std::cout << "slot less operation is :" << less << std::endl;
+    //   return less; 
+    // }
+    // if(head.m_fiber_no != ohead.m_fiber_no)
+    // {
+    //   bool less = head.m_fiber_no < ohead.m_fiber_no; 
+    //   std::cout << "fiber less operation is :" << less << std::endl;
+    //   return less; 
+    // }
+    // if(head.m_wire_no != ohead.m_wire_no)
+    // {
+    //   bool less = head.m_wire_no < ohead.m_wire_no; 
+    //   std::cout << "wire less operation is :" << less << std::endl;
+    //   return less; 
+    // }
+    // return false;
     // return less;
+    return = (
+      std::tie(
+        m_first_timestamp,
+        head.m_crate_no,
+        head.m_slot_no,
+        head.m_fiber_no,
+        head.m_wire_no
+      ) 
+      < 
+      std::tie(
+        other.m_first_timestamp,
+        ohead.m_crate_no,
+        ohead.m_slot_no,
+        ohead.m_fiber_no,
+        ohead.m_wire_no
+      );
+
   }
   
   uint64_t get_timestamp() const  // NOLINT(build/unsigned)
@@ -152,15 +168,15 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
 
 private:
 void unpack_timestamp() {
-    std::unique_ptr<detdataformats::fwtp::RawTp> rwtp = 
-                    std::make_unique<detdataformats::fwtp::RawTp>();
-    ::memcpy(static_cast<void*>(&rwtp->m_head),
-             static_cast<void*>(m_raw_tp_frame_chunk.data()),
-             2*RAW_WIB_TP_SUBFRAME_SIZE); 
-    m_first_timestamp = rwtp->m_head.get_timestamp();
+    // std::unique_ptr<detdataformats::fwtp::RawTp> rwtp = 
+    //                 std::make_unique<detdataformats::fwtp::RawTp>();
+    // ::memcpy(static_cast<void*>(&rwtp->m_head),
+    //          static_cast<void*>(m_raw_tp_frame_chunk.data()),
+    //          2*RAW_WIB_TP_SUBFRAME_SIZE); 
+    // m_first_timestamp = rwtp->m_head.get_timestamp();
 
     // m_first_timestamp = reinterpret_cast<detdataformats::fwtp::RawTp*>(m_raw_tp_frame_chunk.data())->m_head.get_timestamp()
-    // m_first_timestamp = get_header().get_timestamp();
+    m_first_timestamp = get_header().get_timestamp();
 } 
 
 const detdataformats::fwtp::TpHeader& get_header() const {
