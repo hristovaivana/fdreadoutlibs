@@ -71,11 +71,8 @@ public:
   explicit WIB2FrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
     : TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>(error_registry)
     , m_sw_tpg_enabled(false)
-    , m_ind_thread_should_run(false)
     , m_coll_primfind_dest(nullptr)
     , m_coll_taps_p(nullptr)
-    , m_ind_primfind_dest(nullptr)
-    , m_ind_taps_p(nullptr)
   {}
 
   ~WIB2FrameProcessor()
@@ -85,12 +82,6 @@ public:
     }
     if (m_coll_primfind_dest) {
       delete[] m_coll_primfind_dest;
-    }
-    if (m_ind_taps_p) {
-      delete[] m_ind_taps_p;
-    }
-    if (m_ind_primfind_dest) {
-      delete[] m_ind_primfind_dest;
     }
   }
 
@@ -107,8 +98,8 @@ public:
 
       m_coll_taps = swtpg_wib2::firwin_int(7, 0.1, m_coll_multiplier);
       m_coll_taps.push_back(0);
-      m_ind_taps = swtpg_wib2::firwin_int(7, 0.1, m_ind_multiplier);
-      m_ind_taps.push_back(0);
+      //m_ind_taps = swtpg_wib2::firwin_int(7, 0.1, m_ind_multiplier);
+      //m_ind_taps.push_back(0);
 
       if (m_coll_taps_p == nullptr) {
         m_coll_taps_p = new int16_t[m_coll_taps.size()];
@@ -117,20 +108,20 @@ public:
         m_coll_taps_p[i] = m_coll_taps[i];
       }
 
-      if (m_ind_taps_p == nullptr) {
-        m_ind_taps_p = new int16_t[m_ind_taps.size()];
-      }
-      for (size_t i = 0; i < m_ind_taps.size(); ++i) {
-        m_ind_taps_p[i] = m_ind_taps[i];
-      }
+      //if (m_ind_taps_p == nullptr) {
+      //  m_ind_taps_p = new int16_t[m_ind_taps.size()];
+      // }
+      //for (size_t i = 0; i < m_ind_taps.size(); ++i) {
+      //  m_ind_taps_p[i] = m_ind_taps[i];
+      //}
 
       // Temporary place to stash the hits
       if (m_coll_primfind_dest == nullptr) {
         m_coll_primfind_dest = new uint16_t[100000]; // NOLINT(build/unsigned)
       }
-      if (m_ind_primfind_dest == nullptr) {
-        m_ind_primfind_dest = new uint16_t[100000]; // NOLINT(build/unsigned)
-      }
+      //if (m_ind_primfind_dest == nullptr) {
+      //  m_ind_primfind_dest = new uint16_t[100000]; // NOLINT(build/unsigned)
+      //}
 
       TLOG() << "COLL TAPS SIZE: " << m_coll_taps.size() << " threshold:" << m_coll_threshold
              << " exponent:" << m_coll_tap_exponent;
@@ -147,7 +138,7 @@ public:
         m_coll_threshold,
         0,
         0);
-
+/*
       m_ind_tpg_pi = std::make_unique<swtpg_wib2::ProcessingInfo<swtpg_wib2::INDUCTION_REGISTERS_PER_FRAME>>(
         nullptr,
         swtpg_wib2::FRAMES_PER_MSG,
@@ -160,7 +151,7 @@ public:
         m_ind_threshold,
         0,
         0);
-
+*/
       //m_induction_thread = std::thread(&WIB2FrameProcessor::find_induction_hits_thread, this);
     } // end if(m_sw_tpg_enabled)
 
@@ -196,6 +187,7 @@ public:
         delete[] m_coll_primfind_dest;
         m_coll_primfind_dest = nullptr;
       }
+      /*
       if (m_ind_taps_p) {
         delete[] m_ind_taps_p;
         m_ind_taps_p = nullptr;
@@ -204,8 +196,9 @@ public:
         delete[] m_ind_primfind_dest;
         m_ind_primfind_dest = nullptr;
       }
+      */
       auto runtime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_t0).count();
-      TLOG() << "Ran for " << runtime << "ms. Found " << m_num_hits_coll << " collection hits and " << m_num_hits_ind << " induction hits";
+      //TLOG() << "Ran for " << runtime << "ms. Found " << m_num_hits_coll << " collection hits and " << m_num_hits_ind << " induction hits";
     }
 
   }
@@ -250,10 +243,11 @@ public:
       TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_postprocess_task(
         std::bind(&WIB2FrameProcessor::find_collection_hits, this, std::placeholders::_1));
 
-      // start the thread for induction hit finding
+      /* start the thread for induction hit finding
       TLOG() << "Launch induction hit finding thread"; 
       m_ind_thread_should_run.store(true);
       m_induction_thread = std::thread(&WIB2FrameProcessor::find_induction_hits_thread, this);
+      */
     }
 
     // Setup pre-processing pipeline
@@ -265,12 +259,14 @@ public:
 
   void scrap(const nlohmann::json& args) override
   {
+  /*
    if(m_sw_tpg_enabled) {	  
       TLOG() << "Waiting to join induction thread";
       m_ind_thread_should_run.store(false);
       m_induction_thread.join();
       TLOG() << "Induction thread joined";
    }
+   */
       m_tphandler.reset();
 
     TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::scrap(args);
@@ -310,6 +306,7 @@ protected:
   bool m_problem_reported = false;
   std::atomic<int> m_ts_error_ctr{ 0 };
 
+  /*
   struct InductionItemToProcess
   {
     // Horribly, `registers` has to be the first item in the
@@ -323,7 +320,7 @@ protected:
 
     static constexpr uint64_t END_OF_MESSAGES = UINT64_MAX; // NOLINT(build/unsigned)
   };
-
+  */
   void postprocess_example(const types::WIB2_SUPERCHUNK_STRUCT* fp)
   {
     TLOG() << "Postprocessing: " << fp->get_first_timestamp();
@@ -448,16 +445,17 @@ protected:
     // thread, and some on another, since a single thread can't keep
     // up with all channels
     swtpg_wib2::MessageRegistersCollection collection_registers;
-    InductionItemToProcess ind_item;
+    //InductionItemToProcess ind_item;
 
     // WIB2
-    expand_message_adcs_inplace_wib2(fp, &collection_registers, &ind_item.registers);
+    expand_message_adcs_inplace_wib2(fp, &collection_registers);
 
+    
     if (m_first_coll) {
       m_register_channel_map = swtpg_wib2::get_register_to_offline_channel_map_wib2(wfptr, m_channel_map);
 
       m_coll_tpg_pi->setState(collection_registers);
-
+/*
       m_link = wfptr->header.link;
       m_crate_no = wfptr->header.crate;
       m_slot_no = wfptr->header.slot;
@@ -477,12 +475,12 @@ protected:
         ss2 << i << "\t" << m_register_channel_map.induction[i] << "\n";
       }
       TLOG_DEBUG(2) << ss2.str();
-
+*/
     } // end if (m_first_coll)
-
+    
     // Signal to the induction thread that there's an item ready
-    m_induction_item_to_process = &ind_item;
-    m_induction_item_ready.store(true);
+    //m_induction_item_to_process = &ind_item;
+    //m_induction_item_ready.store(true);
 
     // Find the hits in the "collection" registers
     m_coll_tpg_pi->input = &collection_registers;
@@ -491,10 +489,11 @@ protected:
 
     unsigned int nhits = add_hits_to_tphandler(m_coll_primfind_dest, timestamp, types::kCollection);
 
+    /*
     if (nhits > 0) {
        TLOG_DEBUG(0) << "Non null collection hits: " << nhits << " for ts: " << timestamp;
     }
-
+    */
     m_num_hits_coll += nhits;
     m_coll_hits_count += nhits;
 
@@ -507,6 +506,7 @@ protected:
     // and not sleep, because we only have 6 microseconds to process
     // each superchunk. It appears that anything that makes a system
     // call or puts the thread to sleep causes too much latency
+    /*
     while (m_induction_item_ready.load()) {
       _mm_pause();
       // std::this_thread::sleep_for(std::chrono::microseconds(100));
@@ -517,11 +517,11 @@ protected:
     if (m_num_hits_ind > 0) {
        TLOG_DEBUG(2) << "NON null induction hits: " << m_num_hits_ind << " for ts: " << timestamp;
     }
-
+    */
 
     m_tphandler->try_sending_tpsets(timestamp);
   }
-
+/*
   void find_induction_hits(InductionItemToProcess* induction_item_to_process)
   {
     if (m_first_ind) {
@@ -578,7 +578,7 @@ protected:
 
     TLOG() << "Induction hit-finding thread stopping after processing " << n_items << " frames";
   }
-
+*/
   unsigned int add_hits_to_tphandler(uint16_t* primfind_it, timestamp_t timestamp, types::CollectionOrInduction coll_or_ind)
   {
 
@@ -624,8 +624,9 @@ protected:
       for (int i = 0; i < 16; ++i) {
         if (hit_charge[i] && chan[i] != swtpg_wib2::MAGIC) {
           // This channel had a hit ending here, so we can create and output the hit here
-          const uint16_t offline_channel = (coll_or_ind == types::kCollection) ?
-            m_register_channel_map.collection[chan[i]] : m_register_channel_map.induction[chan[i]];
+	  const uint16_t offline_channel = m_register_channel_map.collection[chan[i]];
+          //const uint16_t offline_channel = (coll_or_ind == types::kCollection) ?
+          //  m_register_channel_map.collection[chan[i]] : m_register_channel_map.induction[chan[i]];
           uint64_t tp_t_begin =                                                        // NOLINT(build/unsigned)
             timestamp + clocksPerTPCTick * (int64_t(hit_end[i]) - hit_tover[i]);       // NOLINT(build/unsigned)
           uint64_t tp_t_end = timestamp + clocksPerTPCTick * int64_t(hit_end[i]);      // NOLINT(build/unsigned)
@@ -673,25 +674,25 @@ protected:
 
 private:
   bool m_sw_tpg_enabled;
-  std::atomic<bool> m_ind_thread_should_run;
+  //std::atomic<bool> m_ind_thread_should_run;
 
-  InductionItemToProcess* m_induction_item_to_process;
-  std::atomic<bool> m_induction_item_ready{false};
+  //InductionItemToProcess* m_induction_item_to_process;
+  //std::atomic<bool> m_induction_item_ready{false};
 
   size_t m_num_msg = 0;
   size_t m_num_push_fail = 0;
 
   size_t m_num_hits_coll = 0;
-  size_t m_num_hits_ind = 0;
+  //size_t m_num_hits_ind = 0;
 
   std::atomic<int> m_coll_hits_count{ 0 };
-  std::atomic<int> m_indu_hits_count{ 0 };
+  //std::atomic<int> m_indu_hits_count{ 0 };
   std::atomic<int> m_num_tps_pushed{ 0 };
 
   bool m_first_coll = true;
-  bool m_first_ind = true;
+  //bool m_first_ind = true;
 
-  InductionItemToProcess m_dummy_induction_item;
+  //InductionItemToProcess m_dummy_induction_item;
 
   uint8_t m_link; // NOLINT(build/unsigned)
   uint8_t m_slot_no;  // NOLINT(build/unsigned)
@@ -706,7 +707,7 @@ private:
                                                     // number
 
   uint32_t m_offline_channel_base;           // NOLINT(build/unsigned)
-  uint32_t m_offline_channel_base_induction; // NOLINT(build/unsigned)
+  //uint32_t m_offline_channel_base_induction; // NOLINT(build/unsigned)
 
   // Frame error check
   bool m_current_frame_pushed = false;
@@ -724,7 +725,7 @@ private:
   int16_t* m_coll_taps_p;
   std::unique_ptr<swtpg_wib2::ProcessingInfo<swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME>> m_coll_tpg_pi;
 
-  // Induction
+  /* Induction
   const uint16_t m_ind_threshold = 5;                   // units of sigma // NOLINT(build/unsigned)
   const uint8_t m_ind_tap_exponent = 6;                 // NOLINT(build/unsigned)
   const int m_ind_multiplier = 1 << m_ind_tap_exponent; // 64
@@ -733,7 +734,7 @@ private:
   int16_t* m_ind_taps_p;
   std::unique_ptr<swtpg_wib2::ProcessingInfo<swtpg_wib2::INDUCTION_REGISTERS_PER_FRAME>> m_ind_tpg_pi;
   std::thread m_induction_thread;
-
+  */
   std::shared_ptr<iomanager::SenderConcept<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>> m_tp_sink;
   std::shared_ptr<iomanager::SenderConcept<trigger::TPSet>> m_tpset_sink;
   std::shared_ptr<iomanager::SenderConcept<detdataformats::wib2::WIB2Frame>> m_err_frame_sink;

@@ -30,8 +30,8 @@ const constexpr std::size_t FRAMES_PER_MSG = 12;
 
 // How many collection-wire AVX2 registers are returned per
 // frame.
-const constexpr std::size_t COLLECTION_REGISTERS_PER_FRAME = 6;
-const constexpr std::size_t INDUCTION_REGISTERS_PER_FRAME = 10;
+const constexpr std::size_t COLLECTION_REGISTERS_PER_FRAME = 16;
+const constexpr std::size_t INDUCTION_REGISTERS_PER_FRAME = 0;
 
 // How many bytes are in an AVX2 register
 const constexpr std::size_t BYTES_PER_REGISTER = 32;
