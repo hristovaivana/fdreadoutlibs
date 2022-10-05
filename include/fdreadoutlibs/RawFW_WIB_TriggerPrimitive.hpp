@@ -71,7 +71,7 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
     // }
     // return false;
     // return less;
-    return = (
+    return (
       std::tie(
         m_first_timestamp,
         head.m_crate_no,
@@ -86,7 +86,8 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
         ohead.m_slot_no,
         ohead.m_fiber_no,
         ohead.m_wire_no
-      );
+      )
+    );
 
   }
   
