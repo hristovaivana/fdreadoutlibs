@@ -383,7 +383,7 @@ struct SW_WIB_TRIGGERPRIMITIVE_STRUCT
   size_t get_frame_size() { return TP_SIZE; }
 
   static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
-  static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kSW_TriggerPrimitive;
+  static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTriggerPrimitive;
   static const constexpr uint64_t expected_tick_difference = 25; // NOLINT(build/unsigned)
 };
 
@@ -433,7 +433,7 @@ struct SW_WIB2_TRIGGERPRIMITIVE_STRUCT
   size_t get_frame_size() { return TP_SIZE_WIB2; }
 
   static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
-  static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kSW_TriggerPrimitive;
+  static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTriggerPrimitive;
   static const constexpr uint64_t expected_tick_difference = 25; // NOLINT(build/unsigned)
 };
 
