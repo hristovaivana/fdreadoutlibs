@@ -138,21 +138,7 @@ public:
         m_coll_threshold,
         0,
         0);
-/*
-      m_ind_tpg_pi = std::make_unique<swtpg_wib2::ProcessingInfo<swtpg_wib2::INDUCTION_REGISTERS_PER_FRAME>>(
-        nullptr,
-        swtpg_wib2::FRAMES_PER_MSG,
-        0,
-        swtpg_wib2::INDUCTION_REGISTERS_PER_FRAME,
-        m_ind_primfind_dest,
-        m_ind_taps_p,
-        (uint8_t)m_ind_taps.size(), // NOLINT(build/unsigned)
-        m_ind_tap_exponent,
-        m_ind_threshold,
-        0,
-        0);
-*/
-      //m_induction_thread = std::thread(&WIB2FrameProcessor::find_induction_hits_thread, this);
+
     } // end if(m_sw_tpg_enabled)
 
     // Reset timestamp check
@@ -187,16 +173,8 @@ public:
         delete[] m_coll_primfind_dest;
         m_coll_primfind_dest = nullptr;
       }
-      /*
-      if (m_ind_taps_p) {
-        delete[] m_ind_taps_p;
-        m_ind_taps_p = nullptr;
-      }
-      if (m_ind_primfind_dest) {
-        delete[] m_ind_primfind_dest;
-        m_ind_primfind_dest = nullptr;
-      }
-      */
+      
+      
       auto runtime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_t0).count();
       //TLOG() << "Ran for " << runtime << "ms. Found " << m_num_hits_coll << " collection hits and " << m_num_hits_ind << " induction hits";
     }
@@ -213,8 +191,6 @@ public:
       if (queue_index.find("tpset_out") != queue_index.end()) {
         m_tpset_sink = get_iom_sender<trigger::TPSet>(queue_index["tpset_out"]);
       }
-      // Error frames have been removed from wib2. We rely only on operational monitoring
-      // m_err_frame_sink = get_iom_sender<detdataformats::wib2::WIB2Frame>(queue_index["errored_frames"]);
     } catch (const ers::Issue& excpt) {
       throw readoutlibs::ResourceQueueError(ERS_HERE, "tp queue", "DefaultRequestHandlerModel", excpt);
     }
@@ -236,18 +212,9 @@ public:
       m_tphandler.reset(
         new WIB2TPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, m_sourceid, config.tpset_topic));
 
-      // m_induction_items_to_process = std::make_unique<readoutlibs::IterableQueueModel<InductionItemToProcess>>(
-      //   200000, false, 0, true, 64); // 64 byte aligned
-
       // Setup parallel post-processing
       TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_postprocess_task(
-        std::bind(&WIB2FrameProcessor::find_collection_hits, this, std::placeholders::_1));
-
-      /* start the thread for induction hit finding
-      TLOG() << "Launch induction hit finding thread"; 
-      m_ind_thread_should_run.store(true);
-      m_induction_thread = std::thread(&WIB2FrameProcessor::find_induction_hits_thread, this);
-      */
+        std::bind(&WIB2FrameProcessor::find_hits, this, std::placeholders::_1));
     }
 
     // Setup pre-processing pipeline
@@ -259,15 +226,7 @@ public:
 
   void scrap(const nlohmann::json& args) override
   {
-  /*
-   if(m_sw_tpg_enabled) {	  
-      TLOG() << "Waiting to join induction thread";
-      m_ind_thread_should_run.store(false);
-      m_induction_thread.join();
-      TLOG() << "Induction thread joined";
-   }
-   */
-      m_tphandler.reset();
+    m_tphandler.reset();
 
     TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::scrap(args);
   }
@@ -306,21 +265,7 @@ protected:
   bool m_problem_reported = false;
   std::atomic<int> m_ts_error_ctr{ 0 };
 
-  /*
-  struct InductionItemToProcess
-  {
-    // Horribly, `registers` has to be the first item in the
-    // struct, because the first item in the queue has to be
-    // correctly aligned, and we're going to put this in an
-    // AlignedProducerConsumerQueue, which aligns the *starts* of
-    // the contained objects to 64-byte boundaries, not any later
-    // items
-    swtpg_wib2::MessageRegistersInduction registers;
-    uint64_t timestamp; // NOLINT(build/unsigned)
-
-    static constexpr uint64_t END_OF_MESSAGES = UINT64_MAX; // NOLINT(build/unsigned)
-  };
-  */
+  
   void postprocess_example(const types::WIB2_SUPERCHUNK_STRUCT* fp)
   {
     TLOG() << "Postprocessing: " << fp->get_first_timestamp();
@@ -392,33 +337,9 @@ protected:
         }
       }
 
-      //auto wfh = const_cast<dunedaq::detdataformats::wib2::WIBHeader*>(wf->get_wib_header());
-      //if (wfh->wib_errors) {
-      //  m_frame_error_count += std::bitset<16>(wfh->wib_errors).count();
-      //}
-
       m_current_frame_pushed = false;
 
-      /*
-       *Commenting out frame check, originally included in WIB1
-       *
-      for (int j = 0; j < m_num_frame_error_bits; ++j) {
-        if (wfh->wib_errors & (1 << j)) {
-          if (m_error_occurrence_counters[j] < m_error_counter_threshold) {
-            m_error_occurrence_counters[j]++;
-            if (!m_current_frame_pushed) {
-              try {
-                  dunedaq::detdataformats::wib2::WIB2Frame wf_copy(*wf);
-                m_err_frame_sink->send(std::move(wf_copy), std::chrono::milliseconds(10));
-                m_current_frame_pushed = true;
-              } catch (const ers::Issue& excpt) {
-                ers::warning(readoutlibs::CannotWriteToQueue(ERS_HERE, m_sourceid, "Errored frame queue", excpt));
-              }
-            }
-          }
-        }
-      }
-      */
+
       wf++;
       m_frames_processed++;
     }
@@ -427,7 +348,7 @@ protected:
   /**
    * Pipeline Stage 3.: Do software TPG
    * */
-  void find_collection_hits(constframeptr fp)
+  void find_hits(constframeptr fp)
   {
     if (!fp)
       return;
@@ -455,7 +376,9 @@ protected:
       m_register_channel_map = swtpg_wib2::get_register_to_offline_channel_map_wib2(wfptr, m_channel_map);
 
       m_coll_tpg_pi->setState(collection_registers);
-/*
+      /*
+      // Debugging purposes
+
       m_link = wfptr->header.link;
       m_crate_no = wfptr->header.crate;
       m_slot_no = wfptr->header.slot;
@@ -475,13 +398,9 @@ protected:
         ss2 << i << "\t" << m_register_channel_map.induction[i] << "\n";
       }
       TLOG_DEBUG(2) << ss2.str();
-*/
+      */
     } // end if (m_first_coll)
     
-    // Signal to the induction thread that there's an item ready
-    //m_induction_item_to_process = &ind_item;
-    //m_induction_item_ready.store(true);
-
     // Find the hits in the "collection" registers
     m_coll_tpg_pi->input = &collection_registers;
     *m_coll_primfind_dest = swtpg_wib2::MAGIC;
@@ -502,83 +421,9 @@ protected:
       m_first_coll = false;
     }
 
-    // Wait for the induction item to be done. We have to spin here,
-    // and not sleep, because we only have 6 microseconds to process
-    // each superchunk. It appears that anything that makes a system
-    // call or puts the thread to sleep causes too much latency
-    /*
-    while (m_induction_item_ready.load()) {
-      _mm_pause();
-      // std::this_thread::sleep_for(std::chrono::microseconds(100));
-    }
-
-    m_num_hits_ind += add_hits_to_tphandler(m_ind_primfind_dest, timestamp, types::kInduction);
-
-    if (m_num_hits_ind > 0) {
-       TLOG_DEBUG(2) << "NON null induction hits: " << m_num_hits_ind << " for ts: " << timestamp;
-    }
-    */
-
     m_tphandler->try_sending_tpsets(timestamp);
   }
-/*
-  void find_induction_hits(InductionItemToProcess* induction_item_to_process)
-  {
-    if (m_first_ind) {
-      m_ind_tpg_pi->setState(induction_item_to_process->registers);
-      TLOG() << "Induction channel got first item, link/crate/slot=" << m_link << "/" << m_crate_no << "/" << m_slot_no;
-    }
 
-    m_ind_tpg_pi->input = &induction_item_to_process->registers;
-    *m_ind_primfind_dest = swtpg_wib2::MAGIC;
-    swtpg_wib2::process_window_avx2(*m_ind_tpg_pi);
-
-    m_first_ind = false;
-
-  }
-
-  // Stage: induction hit finding port
-  void find_induction_hits_thread()
-  {
-    std::stringstream thread_name;
-    thread_name << "ind-hits-" << m_sourceid.id;
-    pthread_setname_np(pthread_self(), thread_name.str().c_str());
-
-    size_t n_items=0;
-    while (m_ind_thread_should_run.load()) {
-      // There must be a nicer way to write this
-      while (!m_induction_item_ready.load()) {
-        // PAR 2022-03-16 Empirically, we can't sleep here, or wait on
-        // a condition variable: that causes everything to back up. I
-        // think the reason is that we're processing superchunks
-        // without any buffering, so we have to be done in 6
-        // microseconds. When we put the thread to sleep, we don't
-        // wake up quickly enough, and problems ensue.
-        //
-        // It would probably be nicer to have the collection and
-        // induction threads talk to each other via a queue, so we get
-        // buffering and can relax the latency requirement, but then
-        // we would have to think carefully about how we pass hits to
-        // m_tp_handler. So we do it this way and spin-wait
-
-        // std::this_thread::sleep_for(std::chrono::microseconds(1));
-        _mm_pause();
-        if(!m_ind_thread_should_run.load()) break;
-      }
-      if(!m_ind_thread_should_run.load()) break;
-
-      find_induction_hits(m_induction_item_to_process);
-
-      // Signal back to the collection thread that we're done
-      m_induction_item_ready.store(false);
-      ++n_items;
-    }
-    // Make sure this gets set so the collection thread isn't waiting forever at stop
-    m_induction_item_ready.store(false);
-
-    TLOG() << "Induction hit-finding thread stopping after processing " << n_items << " frames";
-  }
-*/
   unsigned int add_hits_to_tphandler(uint16_t* primfind_it, timestamp_t timestamp, types::CollectionOrInduction coll_or_ind)
   {
 

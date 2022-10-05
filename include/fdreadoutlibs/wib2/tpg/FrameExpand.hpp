@@ -274,49 +274,6 @@ expand_message_adcs_inplace_wib2(const dunedaq::fdreadoutlibs::types::WIB2_SUPER
 
 
 
-
-//==============================================================================
-// Take the raw memory containing 12-bit ADCs in the shuffled WIB
-// format and rearrange them into 16-bit values in channel order. A
-// 256-bit register holds 21-and-a-bit 12-bit values: we expand 16 of
-// them into 16-bit values
-// __m256i expand_two_segments(const dune::ColdataSegment* __restrict__ first_segment);
-
-//==============================================================================
-
-// Get all of the ADCs in the frame, expanded into 16-bit values and
-// split into registers containing only collection or only induction
-// channels.  There are 6 collection registers followed by 10
-// induction registers
-// FrameRegisters get_frame_divided_adcs(const dunedaq::detdataformats::wib::WIBFrame* __restrict__ frame);
-
-//==============================================================================
-
-// Get all the collection channel values from a dune::ColdataBlock as 16-bit
-// values into 2 256-bit registers. Implemented by expanding all the
-// values using expand_two_segments, and then picking out the
-// collection channels with a blend. There are only 12 collection
-// channels in a dune::ColdataBlock, so we shuffle valid values into the
-// 0-11 entries of the register, and leave 4 invalid values at the end of each
-// register
-// inline RegisterArray<2> get_block_collection_adcs(const dune::ColdataBlock& __restrict__ block);
-
-//==============================================================================
-// As above, for all collection and induction ADCs
-// RegisterArray<4> get_block_all_adcs(const dune::ColdataBlock& __restrict__ block);
-
-//==============================================================================
-// Expand all the collection channels into 6 AVX2 registers
-// RegisterArray<REGISTERS_PER_FRAME> get_frame_collection_adcs(const dunedaq::detdataformats::wib::WIBFrame*
-// __restrict__ frame);
-
-//==============================================================================
-// As above, for all collection and induction ADCs
-// RegisterArray<16> get_frame_all_adcs(const dunedaq::detdataformats::wib::WIBFrame* __restrict__ frame);
-
-//======================================================================
-// MessageRegisters expand_message_adcs(const SUPERCHUNK_CHAR_STRUCT& __restrict__ ucs);
-
 } // namespace swtpg_wib2
 
 #endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_TPG_FRAMEEXPAND_HPP_
