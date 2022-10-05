@@ -31,7 +31,7 @@ struct SW_WIB_TRIGGERPRIMITIVE_STRUCT
   // comparable based on start timestamp
   bool operator<(const SW_WIB_TRIGGERPRIMITIVE_STRUCT& other) const
   {
-    return this->tp.time_start < other.tp.time_start;
+    return std::tie(this->tp.time_start, this->tp.channel) < std::tie(other.tp.time_start, other.tp.channel);
   }
 
   uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
