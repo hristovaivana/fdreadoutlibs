@@ -50,7 +50,7 @@ get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WI
   for (size_t ich = 0; ich < dunedaq::detdataformats::wib2::WIB2Frame::s_num_ch_per_frame; ++ich) {
     auto offline_ch = ch_map->get_offline_channel_from_crate_slot_fiber_chan(
       frame->header.crate, frame->header.slot, frame->header.link, ich);
-    TLOG_DEBUG(0) << "AAA: offline_ch " << offline_ch; 
+    //TLOG_DEBUG(0) << "AAA: offline_ch " << offline_ch; 
     min_ch = std::min(min_ch, offline_ch);
   }
   TLOG_DEBUG(0) << "get_register_to_offline_channel_map_wib2 for crate " << frame->header.crate << " slot "
@@ -78,7 +78,7 @@ get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WI
   expand_message_adcs_inplace_wib2(&superchunk, &collection_registers);
 
   RegisterChannelMap ret;
-  for (size_t i = 0; i < 16 * SAMPLES_PER_REGISTER; ++i) {
+  for (size_t i = 0; i < swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME * SAMPLES_PER_REGISTER; ++i) {
     // expand_message_adcs_inplace reorders the output so
     // adjacent-in-time registers are adjacent in memory, hence the
     // need for this indexing. See the comment in that function for a
