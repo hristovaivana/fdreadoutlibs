@@ -34,10 +34,6 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
   // latency buffer 
   bool operator<(const RAW_WIB_TRIGGERPRIMITIVE_STRUCT& other) const 
   {
-    // std::cout << "Hey!" << std::endl;
-    const detdataformats::fwtp::TpHeader& head = this->get_header();
-    // std::cout << "this header" << std::endl;
-    const detdataformats::fwtp::TpHeader& ohead = other.get_header();
     // std::cout << "other header" << std::endl;
     // if(m_first_timestamp != other.m_first_timestamp)
     // {
@@ -71,6 +67,17 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
     // }
     // return false;
     // return less;
+
+ 
+    if (m_raw_tp_frame_chunksize == 0 or other.m_raw_tp_frame_chunksize == 0) {
+      return m_raw_tp_frame_chunksize < other.m_raw_tp_frame_chunksize;
+    }
+    
+    // std::cout << "Hey!" << std::endl;
+    const detdataformats::fwtp::TpHeader& head = this->get_header();
+    // std::cout << "this header" << std::endl;
+    const detdataformats::fwtp::TpHeader& ohead = other.get_header();
+
     return (
       std::tie(
         m_first_timestamp,
@@ -108,11 +115,23 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
     m_first_timestamp = first_timestamp;
   }
 
+  //FrameType* begin()
+  //{
+  //  return this;
+  //}
+
+  //
+  //FrameType* end()
+  //{
+  //  return (this+1);
+  //}
+
+
   FrameType* begin()
   {
     return reinterpret_cast<FrameType*>(m_raw_tp_frame_chunk.data()); // NOLINT
   }
-  
+
   FrameType* end()
   {
     return reinterpret_cast<FrameType*>(m_raw_tp_frame_chunk.data()+m_raw_tp_frame_chunksize); // NOLINT
