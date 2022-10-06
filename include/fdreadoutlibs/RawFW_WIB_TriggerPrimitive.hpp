@@ -200,7 +200,7 @@ void unpack_timestamp() {
 } 
 
 const detdataformats::fwtp::TpHeader& get_header() const {
-  return reinterpret_cast<const detdataformats::fwtp::RawTp*>(m_raw_tp_frame_chunk.data())->m_head;
+  return reinterpret_cast<const detdataformats::fwtp::TpHeader*>(m_raw_tp_frame_chunk.data());
 }
 
 private:
