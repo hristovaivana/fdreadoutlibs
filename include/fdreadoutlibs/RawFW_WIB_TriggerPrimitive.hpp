@@ -74,25 +74,25 @@ struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
     }
     
     // std::cout << "Hey!" << std::endl;
-    const detdataformats::fwtp::TpHeader& head = this->get_header();
+    const detdataformats::fwtp::TpHeader* head = this->get_header();
     // std::cout << "this header" << std::endl;
-    const detdataformats::fwtp::TpHeader& ohead = other.get_header();
+    const detdataformats::fwtp::TpHeader* ohead = other.get_header();
 
     return (
       std::tie(
         m_first_timestamp,
-        head.m_crate_no,
-        head.m_slot_no,
-        head.m_fiber_no,
-        head.m_wire_no
+        head->m_crate_no,
+        head->m_slot_no,
+        head->m_fiber_no,
+        head->m_wire_no
       ) 
       < 
       std::tie(
         other.m_first_timestamp,
-        ohead.m_crate_no,
-        ohead.m_slot_no,
-        ohead.m_fiber_no,
-        ohead.m_wire_no
+        ohead->m_crate_no,
+        ohead->m_slot_no,
+        ohead->m_fiber_no,
+        ohead->m_wire_no
       )
     );
 
@@ -196,10 +196,10 @@ void unpack_timestamp() {
     // m_first_timestamp = rwtp->m_head.get_timestamp();
 
     // m_first_timestamp = reinterpret_cast<detdataformats::fwtp::RawTp*>(m_raw_tp_frame_chunk.data())->m_head.get_timestamp()
-    m_first_timestamp = get_header().get_timestamp();
+    m_first_timestamp = get_header()->get_timestamp();
 } 
 
-const detdataformats::fwtp::TpHeader& get_header() const {
+const detdataformats::fwtp::TpHeader* get_header() const {
   return reinterpret_cast<const detdataformats::fwtp::TpHeader*>(m_raw_tp_frame_chunk.data());
 }
 
