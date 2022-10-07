@@ -41,7 +41,10 @@ struct RegisterChannelMap
  */
 RegisterChannelMap
 get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WIB2Frame* frame,
-                                    std::shared_ptr<dunedaq::detchannelmaps::TPCChannelMap>& ch_map)
+                                    std::shared_ptr<dunedaq::detchannelmaps::TPCChannelMap>& ch_map,
+                                    int cut, 
+                                    int register_group
+                                    )
 {
   auto start_time = std::chrono::steady_clock::now();
 
@@ -73,9 +76,11 @@ get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WI
   }
 
   // Expand the test frame, so the offline channel numbers are now in the relevant places in the output registers
-  swtpg_wib2::MessageRegistersCollection collection_registers;
-  //swtpg_wib2::MessageRegistersInduction induction_registers;
-  expand_message_adcs_inplace_wib2(&superchunk, &collection_registers);
+  swtpg_wib2::MessageRegistersCollection register_array;
+  //swtpg_wib2::RegisterArray<swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME * swtpg_wib2::FRAMES_PER_MSG / cut> collection_registers;     
+  //expand_message_adcs_inplace_wib2(&superchunk, &register_array);
+  expand_wib2_adcs(&superchunk, &register_array, cut, register_group); 
+
 
   RegisterChannelMap ret;
   for (size_t i = 0; i < swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME * SAMPLES_PER_REGISTER; ++i) {
@@ -84,7 +89,7 @@ get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WI
     // need for this indexing. See the comment in that function for a
     // diagram
     size_t index = (i/16)*16*12 + (i%16);
-    ret.collection[i] = collection_registers.uint16(index) + min_ch;
+    ret.collection[i] = register_array.uint16(index) + min_ch;
   }
 
   auto end_time = std::chrono::steady_clock::now();
@@ -94,10 +99,10 @@ get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WI
 }
 
 RegisterChannelMap
-get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WIB2Frame* frame, std::string channel_map_name)
+get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WIB2Frame* frame, std::string channel_map_name, int cut, int register_group)
 {
   auto ch_map = dunedaq::detchannelmaps::make_map(channel_map_name);
-  return get_register_to_offline_channel_map_wib2(frame, ch_map);
+  return get_register_to_offline_channel_map_wib2(frame, ch_map, cut, register_group);
 }
 
 

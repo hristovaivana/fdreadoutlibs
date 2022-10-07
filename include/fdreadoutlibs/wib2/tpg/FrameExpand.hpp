@@ -107,6 +107,7 @@ typedef RegisterArray<swtpg_wib2::INDUCTION_REGISTERS_PER_FRAME> FrameRegistersI
 typedef RegisterArray<swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME * swtpg_wib2::FRAMES_PER_MSG> MessageRegistersCollection;
 typedef RegisterArray<swtpg_wib2::INDUCTION_REGISTERS_PER_FRAME * swtpg_wib2::FRAMES_PER_MSG> MessageRegistersInduction;
 
+
 struct FrameRegisters
 {
   FrameRegistersCollection collection_registers;
@@ -274,17 +275,16 @@ expand_message_adcs_inplace_wib2(const dunedaq::fdreadoutlibs::types::WIB2_SUPER
 
 
 inline void
-expand_message_adcs_inplace_wib2_second_half(const dunedaq::fdreadoutlibs::types::WIB2_SUPERCHUNK_STRUCT* __restrict__ ucs,
-                            swtpg_wib2::MessageRegistersCollection* __restrict__ second_half_registers)
+expand_wib2_adcs(const dunedaq::fdreadoutlibs::types::WIB2_SUPERCHUNK_STRUCT* __restrict__ ucs,
+                            swtpg_wib2::MessageRegistersCollection* __restrict__ register_array, int cut, int register_group)
 {
 
   for (size_t iframe = 0; iframe < swtpg_wib2::FRAMES_PER_MSG; ++iframe) {
     const dunedaq::detdataformats::wib2::WIB2Frame* frame =
       reinterpret_cast<const dunedaq::detdataformats::wib2::WIB2Frame*>(ucs) + iframe; // NOLINT
- 
-    // Same for induction registers
-    for (size_t iblock = 0; iblock < swtpg_wib2::INDUCTION_REGISTERS_PER_FRAME ; ++iblock) {
-      second_half_registers->set_ymm(iframe + iblock * swtpg_wib2::FRAMES_PER_MSG, swtpg_wib2::unpack_one_register(frame->adc_words+7*(iblock+swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME)));
+
+    for (size_t iblock = 0; iblock < swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME ; ++iblock) {
+      register_array->set_ymm(iframe + iblock * swtpg_wib2::FRAMES_PER_MSG, swtpg_wib2::unpack_one_register(frame->adc_words+7*(iblock+register_group*swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME)));
     }
     
 
