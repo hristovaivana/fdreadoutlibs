@@ -28,9 +28,9 @@ const constexpr std::int16_t THRESHOLD = 2000;
 // How many frames are concatenated in one netio message
 const constexpr std::size_t FRAMES_PER_MSG = 12;
 
-// How many collection-wire AVX2 registers are returned per
+// How many AVX2 registers are returned per
 // frame.
-const constexpr std::size_t COLLECTION_REGISTERS_PER_FRAME = 4;
+const constexpr std::size_t NUM_REGISTERS_PER_FRAME = 4;
 
 // How many bytes are in an AVX2 register
 const constexpr std::size_t BYTES_PER_REGISTER = 32;
@@ -38,10 +38,10 @@ const constexpr std::size_t BYTES_PER_REGISTER = 32;
 // How many samples are in a register
 const constexpr std::size_t SAMPLES_PER_REGISTER = 16;
 
-// One netio message's worth of collection channel ADCs after
+// One netio message's worth of channel ADCs after
 // expansion: 12 frames per message times 8 registers per frame times
 // 32 bytes (256 bits) per register
-const constexpr std::size_t COLLECTION_ADCS_SIZE = BYTES_PER_REGISTER * COLLECTION_REGISTERS_PER_FRAME * FRAMES_PER_MSG;
+const constexpr std::size_t ADCS_SIZE = BYTES_PER_REGISTER * NUM_REGISTERS_PER_FRAME * FRAMES_PER_MSG;
 
 } // namespace swtpg_wib2
 

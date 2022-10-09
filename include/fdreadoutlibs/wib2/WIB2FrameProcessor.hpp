@@ -88,7 +88,7 @@ public:
 
   // Making the following public members to avoid copying the unique ptr
   //std::unique_ptr<WIB2TPHandler> tphandler;
-  std::unique_ptr<swtpg_wib2::ProcessingInfo<swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME>> m_tpg_processing_info;
+  std::unique_ptr<swtpg_wib2::ProcessingInfo<swtpg_wib2::NUM_REGISTERS_PER_FRAME>> m_tpg_processing_info;
   bool first_hits = true;
   swtpg_wib2::RegisterChannelMap register_channel_map; // Map from
                                                   // expanded AVX
@@ -125,11 +125,11 @@ public:
       m_primfind_dest = new uint16_t[100000]; // NOLINT(build/unsigned)
     }
 
-    m_tpg_processing_info = std::make_unique<swtpg_wib2::ProcessingInfo<swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME>>(
+    m_tpg_processing_info = std::make_unique<swtpg_wib2::ProcessingInfo<swtpg_wib2::NUM_REGISTERS_PER_FRAME>>(
       nullptr,
       swtpg_wib2::FRAMES_PER_MSG,
       0,
-      swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME,
+      swtpg_wib2::NUM_REGISTERS_PER_FRAME,
       m_primfind_dest,
       m_tpg_taps_p,
       (uint8_t)m_tpg_taps.size(), // NOLINT(build/unsigned)
@@ -421,9 +421,9 @@ protected:
     uint64_t timestamp = wfptr->get_timestamp();                        // NOLINT(build/unsigned)
 
     // AAA: this is fine because Registers for both halfs have the same size
-    //swtpg_wib2::MessageRegistersCollection registers_array;
+    //swtpg_wib2::MessageRegisters registers_array;
     registers_selector register_selection = frame_handler->get_registers_selector();    
-    swtpg_wib2::RegisterArray<swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME * swtpg_wib2::FRAMES_PER_MSG> registers_array;   
+    swtpg_wib2::RegisterArray<swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::FRAMES_PER_MSG> registers_array;   
     expand_wib2_adcs(fp, &registers_array, register_selection.cut, register_selection.register_group); 
     //expand_message_adcs_inplace_wib2_second_half(fp, &registers_array);     
 
@@ -444,12 +444,12 @@ protected:
       m_crate_no = wfptr->header.crate;
       m_slot_no = wfptr->header.slot;
 
-      TLOG() << "second_half Collection channel got first item, link/crate/slot=" << m_link << "/" << m_crate_no << "/" << m_slot_no;      
+      TLOG() << "Got first item, link/crate/slot=" << m_link << "/" << m_crate_no << "/" << m_slot_no;      
 
       /*
       std::stringstream ss;
-      ss << "Collection channels are:\n";
-      for(size_t i=0; i<swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME*swtpg_wib2::SAMPLES_PER_REGISTER; ++i){
+      ss << " Channels are:\n";
+      for(size_t i=0; i<swtpg_wib2::NUM_REGISTERS_PER_FRAME*swtpg_wib2::SAMPLES_PER_REGISTER; ++i){
         ss << i << "\t" << m_register_channel_map.collection[i] << "\n";
       }
       TLOG_DEBUG(2) << ss.str();

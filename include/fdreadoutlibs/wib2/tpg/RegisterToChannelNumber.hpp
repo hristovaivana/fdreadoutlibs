@@ -75,14 +75,14 @@ get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WI
   }
 
   // Expand the test frame, so the offline channel numbers are now in the relevant places in the output registers
-  swtpg_wib2::MessageRegistersCollection register_array;
-  //swtpg_wib2::RegisterArray<swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME * swtpg_wib2::FRAMES_PER_MSG / cut> collection_registers;     
+  swtpg_wib2::MessageRegisters register_array;
+  //swtpg_wib2::RegisterArray<swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::FRAMES_PER_MSG / cut> NUM_REGISTERS_PER_FRAME;     
   //expand_message_adcs_inplace_wib2(&superchunk, &register_array);
   expand_wib2_adcs(&superchunk, &register_array, cut, register_group); 
 
 
   RegisterChannelMap ret;
-  for (size_t i = 0; i < swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME * SAMPLES_PER_REGISTER; ++i) {
+  for (size_t i = 0; i < swtpg_wib2::NUM_REGISTERS_PER_FRAME * SAMPLES_PER_REGISTER; ++i) {
     // expand_message_adcs_inplace reorders the output so
     // adjacent-in-time registers are adjacent in memory, hence the
     // need for this indexing. See the comment in that function for a

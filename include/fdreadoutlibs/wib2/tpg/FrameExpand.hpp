@@ -18,15 +18,15 @@
 
 namespace swtpg_wib2 {
 
-struct MessageCollectionADCs
+struct MessageADCs
 {
-  char fragments[COLLECTION_ADCS_SIZE];
+  char fragments[ADCS_SIZE];
 };
 
 template<size_t NREGISTERS>
-struct WindowCollectionADCs
+struct WindowADCs
 {
-  WindowCollectionADCs(size_t numMessages_, MessageCollectionADCs* fragments_)
+  WindowADCs(size_t numMessages_, MessageADCs* fragments_)
     : numMessages(numMessages_)
     , fragments(fragments_)
   {}
@@ -50,14 +50,14 @@ struct WindowCollectionADCs
     const size_t msg_time_offset = itime % 12;
     // The index in uint16_t of the start of the message we want // NOLINT(build/unsigned)
     const size_t msg_start_index =
-      msg_index * sizeof(MessageCollectionADCs) / sizeof(uint16_t); // NOLINT(build/unsigned)
+      msg_index * sizeof(MessageADCs) / sizeof(uint16_t); // NOLINT(build/unsigned)
     const size_t offset_within_msg = register_t0_start + SAMPLES_PER_REGISTER * msg_time_offset + register_offset;
     const size_t index = msg_start_index + offset_within_msg;
     return *(reinterpret_cast<uint16_t*>(fragments) + index); // NOLINT
   }
 
   size_t numMessages;
-  MessageCollectionADCs* __restrict__ fragments;
+  MessageADCs* __restrict__ fragments;
 };
 
 // A little wrapper around an array of 256-bit registers, so that we
@@ -101,9 +101,9 @@ private:
   alignas(32) uint16_t __restrict__ m_array[N * 16]; // NOLINT(build/unsigned)
 };
 
-typedef RegisterArray<swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME> FrameRegistersCollection;
+typedef RegisterArray<swtpg_wib2::NUM_REGISTERS_PER_FRAME> FrameRegisters;
 
-typedef RegisterArray<swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME * swtpg_wib2::FRAMES_PER_MSG> MessageRegistersCollection;
+typedef RegisterArray<swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::FRAMES_PER_MSG> MessageRegisters;
 
 
 
@@ -231,14 +231,14 @@ inline __m256i unpack_one_register(const dunedaq::detdataformats::wib2::WIB2Fram
 // for wib2 
 inline void
 expand_message_adcs_inplace_wib2(const dunedaq::fdreadoutlibs::types::WIB2_SUPERCHUNK_STRUCT* __restrict__ ucs,
-                            swtpg_wib2::MessageRegistersCollection* __restrict__ collection_registers)
+                            swtpg_wib2::MessageRegisters* __restrict__ register_array)
 {
 
   for (size_t iframe = 0; iframe < swtpg_wib2::FRAMES_PER_MSG; ++iframe) {
     const dunedaq::detdataformats::wib2::WIB2Frame* frame =
       reinterpret_cast<const dunedaq::detdataformats::wib2::WIB2Frame*>(ucs) + iframe; // NOLINT
  
-    for (size_t iblock = 0; iblock < swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME; ++iblock) {
+    for (size_t iblock = 0; iblock < swtpg_wib2::NUM_REGISTERS_PER_FRAME; ++iblock) {
       // Arrange it so that adjacent times are adjacent in
       // memory, which will hopefully make the trigger primitive
       // finding code itself a little easier
@@ -248,12 +248,12 @@ expand_message_adcs_inplace_wib2(const dunedaq::fdreadoutlibs::types::WIB2_SUPER
       // (register 1, time 0) (register 1, time 1) ... (register 1, time 11)
       // ...
       // (register 5, time 0) (register 5, time 1) ... (register 5, time 11)
-      collection_registers->set_ymm(iframe + iblock * swtpg_wib2::FRAMES_PER_MSG, swtpg_wib2::unpack_one_register(frame->adc_words+7*iblock));
+      register_array->set_ymm(iframe + iblock * swtpg_wib2::FRAMES_PER_MSG, swtpg_wib2::unpack_one_register(frame->adc_words+7*iblock));
     }
     /*
     // Same for induction registers
     for (size_t iblock = 0; iblock < swtpg_wib2::INDUCTION_REGISTERS_PER_FRAME ; ++iblock) {
-      induction_registers->set_ymm(iframe + iblock * swtpg_wib2::FRAMES_PER_MSG, swtpg_wib2::unpack_one_register(frame->adc_words+7*(iblock+swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME)));
+      induction_registers->set_ymm(iframe + iblock * swtpg_wib2::FRAMES_PER_MSG, swtpg_wib2::unpack_one_register(frame->adc_words+7*(iblock+swtpg_wib2::NUM_REGISTERS_PER_FRAME)));
     }
     */
 
@@ -263,15 +263,15 @@ expand_message_adcs_inplace_wib2(const dunedaq::fdreadoutlibs::types::WIB2_SUPER
 
 inline void
 expand_wib2_adcs(const dunedaq::fdreadoutlibs::types::WIB2_SUPERCHUNK_STRUCT* __restrict__ ucs,
-                            swtpg_wib2::MessageRegistersCollection* __restrict__ register_array, int cut, int register_group)
+                            swtpg_wib2::MessageRegisters* __restrict__ register_array, int cut, int register_group)
 {
   #pragma GCC ivdep
   for (size_t iframe = 0; iframe < swtpg_wib2::FRAMES_PER_MSG; ++iframe) {
     const dunedaq::detdataformats::wib2::WIB2Frame* frame =
       reinterpret_cast<const dunedaq::detdataformats::wib2::WIB2Frame*>(ucs) + iframe; // NOLINT
 
-    for (size_t iblock = 0; iblock < swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME ; ++iblock) {
-      register_array->set_ymm(iframe + iblock * swtpg_wib2::FRAMES_PER_MSG, swtpg_wib2::unpack_one_register(frame->adc_words+7*(iblock+register_group*swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME)));
+    for (size_t iblock = 0; iblock < swtpg_wib2::NUM_REGISTERS_PER_FRAME ; ++iblock) {
+      register_array->set_ymm(iframe + iblock * swtpg_wib2::FRAMES_PER_MSG, swtpg_wib2::unpack_one_register(frame->adc_words+7*(iblock+register_group*swtpg_wib2::NUM_REGISTERS_PER_FRAME)));
     }
     
 
