@@ -237,7 +237,7 @@ public:
       m_wib2_frame_handler_second_half->reset();  
       
       auto runtime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_t0).count();
-      //TLOG() << "Ran for " << runtime << "ms. Found " << m_num_hits_coll << " collection hits and " << m_num_hits_ind << " induction hits";
+      //TLOG() << "Ran for " << runtime << "ms. Found " << m_num_hits_coll << "  hits";
     }
 
   }
@@ -453,13 +453,6 @@ protected:
         ss << i << "\t" << m_register_channel_map.collection[i] << "\n";
       }
       TLOG_DEBUG(2) << ss.str();
-
-      std::stringstream ss2;
-      ss2 << "Induction channels are:\n";
-      for(size_t i=0; i<swtpg_wib2::INDUCTION_REGISTERS_PER_FRAME*swtpg_wib2::SAMPLES_PER_REGISTER; ++i){
-        ss2 << i << "\t" << m_register_channel_map.induction[i] << "\n";
-      }
-      TLOG_DEBUG(2) << ss2.str();
       */
 
     } // end if (m_first_coll)
@@ -596,10 +589,9 @@ private:
   size_t m_num_push_fail = 0;
 
   size_t m_num_hits_coll = 0;
-  //size_t m_num_hits_ind = 0;
 
   std::atomic<int> m_coll_hits_count{ 0 };
-  //std::atomic<int> m_indu_hits_count{ 0 };
+
   std::atomic<int> m_num_tps_pushed{ 0 };
 
   bool m_first_coll = true;

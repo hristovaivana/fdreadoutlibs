@@ -26,7 +26,6 @@ struct RegisterChannelMap
 {
   // TODO: Make these the right size
   uint collection[256];
-  uint induction[256];
 };
 
 

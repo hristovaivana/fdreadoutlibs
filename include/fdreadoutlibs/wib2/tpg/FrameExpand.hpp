@@ -102,23 +102,10 @@ private:
 };
 
 typedef RegisterArray<swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME> FrameRegistersCollection;
-typedef RegisterArray<swtpg_wib2::INDUCTION_REGISTERS_PER_FRAME> FrameRegistersInduction;
 
 typedef RegisterArray<swtpg_wib2::COLLECTION_REGISTERS_PER_FRAME * swtpg_wib2::FRAMES_PER_MSG> MessageRegistersCollection;
-typedef RegisterArray<swtpg_wib2::INDUCTION_REGISTERS_PER_FRAME * swtpg_wib2::FRAMES_PER_MSG> MessageRegistersInduction;
 
 
-struct FrameRegisters
-{
-  FrameRegistersCollection collection_registers;
-  FrameRegistersInduction induction_registers;
-};
-
-struct MessageRegisters
-{
-  MessageRegistersCollection collection_registers;
-  MessageRegistersInduction induction_registers;
-};
 
 //==============================================================================
 // Print a 256-bit register interpreting it as packed 8-bit values
@@ -278,7 +265,7 @@ inline void
 expand_wib2_adcs(const dunedaq::fdreadoutlibs::types::WIB2_SUPERCHUNK_STRUCT* __restrict__ ucs,
                             swtpg_wib2::MessageRegistersCollection* __restrict__ register_array, int cut, int register_group)
 {
-
+  #pragma GCC ivdep
   for (size_t iframe = 0; iframe < swtpg_wib2::FRAMES_PER_MSG; ++iframe) {
     const dunedaq::detdataformats::wib2::WIB2Frame* frame =
       reinterpret_cast<const dunedaq::detdataformats::wib2::WIB2Frame*>(ucs) + iframe; // NOLINT
