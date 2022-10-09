@@ -28,9 +28,9 @@ const constexpr std::int16_t THRESHOLD = 2000;
 // How many frames are concatenated in one netio message
 const constexpr std::size_t FRAMES_PER_MSG = 12;
 
-// How many AVX2 registers are returned per
-// frame.
-const constexpr std::size_t NUM_REGISTERS_PER_FRAME = 4;
+// How many AVX2 registers are returned per frame.
+// Maximum is 16
+const constexpr std::size_t NUM_REGISTERS_PER_FRAME = 8;
 
 // How many bytes are in an AVX2 register
 const constexpr std::size_t BYTES_PER_REGISTER = 32;
