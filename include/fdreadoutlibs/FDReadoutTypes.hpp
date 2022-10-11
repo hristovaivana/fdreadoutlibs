@@ -8,4 +8,4 @@
 #include "RawFWDUNEWIBTriggerPrimitiveSuperChunkWrapper.hpp"
 
 
-#include "FDReadoutTypes_old.hpp"
+#include "common.hpp"
