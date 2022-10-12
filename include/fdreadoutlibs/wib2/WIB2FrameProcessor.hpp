@@ -71,7 +71,7 @@ struct registers_selector {
 class WIB2FrameHandler {
 
 public: 
-  WIB2FrameHandler(registers_selector register_selector_params) {
+  explicit WIB2FrameHandler(registers_selector register_selector_params) {
     m_register_selector = register_selector_params;
   }
   WIB2FrameHandler(const WIB2FrameHandler&) = delete;
@@ -420,12 +420,13 @@ protected:
     auto wfptr = reinterpret_cast<dunedaq::detdataformats::wib2::WIB2Frame*>((uint8_t*)fp); // NOLINT
     uint64_t timestamp = wfptr->get_timestamp();                        // NOLINT(build/unsigned)
 
-    // AAA: this is fine because Registers for both halfs have the same size
-    //swtpg_wib2::MessageRegisters registers_array;
+    // Frame expansion
+    swtpg_wib2::MessageRegisters registers_array;
     registers_selector register_selection = frame_handler->get_registers_selector();    
-    swtpg_wib2::RegisterArray<swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::FRAMES_PER_MSG> registers_array;   
     expand_wib2_adcs(fp, &registers_array, register_selection.cut, register_selection.register_group); 
-    //expand_message_adcs_inplace_wib2_second_half(fp, &registers_array);     
+    
+    
+    
 
     if (m_first_coll) {
 
@@ -458,12 +459,17 @@ protected:
     } // end if (m_first_coll)
     
 
-    // Find the hits in the "collection" registers
+    // Execute the SWTPG algorithm
+  
     frame_handler->m_tpg_processing_info->input = &registers_array;
     *frame_handler->get_primfind_dest() = swtpg_wib2::MAGIC;
     swtpg_wib2::process_window_avx2(*frame_handler->m_tpg_processing_info);
-
     
+    
+    
+    
+
+
     //unsigned int nhits = add_hits_to_tphandler(frame_handler->get_primfind_dest(), timestamp);
 
     
@@ -473,12 +479,15 @@ protected:
     
     //m_num_hits_coll += nhits;
     //m_coll_hits_count += nhits;
+    
 
     if (m_first_coll) {
       TLOG() << "Total hits in first superchunk (second_half): ";// << nhits;
       m_first_coll = false;
     }
     
+       
+
     //m_tphandler->try_sending_tpsets(timestamp);
   }
 
