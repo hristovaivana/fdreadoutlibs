@@ -10,12 +10,12 @@ The following frontends and features are provided by this package:
 * *Daphne*: Frame processor and request handler to be used with the SkipList latency buffer.
 * *SSP*: Only frame processor
 * *WIB*: Frame processor for `WIB`, software and hardware `WIB` TPs. Implementation of avx based software hit finding (software tpg) for `WIB`
-* *WIB2*: Only frame processor
+* *WIB2*: Frame processor for `WIB2`, implementation of avx based software hit finding (software tpg) for `WIB2`
 
 
 # Test Software TPG on WIB2
 
-To test the execution of the DUNE WIB2 software TPG, first download a raw data file, either by running `wget https://www.dropbox.com/s/9b1xtkjbkfyakij/frames_wib2.bin` or clicking on the [CERNBox link](https://www.dropbox.com/s/9b1xtkjbkfyakij/frames_wib2.bin) and put it into `<work_dir>`                                                                                             
+To test the execution of the DUNE WIB2 software TPG, first download a raw data file, either by running `curl https://cernbox.cern.ch/index.php/s/ocrHxSU8PucxphE/download -o wib2-frames.bin` or clicking on the [CERNBox link](https://cernbox.cern.ch/index.php/s/ocrHxSU8PucxphE/download) and put it into `<work_dir>`                                                                                             
 
 Example of `daqconf` configuration file used for testing:
 
@@ -28,7 +28,7 @@ Example of `daqconf` configuration file used for testing:
 "readout": {
    "enable_software_tpg": true,
    "clock_speed_hz": 62500000,
-   "data_file": "./frames_wib2.bin",
+   "data_file": "./wib2-frames.bin",
    "readout_sends_tp_fragments": false
 },
 

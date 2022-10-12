@@ -52,8 +52,14 @@ using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 using dunedaq::readoutlibs::logging::TLVL_TAKE_NOTE;
 
 
+
 namespace dunedaq {
 namespace fdreadoutlibs {
+
+enum WIB2CollectionOrInduction {
+  kCollection,
+  kInduction
+};
 
 class WIB2FrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>
 {
@@ -489,7 +495,7 @@ protected:
     *m_coll_primfind_dest = swtpg_wib2::MAGIC;
     swtpg_wib2::process_window_avx2(*m_coll_tpg_pi);
 
-    unsigned int nhits = add_hits_to_tphandler(m_coll_primfind_dest, timestamp, types::kCollection);
+    unsigned int nhits = add_hits_to_tphandler(m_coll_primfind_dest, timestamp, kCollection);
 
     if (nhits > 0) {
        TLOG_DEBUG(0) << "Non null collection hits: " << nhits << " for ts: " << timestamp;
@@ -512,7 +518,7 @@ protected:
       // std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
 
-    m_num_hits_ind += add_hits_to_tphandler(m_ind_primfind_dest, timestamp, types::kInduction);
+    m_num_hits_ind += add_hits_to_tphandler(m_ind_primfind_dest, timestamp, kInduction);
 
     if (m_num_hits_ind > 0) {
        TLOG_DEBUG(2) << "NON null induction hits: " << m_num_hits_ind << " for ts: " << timestamp;
@@ -579,7 +585,7 @@ protected:
     TLOG() << "Induction hit-finding thread stopping after processing " << n_items << " frames";
   }
 
-  unsigned int add_hits_to_tphandler(uint16_t* primfind_it, timestamp_t timestamp, types::CollectionOrInduction coll_or_ind)
+  unsigned int add_hits_to_tphandler(uint16_t* primfind_it, timestamp_t timestamp, WIB2CollectionOrInduction coll_or_ind)
   {
 
     constexpr int clocksPerTPCTick = 32;
@@ -624,7 +630,7 @@ protected:
       for (int i = 0; i < 16; ++i) {
         if (hit_charge[i] && chan[i] != swtpg_wib2::MAGIC) {
           // This channel had a hit ending here, so we can create and output the hit here
-          const uint16_t offline_channel = (coll_or_ind == types::kCollection) ?
+          const uint16_t offline_channel = (coll_or_ind == kCollection) ?
             m_register_channel_map.collection[chan[i]] : m_register_channel_map.induction[chan[i]];
           uint64_t tp_t_begin =                                                        // NOLINT(build/unsigned)
             timestamp + clocksPerTPCTick * (int64_t(hit_end[i]) - hit_tover[i]);       // NOLINT(build/unsigned)
