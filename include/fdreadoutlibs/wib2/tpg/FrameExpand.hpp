@@ -228,7 +228,7 @@ inline __m256i unpack_one_register(const dunedaq::detdataformats::wib2::WIB2Fram
 }
 
 //==============================================================================
-// for wib2 
+/*
 inline void
 expand_message_adcs_inplace_wib2(const dunedaq::fdreadoutlibs::types::WIB2_SUPERCHUNK_STRUCT* __restrict__ ucs,
                             swtpg_wib2::MessageRegisters* __restrict__ register_array)
@@ -250,17 +250,18 @@ expand_message_adcs_inplace_wib2(const dunedaq::fdreadoutlibs::types::WIB2_SUPER
       // (register 5, time 0) (register 5, time 1) ... (register 5, time 11)
       register_array->set_ymm(iframe + iblock * swtpg_wib2::FRAMES_PER_MSG, swtpg_wib2::unpack_one_register(frame->adc_words+7*iblock));
     }
-    /*
     // Same for induction registers
-    for (size_t iblock = 0; iblock < swtpg_wib2::INDUCTION_REGISTERS_PER_FRAME ; ++iblock) {
-      induction_registers->set_ymm(iframe + iblock * swtpg_wib2::FRAMES_PER_MSG, swtpg_wib2::unpack_one_register(frame->adc_words+7*(iblock+swtpg_wib2::NUM_REGISTERS_PER_FRAME)));
-    }
-    */
+    //for (size_t iblock = 0; iblock < swtpg_wib2::INDUCTION_REGISTERS_PER_FRAME ; ++iblock) {
+    //  induction_registers->set_ymm(iframe + iblock * swtpg_wib2::FRAMES_PER_MSG, swtpg_wib2::unpack_one_register(frame->adc_words+7*(iblock+swtpg_wib2::NUM_REGISTERS_PER_FRAME)));
+    //}
+    
 
   }
 }
+*/
 
 
+// Expand 14-bit ADCs to 16-bits using the WIB2 format
 inline void
 expand_wib2_adcs(const dunedaq::fdreadoutlibs::types::WIB2_SUPERCHUNK_STRUCT* __restrict__ ucs,
                             swtpg_wib2::MessageRegisters* __restrict__ register_array, int cut, int register_group)

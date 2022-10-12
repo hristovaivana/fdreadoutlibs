@@ -276,8 +276,8 @@ public:
       TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_postprocess_task(
         std::bind(&WIB2FrameProcessor::find_hits, this, std::placeholders::_1, m_wib2_frame_handler.get()));
 
-      //TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_postprocess_task(
-      //  std::bind(&WIB2FrameProcessor::find_hits, this, std::placeholders::_1, m_wib2_frame_handler_second_half.get()));
+      TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_postprocess_task(
+        std::bind(&WIB2FrameProcessor::find_hits, this, std::placeholders::_1, m_wib2_frame_handler_second_half.get()));
 
 
     }
@@ -439,22 +439,18 @@ protected:
 
       frame_handler->m_tpg_processing_info->setState(registers_array);
 
-      // Debugging purposes
-
+      // Debugging 
       m_link = wfptr->header.link;
       m_crate_no = wfptr->header.crate;
       m_slot_no = wfptr->header.slot;
-
       TLOG() << "Got first item, link/crate/slot=" << m_link << "/" << m_crate_no << "/" << m_slot_no;      
 
-      /*
       std::stringstream ss;
       ss << " Channels are:\n";
       for(size_t i=0; i<swtpg_wib2::NUM_REGISTERS_PER_FRAME*swtpg_wib2::SAMPLES_PER_REGISTER; ++i){
         ss << i << "\t" << m_register_channel_map.collection[i] << "\n";
       }
-      TLOG_DEBUG(2) << ss.str();
-      */
+      TLOG_DEBUG(2) << ss.str();      
 
     } // end if (m_first_coll)
     
@@ -468,21 +464,21 @@ protected:
     
     
     
-
-
+    // Add hits to TPHandler to build the TP 
     //unsigned int nhits = add_hits_to_tphandler(frame_handler->get_primfind_dest(), timestamp);
 
     
     //if (nhits > 0) {
-    //   TLOG_DEBUG(0) << "Non null hits (second_half): " << nhits << " for ts: " << timestamp;
+    //   TLOG_DEBUG(0) << "Non null hits: " << nhits << " for ts: " << timestamp;
     //}
     
+    // Update the number of hits found needed to update the Grafana
     //m_num_hits_coll += nhits;
     //m_coll_hits_count += nhits;
     
 
     if (m_first_coll) {
-      TLOG() << "Total hits in first superchunk (second_half): ";// << nhits;
+      TLOG() << "Total hits in first superchunk ";// << nhits;
       m_first_coll = false;
     }
     
