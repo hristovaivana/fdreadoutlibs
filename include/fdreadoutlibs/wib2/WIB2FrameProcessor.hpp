@@ -51,7 +51,6 @@
 using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 using dunedaq::readoutlibs::logging::TLVL_TAKE_NOTE;
 
-
 namespace dunedaq {
 namespace fdreadoutlibs {
 
@@ -176,6 +175,7 @@ public:
   explicit WIB2FrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
     : TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>(error_registry)
     , m_sw_tpg_enabled(false)
+    , m_add_hits_tphandler_thread_should_run(false)    
   {}
 
   ~WIB2FrameProcessor()
@@ -280,6 +280,12 @@ public:
         std::bind(&WIB2FrameProcessor::find_hits, this, std::placeholders::_1, m_wib2_frame_handler_second_half.get()));
 
 
+      // Start the thread for adding hits to tphandler
+      TLOG() << "Launch thread for adding hits to tphandler"; 
+      m_add_hits_tphandler_thread_should_run.store(true);
+      m_add_hits_tphandler_thread = std::thread(&WIB2FrameProcessor::add_hits_to_tphandler, this);
+
+
     }
 
     // Setup pre-processing pipeline
@@ -291,9 +297,17 @@ public:
 
   void scrap(const nlohmann::json& args) override
   {
+   if(m_sw_tpg_enabled) {	  
+      TLOG() << "Waiting to join add_hits_tphandler_thread";
+      m_add_hits_tphandler_thread_should_run.store(false);
+      m_add_hits_tphandler_thread.join();
+      TLOG() << "add_hits_tphandler_thread joined";
+   }    
     m_tphandler.reset();
 
     TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::scrap(args);
+
+    
   }
 
   void get_info(opmonlib::InfoCollector& ci, int level)
@@ -487,101 +501,15 @@ protected:
     //m_tphandler->try_sending_tpsets(timestamp);
   }
 
+  void add_hits_to_tphandler() {
+
+    std::stringstream thread_name;
+    thread_name << "process_hits_tphandler-" << m_sourceid.id;
+    pthread_setname_np(pthread_self(), thread_name.str().c_str());
 
 
-
-  unsigned int add_hits_to_tphandler(uint16_t* primfind_it, timestamp_t timestamp)
-  {
-
-    constexpr int clocksPerTPCTick = 32;
-
-    uint16_t chan[16], hit_end[16], hit_charge[16], hit_tover[16]; // NOLINT(build/unsigned)
-    unsigned int nhits = 0;
-
-    // process_window_avx2 stores its output in the buffer pointed to
-    // by m_coll_primfind_dest in a (necessarily) complicated way: for
-    // every set of 16 channels (one AVX2 register) that has at least
-    // one hit which ends at this tick, the full 16-channel registers
-    // of channel number, hit end time, hit charge and hit t-o-t are
-    // stored. This is done for each of the (6 collection registers
-    // per tick) x (12 ticks per superchunk), and the end of valid
-    // hits is indicated by the presence of the value "MAGIC" (defined
-    // in TPGConstants.h).
-    //
-    // Since not all channels in a register will have hits ending at
-    // this tick, we look at the stored hit_charge to determine
-    // whether this channel in the register actually had a hit ending
-    // in it: for channels which *did* have a hit ending, the value of
-    // hit_charge is nonzero.
-    while (*primfind_it != swtpg_wib2::MAGIC) {
-      // First, get all of the register values (including those with no hit) into local variables
-      for (int i = 0; i < 16; ++i) {
-        chan[i] = *primfind_it++; // NOLINT(runtime/increment_decrement)
-      }
-      for (int i = 0; i < 16; ++i) {
-        hit_end[i] = *primfind_it++; // NOLINT(runtime/increment_decrement)
-      }
-      for (int i = 0; i < 16; ++i) {
-        hit_charge[i] = *primfind_it++; // NOLINT(runtime/increment_decrement)
-      }
-      for (int i = 0; i < 16; ++i) {
-        hit_tover[i] = *primfind_it++; // NOLINT(runtime/increment_decrement)
-      }
-
-      // Now that we have all the register values in local
-      // variables, loop over the register index (ie, channel) and
-      // find the channels which actually had a hit, as indicated by
-      // nonzero value of hit_charge
-      for (int i = 0; i < 16; ++i) {
-        if (hit_charge[i] && chan[i] != swtpg_wib2::MAGIC) {
-          // This channel had a hit ending here, so we can create and output the hit here
-	        const uint16_t offline_channel = m_register_channel_map.collection[chan[i]];
-
-          uint64_t tp_t_begin =                                                        // NOLINT(build/unsigned)
-            timestamp + clocksPerTPCTick * (int64_t(hit_end[i]) - hit_tover[i]);       // NOLINT(build/unsigned)
-          uint64_t tp_t_end = timestamp + clocksPerTPCTick * int64_t(hit_end[i]);      // NOLINT(build/unsigned)
-
-          // May be needed for TPSet:
-          // uint64_t tspan = clocksPerTPCTick * hit_tover[i]; // is/will be this needed?
-          //
-
-          // For quick n' dirty debugging: print out time/channel of hits.
-          // Can then make a text file suitable for numpy plotting with, eg:
-          //
-          // sed -n -e 's/.*Hit: \(.*\) \(.*\).*/\1 \2/p' log.txt  > hits.txt
-          //
-          //TLOG_DEBUG(0) << "Hit: " << tp_t_begin << " " << offline_channel;
-
-          triggeralgs::TriggerPrimitive trigprim;
-          trigprim.time_start = tp_t_begin;
-          trigprim.time_peak = (tp_t_begin + tp_t_end) / 2;
-          trigprim.time_over_threshold = hit_tover[i] * clocksPerTPCTick;
-          trigprim.channel = offline_channel;
-          trigprim.adc_integral = hit_charge[i];
-          trigprim.adc_peak = hit_charge[i] / 20;
-          trigprim.detid =
-            m_link; // TODO: convert crate/slot/link to SourceID Roland Sipos rsipos@cern.ch July-22-2021
-          trigprim.type = triggeralgs::TriggerPrimitive::Type::kTPC;
-          trigprim.algorithm = triggeralgs::TriggerPrimitive::Algorithm::kTPCDefault;
-          trigprim.version = 1;
-
-          if (m_first_coll) {
-            TLOG() << "TP makes sense? -> hit_t_begin:" << tp_t_begin << " hit_t_end:" << tp_t_end
-                   << " time_peak:" << (tp_t_begin + tp_t_end) / 2;
-          }
-
-          if (!m_tphandler->add_tp(trigprim, timestamp)) {
-            m_tps_dropped++;
-          }
-        
-
-          m_new_tps++;
-          ++nhits;
-        }
-      }
-    }
-    return nhits;
   }
+
 
 
 
@@ -600,6 +528,8 @@ private:
   std::atomic<int> m_num_tps_pushed{ 0 };
 
   bool m_first_coll = true;
+
+  std::atomic<bool> m_add_hits_tphandler_thread_should_run;
 
   uint8_t m_link; // NOLINT(build/unsigned)
   uint8_t m_slot_no;  // NOLINT(build/unsigned)
@@ -630,13 +560,21 @@ private:
   // Select the registers where to process the frame expansion
   // E.g.: {2,0} --> divide registers by 2 (= 16/2) and select the first half
   // E.g.: {2,1} --> divide registers by 2 (= 16/2) and select the second half
+  // AAA: TODO: implmement the first parameters of the selection_of_register (cut selection)
   registers_selector selection_of_register = {2,0}; 
   std::unique_ptr<WIB2FrameHandler> m_wib2_frame_handler = std::make_unique<WIB2FrameHandler>(selection_of_register);
 
   registers_selector selection_of_register_second_half = {2,1}; 
   std::unique_ptr<WIB2FrameHandler> m_wib2_frame_handler_second_half = std::make_unique<WIB2FrameHandler>(selection_of_register_second_half);
 
+  // AAA: TODO: make selection of the initial capacity of the queue configurable
+  size_t m_initial_capacity_mpmc_queue = 100000; 
+  // The boolean argument is `MayBlock`, where "block" appears to mean
+  // "make a system call". With `MayBlock` set to false, the queue
+  // just spin-waits, so we want true
+  std::unique_ptr<folly::DMPMCQueue<WIB2FrameHandler, true>> m_tphandler_queue = std::make_unique<folly::DMPMCQueue<WIB2FrameHandler, true>>(m_initial_capacity_mpmc_queue);
 
+  std::thread m_add_hits_tphandler_thread;
 
   std::atomic<uint64_t> m_frame_error_count{ 0 }; // NOLINT(build/unsigned)
   std::atomic<uint64_t> m_frames_processed{ 0 };  // NOLINT(build/unsigned)
