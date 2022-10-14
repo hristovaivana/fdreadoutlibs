@@ -80,10 +80,8 @@ public:
       m_link_conf = link_conf.get<link_conf_t>();
       m_sink_queue_timeout_ms = std::chrono::milliseconds(m_conf.queue_timeout_ms);
 
-      m_sourceid.element_id = m_link_conf.sourceid.element;
-      m_sourceid.region_id = m_link_conf.sourceid.region;
-      m_sourceid.system_type = daqdataformats::SourceID::SystemType::kTPC;
-      ;
+      m_sourceid.id = m_link_conf.source_id;
+      m_sourceid.subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
 
       m_file_source =
         std::make_unique<readoutlibs::FileSourceBuffer>(m_link_conf.input_limit, RAW_WIB2_TP_SUBFRAME_SIZE);
