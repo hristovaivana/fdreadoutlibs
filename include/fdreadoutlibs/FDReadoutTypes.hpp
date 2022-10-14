@@ -14,6 +14,7 @@
 #include "daqdataformats/FragmentHeader.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "detdataformats/daphne/DAPHNEFrame.hpp"
+#include "detdataformats/daphne/DAPHNEStreamFrame.hpp"
 #include "detdataformats/ssp/SSPTypes.hpp"
 #include "detdataformats/wib/WIBFrame.hpp"
 #include "detdataformats/wib2/WIB2Frame.hpp"
@@ -336,9 +337,78 @@ struct DAPHNE_SUPERCHUNK_STRUCT
   static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kDAPHNE;
   static const constexpr uint64_t expected_tick_difference = 16; // NOLINT(build/unsigned)
 };
-
 static_assert(sizeof(struct DAPHNE_SUPERCHUNK_STRUCT) == DAPHNE_SUPERCHUNK_SIZE,
               "Check your assumptions on DAPHNE_SUPERCHUNK_STRUCT");
+
+/**
+ * @brief For DAPHNE Stream the numbers are similar to DUNE-WIB
+ * 12[DAPHNE frames] x 472[Bytes] = 5668[Bytes]
+ * */
+const constexpr std::size_t DAPHNE_STREAM_SUPERCHUNK_SIZE = 5668; // for 12: 5668
+struct DAPHNE_STREAM_SUPERCHUNK_STRUCT
+{
+  using FrameType = dunedaq::detdataformats::daphne::DAPHNEStreamFrame;
+  // data
+  char data[DAPHNE_STREAM_SUPERCHUNK_SIZE];
+  // comparable based on first timestamp
+  bool operator<(const DAPHNE_STREAM_SUPERCHUNK_STRUCT& other) const
+  {
+    auto thisptr = reinterpret_cast<const dunedaq::detdataformats::daphne::DAPHNEStreamFrame*>(&data);        // NOLINT
+    auto otherptr = reinterpret_cast<const dunedaq::detdataformats::daphne::DAPHNEStreamFrame*>(&other.data); // NOLINT
+    return thisptr->daq_header.get_timestamp() < otherptr->daq_header.get_timestamp() ? true : false;
+  }
+
+  uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
+  {
+    return reinterpret_cast<const dunedaq::detdataformats::daphne::DAPHNEStreamFrame*>(&data)->daq_header.get_timestamp(); // NOLINT
+  }
+
+  void set_first_timestamp(uint64_t ts) // NOLINT(build/unsigned)
+  {
+    auto frame = reinterpret_cast<dunedaq::detdataformats::daphne::DAPHNEStreamFrame*>(&data); // NOLINT
+    frame->daq_header.timestamp_1 = ts;
+    frame->daq_header.timestamp_2 = ts >> 32;
+  }
+
+  void fake_timestamps(uint64_t first_timestamp, uint64_t offset = 16) // NOLINT(build/unsigned)
+  {
+    uint64_t ts_next = first_timestamp; // NOLINT(build/unsigned)
+    for (unsigned int i = 0; i < 12; ++i) {
+      auto df = reinterpret_cast<dunedaq::detdataformats::daphne::DAPHNEStreamFrame*>(((uint8_t*)(&data)) + i * 472); // NOLINT
+      df->daq_header.timestamp_1 = ts_next;
+      df->daq_header.timestamp_2 = ts_next >> 32;
+      ts_next += offset;
+    }
+  }
+
+  void fake_frame_errors(std::vector<uint16_t>* /*fake_errors*/) // NOLINT
+  {
+    // Set frame error bits in header
+  }
+
+  FrameType* begin()
+  {
+    return reinterpret_cast<FrameType*>(&data[0]); // NOLINT
+  }
+
+  FrameType* end()
+  {
+    return reinterpret_cast<FrameType*>(data + DAPHNE_SUPERCHUNK_SIZE); // NOLINT
+  }
+
+  size_t get_payload_size() { return 5668; }
+
+  size_t get_num_frames() { return 12; }
+
+  size_t get_frame_size() { return 472; }
+
+  static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kDetectorReadout;
+  static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kDAPHNE;
+  static const constexpr uint64_t expected_tick_difference = 16; // NOLINT(build/unsigned)
+};
+static_assert(sizeof(struct DAPHNE_STREAM_SUPERCHUNK_STRUCT) == DAPHNE_STREAM_SUPERCHUNK_SIZE,
+              "Check your assumptions on DAPHNE_STREAM_SUPERCHUNK_STRUCT");
+
 
 const constexpr std::size_t TP_SIZE = sizeof(triggeralgs::TriggerPrimitive);
 struct SW_WIB_TRIGGERPRIMITIVE_STRUCT
