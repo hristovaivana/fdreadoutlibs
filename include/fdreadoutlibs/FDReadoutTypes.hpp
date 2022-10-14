@@ -646,11 +646,6 @@ struct TpSubframe
   uint32_t word3; // NOLINT(build/unsigned)
 };
 
-enum CollectionOrInduction {
-  kCollection,
-  kInduction
-};
-
 
 } // namespace types
 } // namespace fdreadoutlibs
