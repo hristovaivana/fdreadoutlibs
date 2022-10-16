@@ -41,12 +41,12 @@ namespace dunedaq {
 namespace fdreadoutlibs {
 
 class RAWWIBTriggerPrimitiveProcessor
-  : public readoutlibs::TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>
+  : public readoutlibs::TaskRawDataProcessorModel<types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter>
 {
 
 public:
-  using inherited = readoutlibs::TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>;
-  using frame_ptr = types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT*;
+  using inherited = readoutlibs::TaskRawDataProcessorModel<types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter>;
+  using frame_ptr = types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter*;
   using rwtp_ptr = detdataformats::fwtp::RawTp*;
   using timestamp_t = std::uint64_t; // NOLINT(build/unsigned)
 
@@ -54,7 +54,7 @@ public:
   typedef int (*chan_map_fn_t)(int);
   
   explicit RAWWIBTriggerPrimitiveProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
-    : TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>(error_registry)
+    : TaskRawDataProcessorModel<types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter>(error_registry)
     , m_fw_tpg_enabled(false)
   {}
 
@@ -62,9 +62,9 @@ public:
   {
     auto config = args["rawdataprocessorconf"].get<readoutlibs::readoutconfig::RawDataProcessorConf>();
 
-    TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>::add_preprocess_task(
+    TaskRawDataProcessorModel<types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter>::add_preprocess_task(
                 std::bind(&RAWWIBTriggerPrimitiveProcessor::tp_unpack, this, std::placeholders::_1));
-    TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>::conf(args);
+    TaskRawDataProcessorModel<types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter>::conf(args);
 
     if (config.enable_firmware_tpg) {
       m_fw_tpg_enabled = true;
@@ -148,12 +148,12 @@ i*/
   {
     m_tphandler.reset();
 
-    TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>::scrap(args);
+    TaskRawDataProcessorModel<types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter>::scrap(args);
   }
 
   void get_info(opmonlib::InfoCollector& ci, int level)
   {
-    readoutlibs::TaskRawDataProcessorModel<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>::get_info(ci, level);
+    readoutlibs::TaskRawDataProcessorModel<types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter>::get_info(ci, level);
 
     readoutlibs::readoutinfo::RawDataProcessorInfo info;
 
@@ -385,7 +385,7 @@ protected:
   double m_time_tick { 1.0 }; // 
 
 private:
-  using source_t = iomanager::ReceiverConcept<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>;
+  using source_t = iomanager::ReceiverConcept<types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter>;
   std::shared_ptr<source_t> m_tp_source;
 
   // unpacking

@@ -4,5 +4,5 @@
 // #include "TDEAMCFrameTypeAdapter.hpp"
 // #include "SSPFrameTypeAdapter.hpp"
 // #include "fdreadoutlibs/TriggerPrimitiveTypeAdapter.hpp"
-#include "RawFWDUNEWIBTriggerPrimitiveSuperChunkTypeAdapter.hpp"
+// #include "RawFWDUNEWIBTriggerPrimitiveSuperChunkTypeAdapter.hpp"
 #include "VariableSizePayloadTypeAdapter.hpp"
