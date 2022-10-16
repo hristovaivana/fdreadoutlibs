@@ -23,10 +23,10 @@ namespace types {
  * @brief Convencience wrapper to take ownership over char pointers with
  * corresponding allocated memory size.
  * */
-struct VariableSizePayloadWrapper
+struct VariableSizePayloadTypeAdapter
 {
-  VariableSizePayloadWrapper() {}
-  VariableSizePayloadWrapper(size_t size, char* data)
+  VariableSizePayloadTypeAdapter() {}
+  VariableSizePayloadTypeAdapter(size_t size, char* data)
     : size(size)
     , data(data)
   {}

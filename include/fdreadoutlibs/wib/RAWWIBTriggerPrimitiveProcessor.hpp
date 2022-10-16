@@ -14,6 +14,7 @@
 
 #include "fdreadoutlibs/FDReadoutTypes.hpp"
 #include "fdreadoutlibs/TriggerPrimitiveTypeAdapter.hpp"
+#include "fdreadoutlibs/DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter.hpp"
 
 #include "detdataformats/fwtp/RawTp.hpp"
 #include "logging/Logging.hpp"
