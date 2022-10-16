@@ -25,14 +25,14 @@ namespace types {
  * @brief For DAPHNE the numbers are different.
  * 12[DAPHNE frames] x 584[Bytes] = 7008[Bytes]
  * */
-const constexpr std::size_t DAPHNE_SUPERCHUNK_SIZE = 7008; // for 12: 7008
-struct DAPHNE_SUPERCHUNK_STRUCT
+const constexpr std::size_t kDAPHNESuperChunkSize = 7008; // for 12: 7008
+struct DAPHNESuperChunkTypeAdapter
 {
   using FrameType = dunedaq::detdataformats::daphne::DAPHNEFrame;
   // data
-  char data[DAPHNE_SUPERCHUNK_SIZE];
+  char data[kDAPHNESuperChunkSize];
   // comparable based on first timestamp
-  bool operator<(const DAPHNE_SUPERCHUNK_STRUCT& other) const
+  bool operator<(const DAPHNESuperChunkTypeAdapter& other) const
   {
     auto thisptr = reinterpret_cast<const dunedaq::detdataformats::daphne::DAPHNEFrame*>(&data);        // NOLINT
     auto otherptr = reinterpret_cast<const dunedaq::detdataformats::daphne::DAPHNEFrame*>(&other.data); // NOLINT
@@ -74,7 +74,7 @@ struct DAPHNE_SUPERCHUNK_STRUCT
 
   FrameType* end()
   {
-    return reinterpret_cast<FrameType*>(data + DAPHNE_SUPERCHUNK_SIZE); // NOLINT
+    return reinterpret_cast<FrameType*>(data + kDAPHNESuperChunkSize); // NOLINT
   }
 
   size_t get_payload_size() { return 7008; }
@@ -88,8 +88,8 @@ struct DAPHNE_SUPERCHUNK_STRUCT
   static const constexpr uint64_t expected_tick_difference = 16; // NOLINT(build/unsigned)
 };
 
-static_assert(sizeof(struct DAPHNE_SUPERCHUNK_STRUCT) == DAPHNE_SUPERCHUNK_SIZE,
-              "Check your assumptions on DAPHNE_SUPERCHUNK_STRUCT");
+static_assert(sizeof(struct DAPHNESuperChunkTypeAdapter) == kDAPHNESuperChunkSize,
+              "Check your assumptions on DAPHNESuperChunkTypeAdapter");
 
 
 } // namespace types

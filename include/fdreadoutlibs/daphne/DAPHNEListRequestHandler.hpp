@@ -19,6 +19,7 @@
 
 #include "detdataformats/daphne/DAPHNEFrame.hpp"
 #include "fdreadoutlibs/FDReadoutTypes.hpp"
+#include "fdreadoutlibs/DAPHNESuperChunkTypeAdapter.hpp"
 
 #include <atomic>
 #include <deque>
@@ -38,23 +39,23 @@ namespace fdreadoutlibs {
 
 class DAPHNEListRequestHandler
   : public readoutlibs::DefaultRequestHandlerModel<
-      types::DAPHNE_SUPERCHUNK_STRUCT,
-      readoutlibs::SkipListLatencyBufferModel<types::DAPHNE_SUPERCHUNK_STRUCT>>
+      types::DAPHNESuperChunkTypeAdapter,
+      readoutlibs::SkipListLatencyBufferModel<types::DAPHNESuperChunkTypeAdapter>>
 {
 public:
   // Using shorter typenames
   using inherited =
-    readoutlibs::DefaultRequestHandlerModel<types::DAPHNE_SUPERCHUNK_STRUCT,
-                                            readoutlibs::SkipListLatencyBufferModel<types::DAPHNE_SUPERCHUNK_STRUCT>>;
-  using SkipListAcc = typename folly::ConcurrentSkipList<types::DAPHNE_SUPERCHUNK_STRUCT>::Accessor;
-  using SkipListSkip = typename folly::ConcurrentSkipList<types::DAPHNE_SUPERCHUNK_STRUCT>::Skipper;
+    readoutlibs::DefaultRequestHandlerModel<types::DAPHNESuperChunkTypeAdapter,
+                                            readoutlibs::SkipListLatencyBufferModel<types::DAPHNESuperChunkTypeAdapter>>;
+  using SkipListAcc = typename folly::ConcurrentSkipList<types::DAPHNESuperChunkTypeAdapter>::Accessor;
+  using SkipListSkip = typename folly::ConcurrentSkipList<types::DAPHNESuperChunkTypeAdapter>::Skipper;
 
   // Constructor
   DAPHNEListRequestHandler(
-    std::unique_ptr<readoutlibs::SkipListLatencyBufferModel<types::DAPHNE_SUPERCHUNK_STRUCT>>& latency_buffer,
+    std::unique_ptr<readoutlibs::SkipListLatencyBufferModel<types::DAPHNESuperChunkTypeAdapter>>& latency_buffer,
     std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
-    : DefaultRequestHandlerModel<types::DAPHNE_SUPERCHUNK_STRUCT,
-                                 readoutlibs::SkipListLatencyBufferModel<types::DAPHNE_SUPERCHUNK_STRUCT>>(
+    : DefaultRequestHandlerModel<types::DAPHNESuperChunkTypeAdapter,
+                                 readoutlibs::SkipListLatencyBufferModel<types::DAPHNESuperChunkTypeAdapter>>(
         latency_buffer,
         error_registry)
   {

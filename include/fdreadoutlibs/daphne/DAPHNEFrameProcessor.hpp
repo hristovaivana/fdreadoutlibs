@@ -17,6 +17,8 @@
 
 #include "detdataformats/daphne/DAPHNEFrame.hpp"
 #include "fdreadoutlibs/FDReadoutTypes.hpp"
+#include "fdreadoutlibs/DAPHNESuperChunkTypeAdapter.hpp"
+
 
 #include <atomic>
 #include <functional>
@@ -28,18 +30,18 @@ using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-class DAPHNEFrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::DAPHNE_SUPERCHUNK_STRUCT>
+class DAPHNEFrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::DAPHNESuperChunkTypeAdapter>
 {
 
 public:
-  using inherited = readoutlibs::TaskRawDataProcessorModel<types::DAPHNE_SUPERCHUNK_STRUCT>;
-  using frameptr = types::DAPHNE_SUPERCHUNK_STRUCT*;
+  using inherited = readoutlibs::TaskRawDataProcessorModel<types::DAPHNESuperChunkTypeAdapter>;
+  using frameptr = types::DAPHNESuperChunkTypeAdapter*;
   using daphneframeptr = dunedaq::detdataformats::daphne::DAPHNEFrame*;
   using timestamp_t = std::uint64_t; // NOLINT(build/unsigned)
 
   // Constructor
   explicit DAPHNEFrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
-    : readoutlibs::TaskRawDataProcessorModel<types::DAPHNE_SUPERCHUNK_STRUCT>(error_registry)
+    : readoutlibs::TaskRawDataProcessorModel<types::DAPHNESuperChunkTypeAdapter>(error_registry)
   {}
 
   // Override config for pipeline setup
