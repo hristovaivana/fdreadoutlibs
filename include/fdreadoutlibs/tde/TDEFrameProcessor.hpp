@@ -13,6 +13,8 @@
 
 #include "detdataformats/tde/TDE16Frame.hpp"
 #include "fdreadoutlibs/FDReadoutTypes.hpp"
+#include "fdreadoutlibs/TDEAMCFrameTypeAdapter.hpp"
+
 #include "logging/Logging.hpp"
 #include "readoutlibs/FrameErrorRegistry.hpp"
 #include "readoutlibs/ReadoutLogging.hpp"
@@ -27,17 +29,21 @@ using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-class TDEFrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::TDE_AMC_STRUCT>
+class TDEFrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter
+>
 {
 
 public:
-  using inherited = readoutlibs::TaskRawDataProcessorModel<types::TDE_AMC_STRUCT>;
-  using frameptr = types::TDE_AMC_STRUCT*;
+  using inherited = readoutlibs::TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter
+>;
+  using frameptr = types::TDEAMCFrameTypeAdapter
+*;
   using tdeframeptr = dunedaq::detdataformats::tde::TDE16Frame*;
   using timestamp_t = std::uint64_t; // NOLINT(build/unsigned)
 
   explicit TDEFrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
-    : TaskRawDataProcessorModel<types::TDE_AMC_STRUCT>(error_registry)
+    : TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter
+>(error_registry)
   {}
 
   // Override configuration to register pipeline
