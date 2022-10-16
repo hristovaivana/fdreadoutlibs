@@ -687,7 +687,7 @@ inline __m256i unpack_one_register(const dunedaq::detdataformats::wib2::WIB2Fram
 //======================================================================
 // for wib
 inline void
-expand_message_adcs_inplace(const dunedaq::fdreadoutlibs::types::WIB_SUPERCHUNK_STRUCT* __restrict__ ucs,
+expand_message_adcs_inplace(const dunedaq::fdreadoutlibs::types::ProtoWIBSuperChunkTypeAdapter* __restrict__ ucs,
                             MessageRegistersCollection* __restrict__ collection_registers,
                             MessageRegistersInduction* __restrict__ induction_registers)
 {

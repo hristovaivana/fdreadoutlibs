@@ -28,14 +28,14 @@ namespace types {
  * 12[WIB frames] x 464[Bytes] = 5568[Bytes]
  */
 const constexpr std::size_t WIB_SUPERCHUNK_SIZE = 5568; // for 12: 5568
-struct WIB_SUPERCHUNK_STRUCT
+struct ProtoWIBSuperChunkTypeAdapter
 {
   using FrameType = dunedaq::detdataformats::wib::WIBFrame;
 
   // data
   char data[WIB_SUPERCHUNK_SIZE];
   // comparable based on first timestamp
-  bool operator<(const WIB_SUPERCHUNK_STRUCT& other) const
+  bool operator<(const ProtoWIBSuperChunkTypeAdapter& other) const
   {
     // auto thisptr = reinterpret_cast<const dunedaq::detdataformats::WIBHeader*>(&data);        // NOLINT
     // auto otherptr = reinterpret_cast<const dunedaq::detdataformats::WIBHeader*>(&other.data); // NOLINT
@@ -96,7 +96,7 @@ struct WIB_SUPERCHUNK_STRUCT
 };
 
 static_assert(sizeof(struct dunedaq::detdataformats::wib::WIBFrame)*12 == WIB_SUPERCHUNK_SIZE,
-              "Check your assumptions on WIB_SUPERCHUNK_STRUCT");
+              "Check your assumptions on ProtoWIBSuperChunkTypeAdapter");
 
 } // namespace types
 } // namespace fdreadoutlibs

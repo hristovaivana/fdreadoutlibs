@@ -62,13 +62,13 @@ enum CollectionOrInduction {
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-class WIBFrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>
+class WIBFrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::ProtoWIBSuperChunkTypeAdapter>
 {
 
 public:
-  using inherited = readoutlibs::TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>;
-  using frameptr = types::WIB_SUPERCHUNK_STRUCT*;
-  using constframeptr = const types::WIB_SUPERCHUNK_STRUCT*;
+  using inherited = readoutlibs::TaskRawDataProcessorModel<types::ProtoWIBSuperChunkTypeAdapter>;
+  using frameptr = types::ProtoWIBSuperChunkTypeAdapter*;
+  using constframeptr = const types::ProtoWIBSuperChunkTypeAdapter*;
   using wibframeptr = dunedaq::detdataformats::wib::WIBFrame*;
   using timestamp_t = std::uint64_t; // NOLINT(build/unsigned)
 
@@ -76,7 +76,7 @@ public:
   typedef int (*chan_map_fn_t)(int);
 
   explicit WIBFrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
-    : TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>(error_registry)
+    : TaskRawDataProcessorModel<types::ProtoWIBSuperChunkTypeAdapter>(error_registry)
     , m_sw_tpg_enabled(false)
     , m_ind_thread_should_run(false)
     , m_coll_primfind_dest(nullptr)
@@ -237,7 +237,7 @@ public:
   {
     auto config = cfg["rawdataprocessorconf"].get<readoutlibs::readoutconfig::RawDataProcessorConf>();
     m_sourceid.id = config.source_id;
-    m_sourceid.subsystem = types::WIB_SUPERCHUNK_STRUCT::subsystem;
+    m_sourceid.subsystem = types::ProtoWIBSuperChunkTypeAdapter::subsystem;
     m_error_counter_threshold = config.error_counter_threshold;
     m_error_reset_freq = config.error_reset_freq;
 
@@ -256,7 +256,7 @@ public:
       //   200000, false, 0, true, 64); // 64 byte aligned
 
       // Setup parallel post-processing
-      TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::add_postprocess_task(
+      TaskRawDataProcessorModel<types::ProtoWIBSuperChunkTypeAdapter>::add_postprocess_task(
         std::bind(&WIBFrameProcessor::find_collection_hits, this, std::placeholders::_1));
 
       // start the thread for induction hit finding
@@ -266,12 +266,12 @@ public:
     }
 
     // Setup pre-processing pipeline
-    TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::add_preprocess_task(
+    TaskRawDataProcessorModel<types::ProtoWIBSuperChunkTypeAdapter>::add_preprocess_task(
       std::bind(&WIBFrameProcessor::timestamp_check, this, std::placeholders::_1));
-    //TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::add_preprocess_task(
+    //TaskRawDataProcessorModel<types::ProtoWIBSuperChunkTypeAdapter>::add_preprocess_task(
       //std::bind(&WIBFrameProcessor::frame_error_check, this, std::placeholders::_1));
 
-    TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::conf(cfg);
+    TaskRawDataProcessorModel<types::ProtoWIBSuperChunkTypeAdapter>::conf(cfg);
   }
 
   void scrap(const nlohmann::json& args) override
@@ -284,7 +284,7 @@ public:
    }
       m_tphandler.reset();
 
-    TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::scrap(args);
+    TaskRawDataProcessorModel<types::ProtoWIBSuperChunkTypeAdapter>::scrap(args);
   }
 
   void get_info(opmonlib::InfoCollector& ci, int level)
@@ -309,7 +309,7 @@ public:
     }
     m_t0 = now;
 
-    readoutlibs::TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>::get_info(ci, level);
+    readoutlibs::TaskRawDataProcessorModel<types::ProtoWIBSuperChunkTypeAdapter>::get_info(ci, level);
     ci.add(info);
   }
 
@@ -335,7 +335,7 @@ protected:
     static constexpr uint64_t END_OF_MESSAGES = UINT64_MAX; // NOLINT(build/unsigned)
   };
 
-  void postprocess_example(const types::WIB_SUPERCHUNK_STRUCT* fp)
+  void postprocess_example(const types::ProtoWIBSuperChunkTypeAdapter* fp)
   {
     TLOG() << "Postprocessing: " << fp->get_first_timestamp();
   }
