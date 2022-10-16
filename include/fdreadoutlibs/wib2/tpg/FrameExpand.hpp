@@ -13,7 +13,7 @@
 #include "detdataformats/wib2/WIB2Frame.hpp"
 #include "fdreadoutlibs/ProtoWIBSuperChunkTypeAdapter.hpp"
 #include "fdreadoutlibs/DUNEWIBSuperChunkTypeAdapter.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+
 
 #include <array>
 #include <immintrin.h>

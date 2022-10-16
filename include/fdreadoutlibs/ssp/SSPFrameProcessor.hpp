@@ -19,7 +19,7 @@
 #include "readoutlibs/utils/ReusableThread.hpp"
 
 #include "detdataformats/ssp/SSPTypes.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+
 #include "fdreadoutlibs/SSPFrameTypeAdapter.hpp"
 
 #include <atomic>

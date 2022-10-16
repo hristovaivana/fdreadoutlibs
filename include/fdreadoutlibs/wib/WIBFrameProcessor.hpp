@@ -24,7 +24,7 @@
 #include "detchannelmaps/TPCChannelMap.hpp"
 #include "detdataformats/wib/WIBFrame.hpp"
 
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+
 #include "fdreadoutlibs/TriggerPrimitiveTypeAdapter.hpp"
 
 #include "fdreadoutlibs/ProtoWIBSuperChunkTypeAdapter.hpp"

@@ -11,7 +11,7 @@
 
 #include "TPGConstants.hpp"
 #include "detdataformats/wib/WIBFrame.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+
 #include "fdreadoutlibs/ProtoWIBSuperChunkTypeAdapter.hpp"
 
 #include <array>

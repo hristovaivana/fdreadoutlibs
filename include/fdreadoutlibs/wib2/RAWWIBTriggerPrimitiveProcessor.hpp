@@ -12,7 +12,7 @@
 #include "readoutlibs/ReadoutIssues.hpp"
 #include "readoutlibs/models/TaskRawDataProcessorModel.hpp"
 
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+
 #include "detdataformats/fwtp/RawTp.hpp"
 #include "logging/Logging.hpp"
 #include "readoutlibs/FrameErrorRegistry.hpp"

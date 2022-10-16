@@ -18,7 +18,7 @@
 #include "readoutlibs/models/SkipListLatencyBufferModel.hpp"
 
 #include "detdataformats/daphne/DAPHNEFrame.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+
 #include "fdreadoutlibs/DAPHNESuperChunkTypeAdapter.hpp"
 
 #include <atomic>

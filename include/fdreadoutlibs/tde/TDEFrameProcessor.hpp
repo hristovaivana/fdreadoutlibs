@@ -12,7 +12,7 @@
 #include "readoutlibs/models/TaskRawDataProcessorModel.hpp"
 
 #include "detdataformats/tde/TDE16Frame.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+
 #include "fdreadoutlibs/TDEAMCFrameTypeAdapter.hpp"
 
 #include "logging/Logging.hpp"
