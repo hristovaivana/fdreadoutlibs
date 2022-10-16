@@ -24,7 +24,10 @@
 #include "detchannelmaps/TPCChannelMap.hpp"
 #include "detdataformats/wib2/WIB2Frame.hpp"
 #include "fdreadoutlibs/FDReadoutTypes.hpp"
+
 #include "fdreadoutlibs/DUNEWIBSuperChunkTypeAdapter.hpp"
+#include "fdreadoutlibs/TriggerPrimitiveTypeAdapter.hpp"
+
 #include "fdreadoutlibs/wib2/WIB2TPHandler.hpp"
 #include "rcif/cmd/Nljs.hpp"
 #include "trigger/TPSet.hpp"
@@ -222,7 +225,7 @@ public:
     try {
       auto queue_index = appfwk::connection_index(args, {});
       if (queue_index.find("tp_out") != queue_index.end()) {
-        m_tp_sink = get_iom_sender<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>(queue_index["tp_out"]);
+        m_tp_sink = get_iom_sender<types::TriggerPrimitiveTypeAdapter>(queue_index["tp_out"]);
       }
       if (queue_index.find("tpset_out") != queue_index.end()) {
         m_tpset_sink = get_iom_sender<trigger::TPSet>(queue_index["tpset_out"]);
@@ -741,7 +744,7 @@ private:
   std::unique_ptr<swtpg_wib2::ProcessingInfo<swtpg_wib2::INDUCTION_REGISTERS_PER_FRAME>> m_ind_tpg_pi;
   std::thread m_induction_thread;
 
-  std::shared_ptr<iomanager::SenderConcept<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>> m_tp_sink;
+  std::shared_ptr<iomanager::SenderConcept<types::TriggerPrimitiveTypeAdapter>> m_tp_sink;
   std::shared_ptr<iomanager::SenderConcept<trigger::TPSet>> m_tpset_sink;
   std::shared_ptr<iomanager::SenderConcept<detdataformats::wib2::WIB2Frame>> m_err_frame_sink;
 

@@ -22,14 +22,14 @@ namespace dunedaq {
 namespace fdreadoutlibs {
 namespace types {
 
-const constexpr std::size_t TP_SIZE = sizeof(triggeralgs::TriggerPrimitive);
-struct SW_WIB_TRIGGERPRIMITIVE_STRUCT
+const constexpr std::size_t kTriggerPrimitive = sizeof(triggeralgs::TriggerPrimitive);
+struct TriggerPrimitiveTypeAdapter
 {
-  using FrameType = SW_WIB_TRIGGERPRIMITIVE_STRUCT;
+  using FrameType = TriggerPrimitiveTypeAdapter;
   // data
   triggeralgs::TriggerPrimitive tp;
   // comparable based on start timestamp
-  bool operator<(const SW_WIB_TRIGGERPRIMITIVE_STRUCT& other) const
+  bool operator<(const TriggerPrimitiveTypeAdapter& other) const
   {
     return std::tie(this->tp.time_start, this->tp.channel) < std::tie(other.tp.time_start, other.tp.channel);
   }
@@ -58,19 +58,19 @@ struct SW_WIB_TRIGGERPRIMITIVE_STRUCT
 
   FrameType* end() { return (this + 1); } // NOLINT
 
-  size_t get_payload_size() { return TP_SIZE; }
+  size_t get_payload_size() { return kTriggerPrimitive; }
 
   size_t get_num_frames() { return 1; }
 
-  size_t get_frame_size() { return TP_SIZE; }
+  size_t get_frame_size() { return kTriggerPrimitive; }
 
   static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
   static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTriggerPrimitive;
   static const constexpr uint64_t expected_tick_difference = 25; // NOLINT(build/unsigned)
 };
 
-static_assert(sizeof(struct SW_WIB_TRIGGERPRIMITIVE_STRUCT) == sizeof(triggeralgs::TriggerPrimitive),
-              "Check your assumptions on SW_WIB_TRIGGERPRIMITIVE_STRUCT");
+static_assert(sizeof(struct TriggerPrimitiveTypeAdapter) == sizeof(triggeralgs::TriggerPrimitive),
+              "Check your assumptions on TriggerPrimitiveTypeAdapter");
 
 } // namespace types
 } // namespace fdreadoutlibs

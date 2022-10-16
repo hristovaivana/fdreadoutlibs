@@ -89,7 +89,7 @@ public:
     try {
       auto queue_index = appfwk::connection_index(args, {});
       if (queue_index.find("tp_out") != queue_index.end()) {
-        m_tp_sink = get_iom_sender<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>(queue_index["tp_out"]);
+        m_tp_sink = get_iom_sender<types::TriggerPrimitiveTypeAdapter>(queue_index["tp_out"]);
       }
       if (queue_index.find("tpset_out") != queue_index.end()) {
         m_tpset_sink = get_iom_sender<trigger::TPSet>(queue_index["tpset_out"]);
@@ -102,7 +102,7 @@ public:
     try {
       auto queue_index = appfwk::connection_index(args, {});
       if (queue_index.find("tp_out") != queue_index.end()) {
-        m_tp_sink = get_iom_sender<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>(queue_index["tp_out"]);
+        m_tp_sink = get_iom_sender<types::TriggerPrimitiveTypeAdapter>(queue_index["tp_out"]);
       }
       if (queue_index.find("tpset_out") != queue_index.end()) {
         m_tpset_sink = get_iom_sender<trigger::TPSet>(queue_index["tpset_out"]);
@@ -404,7 +404,7 @@ private:
   // interface to DS
   bool m_fw_tpg_enabled;
   bool m_enable_fake_timestamp;
-  std::shared_ptr<iomanager::SenderConcept<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>> m_tp_sink;
+  std::shared_ptr<iomanager::SenderConcept<types::TriggerPrimitiveTypeAdapter>> m_tp_sink;
   std::shared_ptr<iomanager::SenderConcept<trigger::TPSet>> m_tpset_sink;
   std::unique_ptr<WIB2TPHandler> m_tphandler;
   std::atomic<uint64_t> m_tps_dropped{ 0 }; // NOLINT
