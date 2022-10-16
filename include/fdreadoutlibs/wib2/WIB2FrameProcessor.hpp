@@ -24,6 +24,7 @@
 #include "detchannelmaps/TPCChannelMap.hpp"
 #include "detdataformats/wib2/WIB2Frame.hpp"
 #include "fdreadoutlibs/FDReadoutTypes.hpp"
+#include "fdreadoutlibs/DUNEWIBSuperChunkTypeAdapter.hpp"
 #include "fdreadoutlibs/wib2/WIB2TPHandler.hpp"
 #include "rcif/cmd/Nljs.hpp"
 #include "trigger/TPSet.hpp"
@@ -61,13 +62,13 @@ enum WIB2CollectionOrInduction {
   kInduction
 };
 
-class WIB2FrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>
+class WIB2FrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>
 {
 
 public:
-  using inherited = readoutlibs::TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>;
-  using frameptr = types::WIB2_SUPERCHUNK_STRUCT*;
-  using constframeptr = const types::WIB2_SUPERCHUNK_STRUCT*;
+  using inherited = readoutlibs::TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>;
+  using frameptr = types::DUNEWIBSuperChunkTypeAdapter*;
+  using constframeptr = const types::DUNEWIBSuperChunkTypeAdapter*;
   using wibframeptr = dunedaq::detdataformats::wib2::WIB2Frame*;
   using timestamp_t = std::uint64_t; // NOLINT(build/unsigned)
 
@@ -75,7 +76,7 @@ public:
   typedef int (*chan_map_fn_t)(int);
 
   explicit WIB2FrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
-    : TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>(error_registry)
+    : TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>(error_registry)
     , m_sw_tpg_enabled(false)
     , m_ind_thread_should_run(false)
     , m_coll_primfind_dest(nullptr)
@@ -237,7 +238,7 @@ public:
   {
     auto config = cfg["rawdataprocessorconf"].get<readoutlibs::readoutconfig::RawDataProcessorConf>();
     m_sourceid.id = config.source_id;
-    m_sourceid.subsystem = types::WIB2_SUPERCHUNK_STRUCT::subsystem;
+    m_sourceid.subsystem = types::DUNEWIBSuperChunkTypeAdapter::subsystem;
     m_error_counter_threshold = config.error_counter_threshold;
     m_error_reset_freq = config.error_reset_freq;
 
@@ -253,7 +254,7 @@ public:
       //   200000, false, 0, true, 64); // 64 byte aligned
 
       // Setup parallel post-processing
-      TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_postprocess_task(
+      TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::add_postprocess_task(
         std::bind(&WIB2FrameProcessor::find_collection_hits, this, std::placeholders::_1));
 
       // start the thread for induction hit finding
@@ -263,10 +264,10 @@ public:
     }
 
     // Setup pre-processing pipeline
-    TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_preprocess_task(
+    TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::add_preprocess_task(
       std::bind(&WIB2FrameProcessor::timestamp_check, this, std::placeholders::_1));
 
-    TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::conf(cfg);
+    TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::conf(cfg);
   }
 
   void scrap(const nlohmann::json& args) override
@@ -279,7 +280,7 @@ public:
    }
       m_tphandler.reset();
 
-    TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::scrap(args);
+    TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::scrap(args);
   }
 
   void get_info(opmonlib::InfoCollector& ci, int level)
@@ -304,7 +305,7 @@ public:
     }
     m_t0 = now;
 
-    readoutlibs::TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::get_info(ci, level);
+    readoutlibs::TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::get_info(ci, level);
     ci.add(info);
   }
 
@@ -330,7 +331,7 @@ protected:
     static constexpr uint64_t END_OF_MESSAGES = UINT64_MAX; // NOLINT(build/unsigned)
   };
 
-  void postprocess_example(const types::WIB2_SUPERCHUNK_STRUCT* fp)
+  void postprocess_example(const types::DUNEWIBSuperChunkTypeAdapter* fp)
   {
     TLOG() << "Postprocessing: " << fp->get_first_timestamp();
   }
@@ -341,7 +342,7 @@ protected:
   void timestamp_check(frameptr fp)
   {
 
-    uint16_t wib2_tick_difference = types::WIB2_SUPERCHUNK_STRUCT::expected_tick_difference;
+    uint16_t wib2_tick_difference = types::DUNEWIBSuperChunkTypeAdapter::expected_tick_difference;
     uint16_t wib2_superchunk_tick_difference = wib2_tick_difference * fp->get_num_frames();
 
     // If EMU data, emulate perfectly incrementing timestamp

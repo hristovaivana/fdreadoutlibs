@@ -12,6 +12,7 @@
 #include "TPGConstants_wib2.hpp"
 #include "detdataformats/wib2/WIB2Frame.hpp"
 #include "fdreadoutlibs/ProtoWIBSuperChunkTypeAdapter.hpp"
+#include "fdreadoutlibs/DUNEWIBSuperChunkTypeAdapter.hpp"
 #include "fdreadoutlibs/FDReadoutTypes.hpp"
 
 #include <array>
@@ -708,7 +709,7 @@ expand_message_adcs_inplace(const dunedaq::fdreadoutlibs::types::ProtoWIBSuperCh
 //==============================================================================
 // for wib2 
 inline void
-expand_message_adcs_inplace_wib2(const dunedaq::fdreadoutlibs::types::WIB2_SUPERCHUNK_STRUCT* __restrict__ ucs,
+expand_message_adcs_inplace_wib2(const dunedaq::fdreadoutlibs::types::DUNEWIBSuperChunkTypeAdapter* __restrict__ ucs,
                             swtpg_wib2::MessageRegistersCollection* __restrict__ collection_registers,
                             swtpg_wib2::MessageRegistersInduction* __restrict__ induction_registers)
 {

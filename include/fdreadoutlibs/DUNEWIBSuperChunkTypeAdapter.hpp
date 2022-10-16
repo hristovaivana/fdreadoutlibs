@@ -26,13 +26,13 @@ namespace types {
  * 12[WIB2 frames] x 472[Bytes] = 5664[Bytes]
  * */
 const constexpr std::size_t WIB2_SUPERCHUNK_SIZE = 5664; // for 12: 5664
-struct WIB2_SUPERCHUNK_STRUCT
+struct DUNEWIBSuperChunkTypeAdapter
 {
   using FrameType = dunedaq::detdataformats::wib2::WIB2Frame;
   // data
   char data[WIB2_SUPERCHUNK_SIZE];
   // comparable based on first timestamp
-  bool operator<(const WIB2_SUPERCHUNK_STRUCT& other) const
+  bool operator<(const DUNEWIBSuperChunkTypeAdapter& other) const
   {
     auto thisptr = reinterpret_cast<const dunedaq::detdataformats::wib2::WIB2Frame*>(&data);        // NOLINT
     auto otherptr = reinterpret_cast<const dunedaq::detdataformats::wib2::WIB2Frame*>(&other.data); // NOLINT
@@ -89,7 +89,7 @@ struct WIB2_SUPERCHUNK_STRUCT
 };
 
 static_assert(sizeof(struct dunedaq::detdataformats::wib2::WIB2Frame)*12 == WIB2_SUPERCHUNK_SIZE,
-              "Check your assumptions on WIB2_SUPERCHUNK_STRUCT");
+              "Check your assumptions on DUNEWIBSuperChunkTypeAdapter");
 
 
 } // namespace types
