@@ -27,13 +27,13 @@ namespace types {
  * that is called a SuperChunk. Default mode is with 12 frames:
  * 12[WIB frames] x 464[Bytes] = 5568[Bytes]
  */
-const constexpr std::size_t WIB_SUPERCHUNK_SIZE = 5568; // for 12: 5568
+const constexpr std::size_t kProtoWIBSuperChunkSize = 5568; // for 12: 5568
 struct ProtoWIBSuperChunkTypeAdapter
 {
   using FrameType = dunedaq::detdataformats::wib::WIBFrame;
 
   // data
-  char data[WIB_SUPERCHUNK_SIZE];
+  char data[kProtoWIBSuperChunkSize];
   // comparable based on first timestamp
   bool operator<(const ProtoWIBSuperChunkTypeAdapter& other) const
   {
@@ -80,7 +80,7 @@ struct ProtoWIBSuperChunkTypeAdapter
 
   FrameType* end()
   {
-    return reinterpret_cast<FrameType*>(data + WIB_SUPERCHUNK_SIZE); // NOLINT
+    return reinterpret_cast<FrameType*>(data + kProtoWIBSuperChunkSize); // NOLINT
   }
 
   size_t get_payload_size() { return 5568; }
@@ -95,7 +95,7 @@ struct ProtoWIBSuperChunkTypeAdapter
   static const constexpr uint64_t expected_tick_difference = 25; // 2 MHz@50MHz clock // NOLINT(build/unsigned)
 };
 
-static_assert(sizeof(struct dunedaq::detdataformats::wib::WIBFrame)*12 == WIB_SUPERCHUNK_SIZE,
+static_assert(sizeof(struct dunedaq::detdataformats::wib::WIBFrame)*12 == kProtoWIBSuperChunkSize,
               "Check your assumptions on ProtoWIBSuperChunkTypeAdapter");
 
 } // namespace types
