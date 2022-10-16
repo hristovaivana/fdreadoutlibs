@@ -5,8 +5,8 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_FDREADOUTTYPES_HPP_
-#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_FDREADOUTTYPES_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_VARIABLESIZEPAYLOADTYPEADAPTER_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_VARIABLESIZEPAYLOADTYPEADAPTER_HPP_
 
 #include <cstdint> // uint_t types
 #include <memory>  // unique_ptr
@@ -39,4 +39,4 @@ struct VariableSizePayloadTypeAdapter
 } // namespace fdreadoutlibs
 } // namespace dunedaq
 
-#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_FDREADOUTTYPES_HPP_
+#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_VARIABLESIZEPAYLOADTYPEADAPTER_HPP_

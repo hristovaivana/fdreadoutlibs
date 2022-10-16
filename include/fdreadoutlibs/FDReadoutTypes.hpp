@@ -1,8 +1,0 @@
-// #include "fdreadoutlibs/ProtoWIBSuperChunkTypeAdapter.hpp"
-// #include "fdreadoutlibs/DUNEWIBSuperChunkTypeAdapter.hpp"
-// #include "fdreadoutlibs/DAPHNESuperChunkTypeAdapter.hpp"
-// #include "fdreadoutlibs/TDEAMCFrameTypeAdapter.hpp"
-// #include "fdreadoutlibs/SSPFrameTypeAdapter.hpp"
-// #include "fdreadoutlibs/fdreadoutlibs/TriggerPrimitiveTypeAdapter.hpp"
-// #include "fdreadoutlibs/RawFWDUNEWIBTriggerPrimitiveSuperChunkTypeAdapter.hpp"
-// #include "fdreadoutlibs/VariableSizePayloadTypeAdapter.hpp"

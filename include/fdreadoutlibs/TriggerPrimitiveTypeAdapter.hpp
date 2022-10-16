@@ -1,15 +1,9 @@
-#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_SW_PROTOWIB_TRIGGERPRIMITIVE_HPP_
-#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_SW_PROTOWIB_TRIGGERPRIMITIVE_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_SW_PROTOWIB_TRIGGERPRIMITIVETYPEADAPTER_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_SW_PROTOWIB_TRIGGERPRIMITIVETYPEADAPTER_HPP_
 
 
 #include "daqdataformats/FragmentHeader.hpp"
 #include "daqdataformats/SourceID.hpp"
-// #include "detdataformats/daphne/DAPHNEFrame.hpp"
-// #include "detdataformats/ssp/SSPTypes.hpp"
-// #include "detdataformats/wib/WIBFrame.hpp"
-// #include "detdataformats/wib2/WIB2Frame.hpp"
-// #include "detdataformats/tde/TDE16Frame.hpp"
-// #include "detdataformats/fwtp/RawTp.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 
 #include <cstdint> // uint_t types
@@ -76,4 +70,4 @@ static_assert(sizeof(struct TriggerPrimitiveTypeAdapter) == sizeof(triggeralgs::
 } // namespace fdreadoutlibs
 } // namespace dunedaq
 
-#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_SW_PROTOWIB_TRIGGERPRIMITIVE_HPP_
+#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_SW_PROTOWIB_TRIGGERPRIMITIVETYPEADAPTER_HPP_

@@ -1,15 +1,9 @@
-#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DUNEWIBSUPERCHUNK_HPP_
-#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DUNEWIBSUPERCHUNK_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DUNEWIBSUPERCHUNKTYPEADAPTER_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DUNEWIBSUPERCHUNKTYPEADAPTER_HPP_
 
 #include "daqdataformats/FragmentHeader.hpp"
 #include "daqdataformats/SourceID.hpp"
-// #include "detdataformats/daphne/DAPHNEFrame.hpp"
-// #include "detdataformats/ssp/SSPTypes.hpp"
-// #include "detdataformats/wib/WIBFrame.hpp"
 #include "detdataformats/wib2/WIB2Frame.hpp"
-// #include "detdataformats/tde/TDE16Frame.hpp"
-// #include "detdataformats/fwtp/RawTp.hpp"
-// #include "triggeralgs/TriggerPrimitive.hpp"
 
 #include <cstdint> // uint_t types
 #include <memory>  // unique_ptr
@@ -96,4 +90,4 @@ static_assert(sizeof(struct dunedaq::detdataformats::wib2::WIB2Frame)*12 == kDUN
 } // namespace fdreadoutlibs
 } // namespace dunedaq
 
-#endif /* FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DUNEWIBSUPERCHUNK_HPP_ */
+#endif /* FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DUNEWIBSUPERCHUNKTYPEADAPTER_HPP_ */
