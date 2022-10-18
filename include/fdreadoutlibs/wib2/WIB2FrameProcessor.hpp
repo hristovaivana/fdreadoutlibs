@@ -223,7 +223,6 @@ public:
 
     // Reset stats
     m_first_hit = true;
-    m_counter = 0;
 
     m_t0 = std::chrono::high_resolution_clock::now();
     m_new_hits = 0;
@@ -283,11 +282,10 @@ public:
       TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_postprocess_task(
         std::bind(&WIB2FrameProcessor::find_hits, this, std::placeholders::_1, m_wib2_frame_handler.get()));
 
-      //TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_postprocess_task(
-      //  std::bind(&WIB2FrameProcessor::find_hits, this, std::placeholders::_1, m_wib2_frame_handler_second_half.get()));
+      TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_postprocess_task(
+        std::bind(&WIB2FrameProcessor::find_hits, this, std::placeholders::_1, m_wib2_frame_handler_second_half.get()));
 
-
-      // Start the thread for adding hits to tphandler
+      // Launch the thread for adding hits to tphandler
       TLOG() << "Launch thread for adding hits to tphandler"; 
       m_add_hits_tphandler_thread_should_run.store(true);
       m_add_hits_tphandler_thread = std::thread(&WIB2FrameProcessor::add_hits_to_tphandler, this);
@@ -445,12 +443,9 @@ protected:
     swtpg_wib2::MessageRegisters registers_array;
     registers_selector register_selection = frame_handler->get_registers_selector();    
     expand_wib2_adcs(fp, &registers_array, register_selection.cut, register_selection.register_group); 
-    
-    
-    
+      
 
     if (m_first_hit) {
-
       std::thread::id thread_id = std::this_thread::get_id();
       pid_t tid;
       tid = syscall(SYS_gettid);
@@ -460,7 +455,7 @@ protected:
 
       frame_handler->m_tpg_processing_info->setState(registers_array);
 
-      // Debugging 
+      // Debugging statements 
       m_link = wfptr->header.link;
       m_crate_no = wfptr->header.crate;
       m_slot_no = wfptr->header.slot;
@@ -480,37 +475,22 @@ protected:
     *frame_handler->get_primfind_dest() = swtpg_wib2::MAGIC;
     swtpg_wib2::process_window_avx2(*frame_handler->m_tpg_processing_info);
     
+    // Insert output of the AVX processing into the swtpg_output 
     swtpg_output swtpg_processing_result = {frame_handler->get_primfind_dest(), timestamp};
 
+    // Push to the MPMC tphandler queue. Used the default timeout of 100 ms. 
     m_tphandler_queue.push(std::move(swtpg_processing_result), std::chrono::milliseconds(100));
 
-    
-    // Add hits to TPHandler to build the TP 
-    //unsigned int nhits = add_hits_to_tphandler(frame_handler->get_primfind_dest(), timestamp);
+     
 
-    
-    //if (nhits > 0) {
-    //   TLOG_DEBUG(0) << "Non null hits: " << nhits << " for ts: " << timestamp;
-    //}
-    
-    // Update the number of hits found needed to update the Grafana
-    //m_num_hits_coll += nhits;
-    //m_coll_hits_count += nhits;
-    
-
-//    if (m_first_hit || m_counter < 100) {
-    if (m_counter < 100) {
-      TLOG() << "Total hits in first superchunk ";// << nhits;      
+    if (m_first_hit) {
+      TLOG() << "Processed the first superchunk ";//;      
       m_first_hit = false;
-      //m_tphandler_queue.push(std::move(swtpg_processing_result), std::chrono::milliseconds(100));
     }
-    
-    m_counter += 1;
-    
+        
     
    
 
-    //m_tphandler->try_sending_tpsets(timestamp);
   }
 
 
@@ -615,19 +595,17 @@ protected:
           unsigned int nhits = process_swtpg_hits(result_from_swtpg.output_location, result_from_swtpg.timestamp);
 
           // AAA: debugging statement for TPHandler
-          if (nhits > 0) {
-             TLOG_DEBUG(0) << "Non null hits: " << nhits << " for ts: " << result_from_swtpg.timestamp;
-          }
+          //if (nhits > 0) {
+          //   TLOG_DEBUG(0) << "Non null hits: " << nhits << " for ts: " << result_from_swtpg.timestamp;
+          //}
       
           m_num_hits_coll += nhits;
           m_coll_hits_count += nhits;
 
           m_tphandler->try_sending_tpsets(result_from_swtpg.timestamp);
-
-          //TLOG() << "AAA: checking output of hits to tphandler" << result_from_swtpg.timestamp;
+          
         } catch (const ers::Issue& excpt) {
-        // AAA: change this ERS issue  
-        throw readoutlibs::ResourceQueueError(ERS_HERE, "add_hits_tphandler", "DefaultRequestHandlerModel", excpt);
+        throw readoutlibs::ResourceQueueError(ERS_HERE, "tphandler queue", "DefaultRequestHandlerModel", excpt);
       }
     } // m_add_hits_tphandler_thread_should_run
 
@@ -657,7 +635,6 @@ private:
   std::atomic<int> m_num_tps_pushed{ 0 };
 
   bool m_first_hit = true;
-  int m_counter;
 
   std::atomic<bool> m_add_hits_tphandler_thread_should_run;
 
