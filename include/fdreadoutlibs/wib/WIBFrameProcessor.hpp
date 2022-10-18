@@ -59,6 +59,8 @@ enum CollectionOrInduction {
 }
 
 namespace dunedaq {
+DUNE_DAQ_TYPESTRING(detdataformats::wib::WIBFrame, "WIBFrame")
+
 namespace fdreadoutlibs {
 
 class WIBFrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::WIB_SUPERCHUNK_STRUCT>
@@ -249,7 +251,7 @@ public:
       tpset_sourceid.id = config.tpset_sourceid;
       tpset_sourceid.subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
       m_tphandler.reset(
-        new WIBTPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, tpset_sourceid, config.tpset_topic));
+        new WIBTPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, tpset_sourceid));
 
       // m_induction_items_to_process = std::make_unique<readoutlibs::IterableQueueModel<InductionItemToProcess>>(
       //   200000, false, 0, true, 64); // 64 byte aligned
