@@ -286,10 +286,10 @@ public:
         std::bind(&WIB2FrameProcessor::find_hits, this, std::placeholders::_1, m_wib2_frame_handler_second_half.get()));
 
       // Launch the thread for adding hits to tphandler
-      TLOG() << "Launch thread for adding hits to tphandler"; 
       m_add_hits_tphandler_thread_should_run.store(true);
       m_add_hits_tphandler_thread = std::thread(&WIB2FrameProcessor::add_hits_to_tphandler, this);
-
+      TLOG() << "Launched thread for adding hits to tphandler"; 
+      
 
     }
 
@@ -582,38 +582,30 @@ protected:
   void add_hits_to_tphandler() {
 
     std::stringstream thread_name;
-    thread_name << "process_hits_tphandler-" << m_sourceid.id;
-    pthread_setname_np(pthread_self(), thread_name.str().c_str());
-
-    TLOG() << "Renamed thread: " << thread_name.str().c_str();
+    thread_name << "tphandler-" << m_sourceid.id;
+    pthread_setname_np(pthread_self(), thread_name.str().c_str());    
 
     while (m_add_hits_tphandler_thread_should_run.load()) {
       swtpg_output result_from_swtpg; 
-      while (m_tphandler_queue.can_pop()) {  
-        try {
-          m_tphandler_queue.pop(result_from_swtpg, std::chrono::milliseconds(100));
-          unsigned int nhits = process_swtpg_hits(result_from_swtpg.output_location, result_from_swtpg.timestamp);
+     
+      bool try_pop_from_tphandler_queue = m_tphandler_queue.try_pop(result_from_swtpg, std::chrono::milliseconds(100));
+      if (try_pop_from_tphandler_queue) {
+        // Process the trigger primitve
+        unsigned int nhits = process_swtpg_hits(result_from_swtpg.output_location, result_from_swtpg.timestamp);
 
-          // AAA: debugging statement for TPHandler
-          //if (nhits > 0) {
-          //   TLOG_DEBUG(0) << "Non null hits: " << nhits << " for ts: " << result_from_swtpg.timestamp;
-          //}
+        // Debugging statement for TPHandler
+        //if (nhits > 0) {
+        //   TLOG_DEBUG(0) << "Non null hits: " << nhits << " for ts: " << result_from_swtpg.timestamp;
+        //}
+    
+        m_num_hits_coll += nhits;
+        m_coll_hits_count += nhits;
+
+        m_tphandler->try_sending_tpsets(result_from_swtpg.timestamp);
+
+      } 
       
-          m_num_hits_coll += nhits;
-          m_coll_hits_count += nhits;
-
-          m_tphandler->try_sending_tpsets(result_from_swtpg.timestamp);
-          
-        } catch (const ers::Issue& excpt) {
-        throw readoutlibs::ResourceQueueError(ERS_HERE, "tphandler queue", "DefaultRequestHandlerModel", excpt);
-      }
     } // m_add_hits_tphandler_thread_should_run
-
-
-      
-    }
-
-
 
   }
 
