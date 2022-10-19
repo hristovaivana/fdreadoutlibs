@@ -57,8 +57,8 @@ get_register_to_offline_channel_map(const dunedaq::detdataformats::wib::WIBFrame
   // corresponding offline channel number, minus the minimum channel
   // number we just calculated (so we don't overflow the 12 bits we
   // have available)
-  dunedaq::fdreadoutlibs::types::WIB_SUPERCHUNK_STRUCT superchunk;
-  memset(superchunk.data, 0, sizeof(dunedaq::fdreadoutlibs::types::WIB_SUPERCHUNK_STRUCT));
+  dunedaq::fdreadoutlibs::types::ProtoWIBSuperChunkTypeAdapter superchunk;
+  memset(superchunk.data, 0, sizeof(dunedaq::fdreadoutlibs::types::ProtoWIBSuperChunkTypeAdapter));
 
   dunedaq::detdataformats::wib::WIBFrame* test_frame =
     reinterpret_cast<dunedaq::detdataformats::wib::WIBFrame*>(&superchunk);

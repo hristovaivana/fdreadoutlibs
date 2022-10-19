@@ -24,7 +24,9 @@
 #include "readoutlibs/utils/RateLimiter.hpp"
 #include "readoutlibs/utils/ReusableThread.hpp"
 
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+
+#include "fdreadoutlibs/DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter.hpp"
+
 #include "detdataformats/wib/RawWIBTp.hpp"
 
 #include <functional>
@@ -64,7 +66,7 @@ public:
   void set_sender(const std::string& sink_name)
   {
     if (!m_sink_is_set) {
-      m_raw_data_sink = get_iom_sender<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>(sink_name);
+      m_raw_data_sink = get_iom_sender<types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter>(sink_name);
       m_sink_is_set = true;
     } else {
       // ers::error();
@@ -191,7 +193,7 @@ private:
 
   // RAW SINK
   std::chrono::milliseconds m_sink_queue_timeout_ms;
-  using raw_sink_qt = iomanager::SenderConcept<types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT>;
+  using raw_sink_qt = iomanager::SenderConcept<types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter>;
   std::shared_ptr<raw_sink_qt> m_raw_data_sink;
 
   bool m_sink_is_set = false;
@@ -209,7 +211,7 @@ private:
   double m_rate_khz;
   daqdataformats::SourceID m_sourceid;
 
-  types::RAW_WIB_TRIGGERPRIMITIVE_STRUCT m_payload_wrapper;
+  types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter m_payload_wrapper;
 
 };
 

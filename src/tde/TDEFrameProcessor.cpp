@@ -17,10 +17,12 @@ namespace fdreadoutlibs {
 void 
 TDEFrameProcessor::conf(const nlohmann::json& args)
 {
-  TaskRawDataProcessorModel<types::TDE_AMC_STRUCT>::add_preprocess_task(
+  TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter
+>::add_preprocess_task(
     std::bind(&TDEFrameProcessor::timestamp_check, this, std::placeholders::_1));
   // m_tasklist.push_back( std::bind(&TDEFrameProcessor::frame_error_check, this, std::placeholders::_1) );
-  TaskRawDataProcessorModel<types::TDE_AMC_STRUCT>::conf(args);
+  TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter
+>::conf(args);
 }
 
 /**

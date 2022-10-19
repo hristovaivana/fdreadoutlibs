@@ -19,7 +19,8 @@
 #include "readoutlibs/utils/ReusableThread.hpp"
 
 #include "detdataformats/ssp/SSPTypes.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+
+#include "fdreadoutlibs/SSPFrameTypeAdapter.hpp"
 
 #include <atomic>
 #include <functional>
@@ -34,22 +35,22 @@ using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-class SSPFrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::SSP_FRAME_STRUCT>
+class SSPFrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::SSPFrameTypeAdapter>
 {
 
 public:
-  using inherited = readoutlibs::TaskRawDataProcessorModel<types::SSP_FRAME_STRUCT>;
-  using frameptr = types::SSP_FRAME_STRUCT*;
+  using inherited = readoutlibs::TaskRawDataProcessorModel<types::SSPFrameTypeAdapter>;
+  using frameptr = types::SSPFrameTypeAdapter*;
   using timestamp_t = std::uint64_t; // NOLINT(build/unsigned)
 
   // Channel map funciton type
   typedef int (*chan_map_fn_t)(int);
 
   explicit SSPFrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
-    : readoutlibs::TaskRawDataProcessorModel<types::SSP_FRAME_STRUCT>(error_registry)
+    : readoutlibs::TaskRawDataProcessorModel<types::SSPFrameTypeAdapter>(error_registry)
   {
     // Setup pre-processing pipeline
-    readoutlibs::TaskRawDataProcessorModel<types::SSP_FRAME_STRUCT>::add_preprocess_task(
+    readoutlibs::TaskRawDataProcessorModel<types::SSPFrameTypeAdapter>::add_preprocess_task(
       std::bind(&SSPFrameProcessor::timestamp_check, this, std::placeholders::_1));
   }
 
@@ -64,7 +65,7 @@ public:
   void conf(const nlohmann::json& cfg) override
   {
     // Setup pre-processing pipeline
-    readoutlibs::TaskRawDataProcessorModel<types::SSP_FRAME_STRUCT>::add_preprocess_task(
+    readoutlibs::TaskRawDataProcessorModel<types::SSPFrameTypeAdapter>::add_preprocess_task(
       std::bind(&SSPFrameProcessor::timestamp_check, this, std::placeholders::_1));
 
     inherited::conf(cfg);
