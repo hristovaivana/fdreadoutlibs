@@ -83,7 +83,6 @@ public:
 
       m_sourceid.id = m_link_conf.source_id;
       m_sourceid.subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
-      ;
 
       m_file_source =
         std::make_unique<readoutlibs::FileSourceBuffer>(m_link_conf.input_limit, RAW_WIB_TP_SUBFRAME_SIZE);
