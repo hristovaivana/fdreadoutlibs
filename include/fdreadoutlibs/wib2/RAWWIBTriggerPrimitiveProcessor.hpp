@@ -20,6 +20,7 @@
 
 #include "detchannelmaps/TPCChannelMap.hpp"
 #include "fdreadoutlibs/wib2/WIB2TPHandler.hpp"
+#include "fdreadoutlibs/DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter.hpp"
 #include "rcif/cmd/Nljs.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 #include "trigger/TPSet.hpp"

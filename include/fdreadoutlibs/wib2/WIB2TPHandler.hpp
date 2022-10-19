@@ -13,6 +13,7 @@
 #include "readoutlibs/ReadoutIssues.hpp"
 #include "trigger/TPSet.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
+#include "fdreadoutlibs/TriggerPrimitiveTypeAdapter.hpp"
 
 #include <queue>
 #include <utility>
