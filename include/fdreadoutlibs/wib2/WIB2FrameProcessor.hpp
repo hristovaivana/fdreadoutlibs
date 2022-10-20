@@ -276,8 +276,12 @@ public:
 
       m_channel_map = dunedaq::detchannelmaps::make_map(config.channel_map_name);
 
+      daqdataformats::SourceID tpset_sourceid;
+      tpset_sourceid.id = config.tpset_sourceid;
+      tpset_sourceid.subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
+
       m_tphandler.reset(
-        new WIB2TPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, m_sourceid, config.tpset_topic));
+        new WIB2TPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, tpset_sourceid, config.tpset_topic));
 
       TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_postprocess_task(
         std::bind(&WIB2FrameProcessor::find_hits, this, std::placeholders::_1, m_wib2_frame_handler.get()));
