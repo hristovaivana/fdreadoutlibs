@@ -36,12 +36,13 @@ DAPHNEStreamFrameProcessor::timestamp_check(frameptr fp)
 {
   // If EMU data, emulate perfectly incrementing timestamp
   if (inherited::m_emulator_mode) { // emulate perfectly incrementing timestamp
-    // RS warning : not fixed rate!
-    if (m_first_ts_fake) {
-      fp->fake_timestamps(m_previous_ts, 16);
-      m_first_ts_fake = false;
-    } else {
-      fp->fake_timestamps(m_previous_ts + 192, 16);
+    uint64_t ts_next = m_previous_ts + 64; // NOLINT(build/unsigned)
+    auto df = reinterpret_cast<daphneframeptr>(((uint8_t*)fp));  // NOLINT
+    for (unsigned int i = 0; i < fp->get_num_frames(); ++i) { // NOLINT(build/unsigned)
+      //auto wfh = const_cast<dunedaq::detdataformats::wib2::WIB2Header*>(wf->get_wib_header());
+      df->set_timestamp(ts_next);
+      ts_next += 64;
+      df++;
     }
   }
 
