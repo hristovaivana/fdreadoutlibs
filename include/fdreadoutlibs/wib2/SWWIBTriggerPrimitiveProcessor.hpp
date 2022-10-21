@@ -20,7 +20,7 @@
 #include "triggeralgs/TriggerPrimitive.hpp"
 
 #include "detdataformats/wib2/WIB2Frame.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+
 
 #include <atomic>
 #include <functional>

@@ -11,7 +11,9 @@
 
 #include "TPGConstants_wib2.hpp"
 #include "detdataformats/wib2/WIB2Frame.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+#include "fdreadoutlibs/ProtoWIBSuperChunkTypeAdapter.hpp"
+#include "fdreadoutlibs/DUNEWIBSuperChunkTypeAdapter.hpp"
+
 
 #include <array>
 #include <immintrin.h>
@@ -227,44 +229,15 @@ inline __m256i unpack_one_register(const dunedaq::detdataformats::wib2::WIB2Fram
     return both;
 }
 
-//==============================================================================
-/*
-inline void
-expand_message_adcs_inplace_wib2(const dunedaq::fdreadoutlibs::types::WIB2_SUPERCHUNK_STRUCT* __restrict__ ucs,
-                            swtpg_wib2::MessageRegisters* __restrict__ register_array)
-{
 
-  for (size_t iframe = 0; iframe < swtpg_wib2::FRAMES_PER_MSG; ++iframe) {
-    const dunedaq::detdataformats::wib2::WIB2Frame* frame =
-      reinterpret_cast<const dunedaq::detdataformats::wib2::WIB2Frame*>(ucs) + iframe; // NOLINT
- 
-    for (size_t iblock = 0; iblock < swtpg_wib2::NUM_REGISTERS_PER_FRAME; ++iblock) {
-      // Arrange it so that adjacent times are adjacent in
-      // memory, which will hopefully make the trigger primitive
-      // finding code itself a little easier
-      //
-      // So the memory now looks like:
-      // (register 0, time 0) (register 0, time 1) ... (register 0, time 11)
-      // (register 1, time 0) (register 1, time 1) ... (register 1, time 11)
-      // ...
-      // (register 5, time 0) (register 5, time 1) ... (register 5, time 11)
-      register_array->set_ymm(iframe + iblock * swtpg_wib2::FRAMES_PER_MSG, swtpg_wib2::unpack_one_register(frame->adc_words+7*iblock));
-    }
-    // Same for induction registers
-    //for (size_t iblock = 0; iblock < swtpg_wib2::INDUCTION_REGISTERS_PER_FRAME ; ++iblock) {
-    //  induction_registers->set_ymm(iframe + iblock * swtpg_wib2::FRAMES_PER_MSG, swtpg_wib2::unpack_one_register(frame->adc_words+7*(iblock+swtpg_wib2::NUM_REGISTERS_PER_FRAME)));
-    //}
-    
-
-  }
-}
-*/
 
 
 // Expand 14-bit ADCs to 16-bits using the WIB2 format
 inline void
-expand_wib2_adcs(const dunedaq::fdreadoutlibs::types::WIB2_SUPERCHUNK_STRUCT* __restrict__ ucs,
-                            swtpg_wib2::MessageRegisters* __restrict__ register_array, int cut, int register_group)
+expand_wib2_adcs(const dunedaq::fdreadoutlibs::types::DUNEWIBSuperChunkTypeAdapter* __restrict__ ucs,
+                            swtpg_wib2::MessageRegisters* __restrict__ register_array, 
+                            int cut, 
+                            int register_group)
 {
   for (size_t iframe = 0; iframe < swtpg_wib2::FRAMES_PER_MSG; ++iframe) {
     const dunedaq::detdataformats::wib2::WIB2Frame* frame =

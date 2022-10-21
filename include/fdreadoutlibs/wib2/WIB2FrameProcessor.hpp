@@ -1,7 +1,8 @@
 /**
- * @file WIB2FrameProcessor.hpp WIB specific Task based raw processor
+ * @file WIB2FrameProcessor.hpp WIB2 specific Task based raw processor
+ * @author Adam Abed Abud (adam.abed.abud@cern.ch)
  *
- * This is part of the DUNE DAQ , copyright 2020.
+ * This is part of the DUNE DAQ , copyright 2022.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
@@ -23,7 +24,11 @@
 
 #include "detchannelmaps/TPCChannelMap.hpp"
 #include "detdataformats/wib2/WIB2Frame.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+
+
+#include "fdreadoutlibs/DUNEWIBSuperChunkTypeAdapter.hpp"
+#include "fdreadoutlibs/TriggerPrimitiveTypeAdapter.hpp"
+
 #include "fdreadoutlibs/wib2/WIB2TPHandler.hpp"
 #include "rcif/cmd/Nljs.hpp"
 #include "trigger/TPSet.hpp"
@@ -57,11 +62,6 @@ using dunedaq::readoutlibs::logging::TLVL_TAKE_NOTE;
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-
-enum register_selector {
-  first_half,
-  second_half
-};
 
 struct registers_selector {
   int cut;
@@ -164,13 +164,14 @@ private:
 
 
 
-class WIB2FrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>
+
+class WIB2FrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>
 {
 
 public:
-  using inherited = readoutlibs::TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>;
-  using frameptr = types::WIB2_SUPERCHUNK_STRUCT*;
-  using constframeptr = const types::WIB2_SUPERCHUNK_STRUCT*;
+  using inherited = readoutlibs::TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>;
+  using frameptr = types::DUNEWIBSuperChunkTypeAdapter*;
+  using constframeptr = const types::DUNEWIBSuperChunkTypeAdapter*;
   using wibframeptr = dunedaq::detdataformats::wib2::WIB2Frame*;
   using timestamp_t = std::uint64_t; // NOLINT(build/unsigned)
 
@@ -178,7 +179,7 @@ public:
   typedef int (*chan_map_fn_t)(int);
 
   explicit WIB2FrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
-    : TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>(error_registry)
+    : TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>(error_registry)
     , m_sw_tpg_enabled(false)
     , m_add_hits_tphandler_thread_should_run(false)    
   {}
@@ -253,7 +254,7 @@ public:
     try {
       auto queue_index = appfwk::connection_index(args, {});
       if (queue_index.find("tp_out") != queue_index.end()) {
-        m_tp_sink = get_iom_sender<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>(queue_index["tp_out"]);
+        m_tp_sink = get_iom_sender<types::TriggerPrimitiveTypeAdapter>(queue_index["tp_out"]);
       }
       if (queue_index.find("tpset_out") != queue_index.end()) {
         m_tpset_sink = get_iom_sender<trigger::TPSet>(queue_index["tpset_out"]);
@@ -267,7 +268,7 @@ public:
   {
     auto config = cfg["rawdataprocessorconf"].get<readoutlibs::readoutconfig::RawDataProcessorConf>();
     m_sourceid.id = config.source_id;
-    m_sourceid.subsystem = types::WIB2_SUPERCHUNK_STRUCT::subsystem;
+    m_sourceid.subsystem = types::DUNEWIBSuperChunkTypeAdapter::subsystem;
     m_error_counter_threshold = config.error_counter_threshold;
     m_error_reset_freq = config.error_reset_freq;
 
@@ -283,10 +284,10 @@ public:
       m_tphandler.reset(
         new WIB2TPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, tpset_sourceid, config.tpset_topic));
 
-      TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_postprocess_task(
+      TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::add_postprocess_task(
         std::bind(&WIB2FrameProcessor::find_hits, this, std::placeholders::_1, m_wib2_frame_handler.get()));
 
-      TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_postprocess_task(
+      TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::add_postprocess_task(
         std::bind(&WIB2FrameProcessor::find_hits, this, std::placeholders::_1, m_wib2_frame_handler_second_half.get()));
 
       // Launch the thread for adding hits to tphandler
@@ -294,14 +295,13 @@ public:
       m_add_hits_tphandler_thread = std::thread(&WIB2FrameProcessor::add_hits_to_tphandler, this);
       TLOG() << "Launched thread for adding hits to tphandler"; 
       
-
     }
 
     // Setup pre-processing pipeline
-    TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_preprocess_task(
+    TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::add_preprocess_task(
       std::bind(&WIB2FrameProcessor::timestamp_check, this, std::placeholders::_1));
 
-    TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::conf(cfg);
+    TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::conf(cfg);
   }
 
   void scrap(const nlohmann::json& args) override
@@ -314,9 +314,7 @@ public:
    }    
     m_tphandler.reset();
 
-    TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::scrap(args);
-
-    
+    TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::scrap(args);
   }
 
   void get_info(opmonlib::InfoCollector& ci, int level)
@@ -341,7 +339,7 @@ public:
     }
     m_t0 = now;
 
-    readoutlibs::TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::get_info(ci, level);
+    readoutlibs::TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::get_info(ci, level);
     ci.add(info);
   }
 
@@ -353,8 +351,9 @@ protected:
   bool m_problem_reported = false;
   std::atomic<int> m_ts_error_ctr{ 0 };
 
-  
-  void postprocess_example(const types::WIB2_SUPERCHUNK_STRUCT* fp)
+
+
+  void postprocess_example(const types::DUNEWIBSuperChunkTypeAdapter* fp)
   {
     TLOG() << "Postprocessing: " << fp->get_first_timestamp();
   }
@@ -365,7 +364,7 @@ protected:
   void timestamp_check(frameptr fp)
   {
 
-    uint16_t wib2_tick_difference = types::WIB2_SUPERCHUNK_STRUCT::expected_tick_difference;
+    uint16_t wib2_tick_difference = types::DUNEWIBSuperChunkTypeAdapter::expected_tick_difference;
     uint16_t wib2_superchunk_tick_difference = wib2_tick_difference * fp->get_num_frames();
 
     // If EMU data, emulate perfectly incrementing timestamp
@@ -492,9 +491,6 @@ protected:
       m_first_hit = false;
     }
         
-    
-   
-
   }
 
 
@@ -652,7 +648,7 @@ private:
   int m_error_reset_freq;
 
 
-  std::shared_ptr<iomanager::SenderConcept<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>> m_tp_sink;
+  std::shared_ptr<iomanager::SenderConcept<types::TriggerPrimitiveTypeAdapter>> m_tp_sink;
   std::shared_ptr<iomanager::SenderConcept<trigger::TPSet>> m_tpset_sink;
   std::shared_ptr<iomanager::SenderConcept<detdataformats::wib2::WIB2Frame>> m_err_frame_sink;
 
@@ -661,7 +657,7 @@ private:
   // Select the registers where to process the frame expansion
   // E.g.: {2,0} --> divide registers by 2 (= 16/2) and select the first half
   // E.g.: {2,1} --> divide registers by 2 (= 16/2) and select the second half
-  // AAA: TODO: implmement the first parameters of the selection_of_register (cut selection)
+  // AAA: TODO: implmement the first parameter, i.e. cut selection. Probably not needed. 
   registers_selector selection_of_register = {2,0}; 
   std::unique_ptr<WIB2FrameHandler> m_wib2_frame_handler = std::make_unique<WIB2FrameHandler>(selection_of_register);
 
