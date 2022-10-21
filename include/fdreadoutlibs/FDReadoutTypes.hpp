@@ -342,9 +342,9 @@ static_assert(sizeof(struct DAPHNE_SUPERCHUNK_STRUCT) == DAPHNE_SUPERCHUNK_SIZE,
 
 /**
  * @brief For DAPHNE Stream the numbers are similar to DUNE-WIB
- * 12[DAPHNE frames] x 472[Bytes] = 5668[Bytes]
+ * 12[DAPHNE frames] x 472[Bytes] = 5664[Bytes]
  * */
-const constexpr std::size_t DAPHNE_STREAM_SUPERCHUNK_SIZE = 5668; // for 12: 5668
+const constexpr std::size_t DAPHNE_STREAM_SUPERCHUNK_SIZE = 5664; // for 12: 5664
 struct DAPHNE_STREAM_SUPERCHUNK_STRUCT
 {
   using FrameType = dunedaq::detdataformats::daphne::DAPHNEStreamFrame;
@@ -370,7 +370,7 @@ struct DAPHNE_STREAM_SUPERCHUNK_STRUCT
     frame->daq_header.timestamp_2 = ts >> 32;
   }
 
-  void fake_timestamps(uint64_t first_timestamp, uint64_t offset = 16) // NOLINT(build/unsigned)
+  void fake_timestamps(uint64_t first_timestamp, uint64_t offset = 64) // NOLINT(build/unsigned)
   {
     uint64_t ts_next = first_timestamp; // NOLINT(build/unsigned)
     for (unsigned int i = 0; i < 12; ++i) {
@@ -393,10 +393,10 @@ struct DAPHNE_STREAM_SUPERCHUNK_STRUCT
 
   FrameType* end()
   {
-    return reinterpret_cast<FrameType*>(data + DAPHNE_SUPERCHUNK_SIZE); // NOLINT
+    return reinterpret_cast<FrameType*>(data + DAPHNE_STREAM_SUPERCHUNK_SIZE); // NOLINT
   }
 
-  size_t get_payload_size() { return 5668; }
+  size_t get_payload_size() { return 5664; }
 
   size_t get_num_frames() { return 12; }
 
@@ -404,7 +404,7 @@ struct DAPHNE_STREAM_SUPERCHUNK_STRUCT
 
   static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kDetectorReadout;
   static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kDAPHNE;
-  static const constexpr uint64_t expected_tick_difference = 16; // NOLINT(build/unsigned)
+  static const constexpr uint64_t expected_tick_difference = 64; // NOLINT(build/unsigned)
 };
 static_assert(sizeof(struct DAPHNE_STREAM_SUPERCHUNK_STRUCT) == DAPHNE_STREAM_SUPERCHUNK_SIZE,
               "Check your assumptions on DAPHNE_STREAM_SUPERCHUNK_STRUCT");
