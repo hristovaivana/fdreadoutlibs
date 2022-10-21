@@ -203,10 +203,6 @@ public:
 
       m_tps_dropped = 0;
 
-
-      //TLOG() << "COLL TAPS SIZE: " << m_coll_taps.size() << " threshold:" << m_coll_threshold
-      //       << " exponent:" << m_coll_tap_exponent;
-
       m_wib2_frame_handler->initialize();
       m_wib2_frame_handler_second_half->initialize();
 
@@ -228,7 +224,7 @@ public:
     m_t0 = std::chrono::high_resolution_clock::now();
     m_new_hits = 0;
     m_new_tps = 0;
-    m_coll_hits_count.exchange(0);
+    m_swtpg_hits_count.exchange(0);
     m_frame_error_count = 0;
     m_frames_processed = 0;
 
@@ -244,7 +240,7 @@ public:
       m_wib2_frame_handler_second_half->reset();  
       
       auto runtime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_t0).count();
-      //TLOG() << "Ran for " << runtime << "ms. Found " << m_num_hits_coll << "  hits";
+      //TLOG() << "Ran for " << runtime << "ms.";
     }
 
   }
@@ -330,7 +326,7 @@ public:
 
     auto now = std::chrono::high_resolution_clock::now();
     if (m_sw_tpg_enabled) {
-      int new_hits = m_coll_hits_count.exchange(0);
+      int new_hits = m_swtpg_hits_count.exchange(0);
       int new_tps = m_num_tps_pushed.exchange(0);
       double seconds = std::chrono::duration_cast<std::chrono::microseconds>(now - m_t0).count() / 1000000.;
       TLOG_DEBUG(TLVL_TAKE_NOTE) << "Hit rate: " << std::to_string(new_hits / seconds / 1000.) << " [kHz]";
@@ -467,7 +463,7 @@ protected:
       std::stringstream ss;
       ss << " Channels are:\n";
       for(size_t i=0; i<swtpg_wib2::NUM_REGISTERS_PER_FRAME*swtpg_wib2::SAMPLES_PER_REGISTER; ++i){
-        ss << i << "\t" << m_register_channel_map.collection[i] << "\n";
+        ss << i << "\t" << m_register_channel_map.channel[i] << "\n";
       }
       TLOG_DEBUG(2) << ss.str();      
 
@@ -525,7 +521,7 @@ protected:
       for (int i = 0; i < 16; ++i) {
         if (hit_charge[i] && chan[i] != swtpg_wib2::MAGIC) {
           // This channel had a hit ending here, so we can create and output the hit here
-          const uint16_t offline_channel = m_register_channel_map.collection[chan[i]];
+          const uint16_t offline_channel = m_register_channel_map.channel[chan[i]];
           uint64_t tp_t_begin =                                                        // NOLINT(build/unsigned)
             timestamp + clocksPerTPCTick * (int64_t(hit_end[i]) - hit_tover[i]);       // NOLINT(build/unsigned)
           uint64_t tp_t_end = timestamp + clocksPerTPCTick * int64_t(hit_end[i]);      // NOLINT(build/unsigned)
@@ -598,8 +594,7 @@ protected:
         //   TLOG_DEBUG(0) << "Non null hits: " << nhits << " for ts: " << result_from_swtpg.timestamp;
         //}
     
-        m_num_hits_coll += nhits;
-        m_coll_hits_count += nhits;
+        m_swtpg_hits_count += nhits;
 
         m_tphandler->try_sending_tpsets(result_from_swtpg.timestamp);
 
@@ -620,9 +615,7 @@ private:
   size_t m_num_msg = 0;
   size_t m_num_push_fail = 0;
 
-  size_t m_num_hits_coll = 0;
-
-  std::atomic<int> m_coll_hits_count{ 0 };
+  std::atomic<int> m_swtpg_hits_count{ 0 };
 
   std::atomic<int> m_num_tps_pushed{ 0 };
 

@@ -25,7 +25,7 @@ namespace swtpg_wib2 {
 struct RegisterChannelMap
 {
   // TODO: Make these the right size
-  uint collection[256];
+  uint channel[256];
 };
 
 
@@ -87,7 +87,7 @@ get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WI
     // need for this indexing. See the comment in that function for a
     // diagram
     size_t index = (i/16)*16*12 + (i%16);
-    ret.collection[i] = register_array.uint16(index) + min_ch;
+    ret.channel[i] = register_array.uint16(index) + min_ch;
   }
 
   auto end_time = std::chrono::steady_clock::now();

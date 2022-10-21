@@ -20,48 +20,6 @@
 
 namespace swtpg_wib2 {
 
-struct MessageADCs
-{
-  char fragments[ADCS_SIZE];
-};
-
-template<size_t NREGISTERS>
-struct WindowADCs
-{
-  WindowADCs(size_t numMessages_, MessageADCs* fragments_)
-    : numMessages(numMessages_)
-    , fragments(fragments_)
-  {}
-
-  // Get a pointer to register `ireg` at time `itime`, as an AVX2 int register
-  const __m256i* get256(size_t ireg, size_t itime) const
-  {
-    const size_t msg_index = itime / 12;
-    const size_t msg_time_offset = itime % 12;
-    const size_t index = msg_index * NREGISTERS * FRAMES_PER_MSG + FRAMES_PER_MSG * ireg + msg_time_offset;
-    const __m256i* rawp = reinterpret_cast<const __m256i*>(fragments) + index; // NOLINT
-    return rawp;
-  }
-
-  uint16_t get16(size_t ichan, size_t itime) const // NOLINT(build/unsigned)
-  {
-    const size_t register_index = ichan / SAMPLES_PER_REGISTER;
-    const size_t register_offset = ichan % SAMPLES_PER_REGISTER;
-    const size_t register_t0_start = register_index * SAMPLES_PER_REGISTER * FRAMES_PER_MSG;
-    const size_t msg_index = itime / 12;
-    const size_t msg_time_offset = itime % 12;
-    // The index in uint16_t of the start of the message we want // NOLINT(build/unsigned)
-    const size_t msg_start_index =
-      msg_index * sizeof(MessageADCs) / sizeof(uint16_t); // NOLINT(build/unsigned)
-    const size_t offset_within_msg = register_t0_start + SAMPLES_PER_REGISTER * msg_time_offset + register_offset;
-    const size_t index = msg_start_index + offset_within_msg;
-    return *(reinterpret_cast<uint16_t*>(fragments) + index); // NOLINT
-  }
-
-  size_t numMessages;
-  MessageADCs* __restrict__ fragments;
-};
-
 // A little wrapper around an array of 256-bit registers, so that we
 // can explicitly access it as an array of 256-bit registers or as an
 // array of uint16_t
