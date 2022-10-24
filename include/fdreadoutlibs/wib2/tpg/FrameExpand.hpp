@@ -194,15 +194,15 @@ inline __m256i unpack_one_register(const dunedaq::detdataformats::wib2::WIB2Fram
 inline void
 expand_wib2_adcs(const dunedaq::fdreadoutlibs::types::DUNEWIBSuperChunkTypeAdapter* __restrict__ ucs,
                             swtpg_wib2::MessageRegisters* __restrict__ register_array, 
-                            int cut, 
-                            int register_group)
+                            int registers_selection
+                            )
 {
   for (size_t iframe = 0; iframe < swtpg_wib2::FRAMES_PER_MSG; ++iframe) {
     const dunedaq::detdataformats::wib2::WIB2Frame* frame =
       reinterpret_cast<const dunedaq::detdataformats::wib2::WIB2Frame*>(ucs) + iframe; // NOLINT
 
     for (size_t iblock = 0; iblock < swtpg_wib2::NUM_REGISTERS_PER_FRAME ; ++iblock) {
-      register_array->set_ymm(iframe + iblock * swtpg_wib2::FRAMES_PER_MSG, swtpg_wib2::unpack_one_register(frame->adc_words+7*(iblock+register_group*swtpg_wib2::NUM_REGISTERS_PER_FRAME)));
+      register_array->set_ymm(iframe + iblock * swtpg_wib2::FRAMES_PER_MSG, swtpg_wib2::unpack_one_register(frame->adc_words+7*(iblock+registers_selection*swtpg_wib2::NUM_REGISTERS_PER_FRAME)));
     }
     
 

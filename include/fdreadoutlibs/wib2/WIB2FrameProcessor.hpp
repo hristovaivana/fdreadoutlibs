@@ -63,12 +63,6 @@ namespace dunedaq {
 namespace fdreadoutlibs {
 
 
-struct registers_selector {
-  int cut;
-  int register_group;
-
-};
-
 
 struct swtpg_output{
   uint16_t* output_location;
@@ -78,7 +72,7 @@ struct swtpg_output{
 class WIB2FrameHandler {
 
 public: 
-  explicit WIB2FrameHandler(registers_selector register_selector_params) {
+  explicit WIB2FrameHandler(int register_selector_params) {
     m_register_selector = register_selector_params;
   }
   WIB2FrameHandler(const WIB2FrameHandler&) = delete;
@@ -102,7 +96,7 @@ public:
   swtpg_wib2::RegisterChannelMap register_channel_map; 
                                                   
                                                   
-  registers_selector get_registers_selector() {
+  int get_registers_selector() {
     return m_register_selector;
   }
 
@@ -151,7 +145,7 @@ public:
 
 
 private: 
-  registers_selector m_register_selector;    
+  int m_register_selector;    
   uint16_t* m_primfind_dest = nullptr;  
   const uint16_t m_tpg_threshold = 5;                    // units of sigma // NOLINT(build/unsigned)
   const uint8_t m_tpg_tap_exponent = 6;                  // NOLINT(build/unsigned)
@@ -440,8 +434,8 @@ protected:
 
     // Frame expansion
     swtpg_wib2::MessageRegisters registers_array;
-    registers_selector register_selection = frame_handler->get_registers_selector();    
-    expand_wib2_adcs(fp, &registers_array, register_selection.cut, register_selection.register_group); 
+    int register_selection = frame_handler->get_registers_selector();    
+    expand_wib2_adcs(fp, &registers_array, register_selection); 
       
 
     if (m_first_hit) {
@@ -450,7 +444,7 @@ protected:
       tid = syscall(SYS_gettid);
       TLOG() << " Thread ID " << thread_id << " PID " << tid ;
 
-      frame_handler->register_channel_map = swtpg_wib2::get_register_to_offline_channel_map_wib2(wfptr, m_channel_map, register_selection.cut, register_selection.register_group);
+      frame_handler->register_channel_map = swtpg_wib2::get_register_to_offline_channel_map_wib2(wfptr, m_channel_map, register_selection);
 
       frame_handler->m_tpg_processing_info->setState(registers_array);
 
@@ -648,13 +642,12 @@ private:
   std::unique_ptr<WIB2TPHandler> m_tphandler;
 
   // Select the registers where to process the frame expansion
-  // E.g.: {2,0} --> divide registers by 2 (= 16/2) and select the first half
-  // E.g.: {2,1} --> divide registers by 2 (= 16/2) and select the second half
-  // AAA: TODO: implmement the first parameter, i.e. cut selection. Probably not needed. 
-  registers_selector selection_of_register = {2,0}; 
+  // E.g.: {0} --> divide registers by 2 (= 16/2) and select the first half
+  // E.g.: {1} --> divide registers by 2 (= 16/2) and select the second half
+  int selection_of_register = 0; 
   std::unique_ptr<WIB2FrameHandler> m_wib2_frame_handler = std::make_unique<WIB2FrameHandler>(selection_of_register);
 
-  registers_selector selection_of_register_second_half = {2,1}; 
+  int selection_of_register_second_half = 1; 
   std::unique_ptr<WIB2FrameHandler> m_wib2_frame_handler_second_half = std::make_unique<WIB2FrameHandler>(selection_of_register_second_half);
 
   // AAA: TODO: make selection of the initial capacity of the queue configurable
