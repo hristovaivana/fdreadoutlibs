@@ -24,7 +24,7 @@ namespace fdreadoutlibs {
 class WIBTPHandler
 {
 public:
-  explicit WIBTPHandler(iomanager::SenderConcept<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>& tp_sink,
+  explicit WIBTPHandler(iomanager::SenderConcept<types::TriggerPrimitiveTypeAdapter>& tp_sink,
                         iomanager::SenderConcept<trigger::TPSet>& tpset_sink,
                         uint64_t tp_timeout,        // NOLINT(build/unsigned)
                         uint64_t tpset_window_size, // NOLINT(build/unsigned)
@@ -69,10 +69,10 @@ public:
       
       while (!m_tp_buffer.empty() && m_tp_buffer.top().time_start < tpset.end_time) {
         triggeralgs::TriggerPrimitive tp = m_tp_buffer.top();
-        types::SW_WIB_TRIGGERPRIMITIVE_STRUCT* tp_readout_type =
-          reinterpret_cast<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT*>(&tp); // NOLINT
+        types::TriggerPrimitiveTypeAdapter* tp_readout_type =
+          reinterpret_cast<types::TriggerPrimitiveTypeAdapter*>(&tp); // NOLINT
         try {
-            types::SW_WIB_TRIGGERPRIMITIVE_STRUCT tp_copy(*tp_readout_type);
+            types::TriggerPrimitiveTypeAdapter tp_copy(*tp_readout_type);
           m_tp_sink.send(std::move(tp_copy), std::chrono::milliseconds(10));
           m_sent_tps++;
         } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
@@ -106,7 +106,7 @@ public:
   size_t get_and_reset_num_sent_tpsets() { return m_sent_tpsets.exchange(0); }
 
 private:
-  iomanager::SenderConcept<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>& m_tp_sink;
+  iomanager::SenderConcept<types::TriggerPrimitiveTypeAdapter>& m_tp_sink;
   iomanager::SenderConcept<trigger::TPSet>& m_tpset_sink;
   daqdataformats::run_number_t m_run_number{ daqdataformats::TypeDefaults::s_invalid_run_number };
   uint64_t m_tp_timeout;           // NOLINT(build/unsigned)

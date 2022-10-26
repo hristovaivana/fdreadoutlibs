@@ -20,7 +20,8 @@
 #include "triggeralgs/TriggerPrimitive.hpp"
 
 #include "detdataformats/wib/WIBFrame.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+
+#include "fdreadoutlibs/TriggerPrimitiveTypeAdapter.hpp"
 
 #include <atomic>
 #include <functional>
@@ -33,17 +34,17 @@ namespace dunedaq {
 namespace fdreadoutlibs {
 
 class SWWIBTriggerPrimitiveProcessor
-  : public readoutlibs::TaskRawDataProcessorModel<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>
+  : public readoutlibs::TaskRawDataProcessorModel<types::TriggerPrimitiveTypeAdapter>
 {
 
 public:
-  using inherited = readoutlibs::TaskRawDataProcessorModel<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>;
-  using frameptr = types::SW_WIB_TRIGGERPRIMITIVE_STRUCT*;
+  using inherited = readoutlibs::TaskRawDataProcessorModel<types::TriggerPrimitiveTypeAdapter>;
+  using frameptr = types::TriggerPrimitiveTypeAdapter*;
   using wibframeptr = dunedaq::detdataformats::wib::WIBFrame*;
   using timestamp_t = std::uint64_t; // NOLINT(build/unsigned)
 
   explicit SWWIBTriggerPrimitiveProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
-    : TaskRawDataProcessorModel<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>(error_registry)
+    : TaskRawDataProcessorModel<types::TriggerPrimitiveTypeAdapter>(error_registry)
   {}
 
 private:

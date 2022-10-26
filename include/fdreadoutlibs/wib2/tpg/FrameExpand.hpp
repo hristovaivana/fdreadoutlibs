@@ -11,7 +11,9 @@
 
 #include "TPGConstants_wib2.hpp"
 #include "detdataformats/wib2/WIB2Frame.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+#include "fdreadoutlibs/ProtoWIBSuperChunkTypeAdapter.hpp"
+#include "fdreadoutlibs/DUNEWIBSuperChunkTypeAdapter.hpp"
+
 
 #include <array>
 #include <immintrin.h>
@@ -686,7 +688,7 @@ inline __m256i unpack_one_register(const dunedaq::detdataformats::wib2::WIB2Fram
 //======================================================================
 // for wib
 inline void
-expand_message_adcs_inplace(const dunedaq::fdreadoutlibs::types::WIB_SUPERCHUNK_STRUCT* __restrict__ ucs,
+expand_message_adcs_inplace(const dunedaq::fdreadoutlibs::types::ProtoWIBSuperChunkTypeAdapter* __restrict__ ucs,
                             MessageRegistersCollection* __restrict__ collection_registers,
                             MessageRegistersInduction* __restrict__ induction_registers)
 {
@@ -707,7 +709,7 @@ expand_message_adcs_inplace(const dunedaq::fdreadoutlibs::types::WIB_SUPERCHUNK_
 //==============================================================================
 // for wib2 
 inline void
-expand_message_adcs_inplace_wib2(const dunedaq::fdreadoutlibs::types::WIB2_SUPERCHUNK_STRUCT* __restrict__ ucs,
+expand_message_adcs_inplace_wib2(const dunedaq::fdreadoutlibs::types::DUNEWIBSuperChunkTypeAdapter* __restrict__ ucs,
                             swtpg_wib2::MessageRegistersCollection* __restrict__ collection_registers,
                             swtpg_wib2::MessageRegistersInduction* __restrict__ induction_registers)
 {

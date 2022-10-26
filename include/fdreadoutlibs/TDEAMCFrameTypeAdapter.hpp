@@ -1,15 +1,9 @@
-#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_TDEAMC_HPP_
-#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_TDEAMC_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_TDEAMCFRAMETYPEADAPTER_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_TDEAMCFRAMETYPEADAPTER_HPP_
 
 #include "daqdataformats/FragmentHeader.hpp"
 #include "daqdataformats/SourceID.hpp"
-// #include "detdataformats/daphne/DAPHNEFrame.hpp"
-// #include "detdataformats/ssp/SSPTypes.hpp"
-// #include "detdataformats/wib/WIBFrame.hpp"
-// #include "detdataformats/wib2/WIB2Frame.hpp"
 #include "detdataformats/tde/TDE16Frame.hpp"
-// #include "detdataformats/fwtp/RawTp.hpp"
-// #include "triggeralgs/TriggerPrimitive.hpp"
 
 #include <cstdint> // uint_t types
 #include <memory>  // unique_ptr
@@ -21,14 +15,16 @@ namespace dunedaq {
 namespace fdreadoutlibs {
 namespace types {
 
-const constexpr std::size_t TDE_AMC_STRUCT_SIZE = 64 * sizeof(dunedaq::detdataformats::tde::TDE16Frame);
-struct TDE_AMC_STRUCT
+const constexpr std::size_t kTDEAMCFrameSize = 64 * sizeof(dunedaq::detdataformats::tde::TDE16Frame);
+struct TDEAMCFrameTypeAdapter
+
 {
   using FrameType = dunedaq::detdataformats::tde::TDE16Frame;
 
-  char data[TDE_AMC_STRUCT_SIZE];
+  char data[kTDEAMCFrameSize];
 
-  bool operator<(const TDE_AMC_STRUCT& other) const
+  bool operator<(const TDEAMCFrameTypeAdapter
+& other) const
   {
     auto thisptr = reinterpret_cast<const FrameType*>(&data);        // NOLINT
     auto otherptr = reinterpret_cast<const FrameType*>(&other.data); // NOLINT
@@ -77,7 +73,7 @@ struct TDE_AMC_STRUCT
 
   FrameType* end()
   {
-    return reinterpret_cast<FrameType*>(data + TDE_AMC_STRUCT_SIZE); // NOLINT
+    return reinterpret_cast<FrameType*>(data + kTDEAMCFrameSize); // NOLINT
   }
 
   // static const constexpr size_t fixed_payload_size = 5568;
@@ -92,4 +88,4 @@ struct TDE_AMC_STRUCT
 } // namespace fdreadoutlibs
 } // namespace dunedaq
 
-#endif /* FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_TDEAMC_HPP_ */
+#endif /* FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_TDEAMCFRAMETYPEADAPTER_HPP_ */

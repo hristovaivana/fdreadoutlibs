@@ -1,15 +1,9 @@
-#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DUNEWIBSUPERCHUNK_HPP_
-#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DUNEWIBSUPERCHUNK_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DUNEWIBSUPERCHUNKTYPEADAPTER_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DUNEWIBSUPERCHUNKTYPEADAPTER_HPP_
 
 #include "daqdataformats/FragmentHeader.hpp"
 #include "daqdataformats/SourceID.hpp"
-// #include "detdataformats/daphne/DAPHNEFrame.hpp"
-// #include "detdataformats/ssp/SSPTypes.hpp"
-// #include "detdataformats/wib/WIBFrame.hpp"
 #include "detdataformats/wib2/WIB2Frame.hpp"
-// #include "detdataformats/tde/TDE16Frame.hpp"
-// #include "detdataformats/fwtp/RawTp.hpp"
-// #include "triggeralgs/TriggerPrimitive.hpp"
 
 #include <cstdint> // uint_t types
 #include <memory>  // unique_ptr
@@ -25,14 +19,14 @@ namespace types {
  * @brief For WIB2 the numbers are different.
  * 12[WIB2 frames] x 472[Bytes] = 5664[Bytes]
  * */
-const constexpr std::size_t WIB2_SUPERCHUNK_SIZE = 5664; // for 12: 5664
-struct WIB2_SUPERCHUNK_STRUCT
+const constexpr std::size_t kDUNEWIBSuperChunkSize = 5664; // for 12: 5664
+struct DUNEWIBSuperChunkTypeAdapter
 {
   using FrameType = dunedaq::detdataformats::wib2::WIB2Frame;
   // data
-  char data[WIB2_SUPERCHUNK_SIZE];
+  char data[kDUNEWIBSuperChunkSize];
   // comparable based on first timestamp
-  bool operator<(const WIB2_SUPERCHUNK_STRUCT& other) const
+  bool operator<(const DUNEWIBSuperChunkTypeAdapter& other) const
   {
     auto thisptr = reinterpret_cast<const dunedaq::detdataformats::wib2::WIB2Frame*>(&data);        // NOLINT
     auto otherptr = reinterpret_cast<const dunedaq::detdataformats::wib2::WIB2Frame*>(&other.data); // NOLINT
@@ -74,7 +68,7 @@ struct WIB2_SUPERCHUNK_STRUCT
 
   FrameType* end()
   {
-    return reinterpret_cast<FrameType*>(data + WIB2_SUPERCHUNK_SIZE); // NOLINT
+    return reinterpret_cast<FrameType*>(data + kDUNEWIBSuperChunkSize); // NOLINT
   }
 
   size_t get_payload_size() { return 5664; }
@@ -88,12 +82,12 @@ struct WIB2_SUPERCHUNK_STRUCT
   static const constexpr uint64_t expected_tick_difference = 32; // NOLINT(build/unsigned)
 };
 
-static_assert(sizeof(struct dunedaq::detdataformats::wib2::WIB2Frame)*12 == WIB2_SUPERCHUNK_SIZE,
-              "Check your assumptions on WIB2_SUPERCHUNK_STRUCT");
+static_assert(sizeof(struct dunedaq::detdataformats::wib2::WIB2Frame)*12 == kDUNEWIBSuperChunkSize,
+              "Check your assumptions on DUNEWIBSuperChunkTypeAdapter");
 
 
 } // namespace types
 } // namespace fdreadoutlibs
 } // namespace dunedaq
 
-#endif /* FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DUNEWIBSUPERCHUNK_HPP_ */
+#endif /* FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DUNEWIBSUPERCHUNKTYPEADAPTER_HPP_ */

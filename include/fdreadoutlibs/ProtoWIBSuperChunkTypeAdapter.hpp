@@ -1,15 +1,9 @@
-#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_PROTOWIBSUPERCHUNK_HPP_
-#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_PROTOWIBSUPERCHUNK_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_PROTOWIBSUPERCHUNKTYPEADAPTER_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_PROTOWIBSUPERCHUNKTYPEADAPTER_HPP_
 
 #include "daqdataformats/FragmentHeader.hpp"
 #include "daqdataformats/SourceID.hpp"
-// #include "detdataformats/daphne/DAPHNEFrame.hpp"
-// #include "detdataformats/ssp/SSPTypes.hpp"
 #include "detdataformats/wib/WIBFrame.hpp"
-// #include "detdataformats/wib2/WIB2Frame.hpp"
-// #include "detdataformats/tde/TDE16Frame.hpp"
-// #include "detdataformats/fwtp/RawTp.hpp"
-// #include "triggeralgs/TriggerPrimitive.hpp"
 
 #include <cstdint> // uint_t types
 #include <memory>  // unique_ptr
@@ -27,15 +21,15 @@ namespace types {
  * that is called a SuperChunk. Default mode is with 12 frames:
  * 12[WIB frames] x 464[Bytes] = 5568[Bytes]
  */
-const constexpr std::size_t WIB_SUPERCHUNK_SIZE = 5568; // for 12: 5568
-struct WIB_SUPERCHUNK_STRUCT
+const constexpr std::size_t kProtoWIBSuperChunkSize = 5568; // for 12: 5568
+struct ProtoWIBSuperChunkTypeAdapter
 {
   using FrameType = dunedaq::detdataformats::wib::WIBFrame;
 
   // data
-  char data[WIB_SUPERCHUNK_SIZE];
+  char data[kProtoWIBSuperChunkSize];
   // comparable based on first timestamp
-  bool operator<(const WIB_SUPERCHUNK_STRUCT& other) const
+  bool operator<(const ProtoWIBSuperChunkTypeAdapter& other) const
   {
     // auto thisptr = reinterpret_cast<const dunedaq::detdataformats::WIBHeader*>(&data);        // NOLINT
     // auto otherptr = reinterpret_cast<const dunedaq::detdataformats::WIBHeader*>(&other.data); // NOLINT
@@ -80,7 +74,7 @@ struct WIB_SUPERCHUNK_STRUCT
 
   FrameType* end()
   {
-    return reinterpret_cast<FrameType*>(data + WIB_SUPERCHUNK_SIZE); // NOLINT
+    return reinterpret_cast<FrameType*>(data + kProtoWIBSuperChunkSize); // NOLINT
   }
 
   size_t get_payload_size() { return 5568; }
@@ -95,11 +89,11 @@ struct WIB_SUPERCHUNK_STRUCT
   static const constexpr uint64_t expected_tick_difference = 25; // 2 MHz@50MHz clock // NOLINT(build/unsigned)
 };
 
-static_assert(sizeof(struct dunedaq::detdataformats::wib::WIBFrame)*12 == WIB_SUPERCHUNK_SIZE,
-              "Check your assumptions on WIB_SUPERCHUNK_STRUCT");
+static_assert(sizeof(struct dunedaq::detdataformats::wib::WIBFrame)*12 == kProtoWIBSuperChunkSize,
+              "Check your assumptions on ProtoWIBSuperChunkTypeAdapter");
 
 } // namespace types
 } // namespace fdreadoutlibs
 } // namespace dunedaq
 
-#endif /* FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_PROTOWIBSUPERCHUNK_HPP_ */
+#endif /* FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_PROTOWIBSUPERCHUNKTYPEADAPTER_HPP_ */

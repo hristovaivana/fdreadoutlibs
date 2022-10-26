@@ -1,15 +1,9 @@
-#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_SSPFRAME_HPP_
-#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_SSPFRAME_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_SSPFRAMETYPEADAPTER_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_SSPFRAMETYPEADAPTER_HPP_
 
 #include "daqdataformats/FragmentHeader.hpp"
 #include "daqdataformats/SourceID.hpp"
-// #include "detdataformats/daphne/DAPHNEFrame.hpp"
 #include "detdataformats/ssp/SSPTypes.hpp"
-// #include "detdataformats/wib/WIBFrame.hpp"
-// #include "detdataformats/wib2/WIB2Frame.hpp"
-// #include "detdataformats/tde/TDE16Frame.hpp"
-// #include "detdataformats/fwtp/RawTp.hpp"
-// #include "triggeralgs/TriggerPrimitive.hpp"
 
 #include <cstdint> // uint_t types
 #include <memory>  // unique_ptr
@@ -21,19 +15,19 @@ namespace dunedaq {
 namespace fdreadoutlibs {
 namespace types {
 
-const constexpr std::size_t SSP_FRAME_SIZE = 1012;
-struct SSP_FRAME_STRUCT
+const constexpr std::size_t kSSPFrameSize = 1012;
+struct SSPFrameTypeAdapter
 {
-  using FrameType = SSP_FRAME_STRUCT;
+  using FrameType = SSPFrameTypeAdapter;
 
   // header
   detdataformats::ssp::EventHeader header;
 
   // data
-  char data[SSP_FRAME_SIZE];
+  char data[kSSPFrameSize];
 
   // comparable based on start timestamp
-  bool operator<(const SSP_FRAME_STRUCT& other) const
+  bool operator<(const SSPFrameTypeAdapter& other) const
   {
     return this->get_first_timestamp() < other.get_first_timestamp() ? true : false;
   }
@@ -72,7 +66,7 @@ struct SSP_FRAME_STRUCT
   FrameType* end() { return (this + 1); } // NOLINT
 
   size_t get_payload_size() {
-    return SSP_FRAME_SIZE;
+    return kSSPFrameSize;
   }
 
   size_t get_num_frames() {
@@ -80,7 +74,7 @@ struct SSP_FRAME_STRUCT
   }
 
   size_t get_frame_size() {
-    return SSP_FRAME_SIZE;
+    return kSSPFrameSize;
   }
 
   static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kDetectorReadout;
@@ -88,12 +82,11 @@ struct SSP_FRAME_STRUCT
   static const constexpr uint64_t expected_tick_difference = 25; // NOLINT(build/unsigned)
 };
 
-static_assert(sizeof(struct SSP_FRAME_STRUCT) == sizeof(detdataformats::ssp::EventHeader) + SSP_FRAME_SIZE,
-              "Check your assumptions on SSP_FRAME_STRUCT");
+static_assert(sizeof(struct SSPFrameTypeAdapter) == sizeof(detdataformats::ssp::EventHeader) + kSSPFrameSize,
+              "Check your assumptions on SSPFrameTypeAdapter");
 
 
 } // namespace types
 } // namespace fdreadoutlibs
 } // namespace dunedaq
-
-#endif /* FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_SSPFRAME_HPP_ */
+#endif /* FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_SSPFRAMETYPEADAPTER_HPP_ */

@@ -1,6 +1,6 @@
 
-#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_RAWFW_TRIGGERPRIMITIVE_HPP_
-#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_RAWFW_TRIGGERPRIMITIVE_HPP_
+#ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DUNEWIBFIRMWARETRIGGERPRIMITIVESUPERCHUNKTYPEADAPTER_HPP_
+#define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DUNEWIBFIRMWARETRIGGERPRIMITIVESUPERCHUNKTYPEADAPTER_HPP_
 
 //#include "iomanager/Sender.hpp"
 //#include "iomanager/Receiver.hpp"
@@ -21,18 +21,18 @@ namespace fdreadoutlibs {
 namespace types {
 
 // raw WIB TP
-struct RAW_WIB_TRIGGERPRIMITIVE_STRUCT
+struct DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter
 {
-  RAW_WIB_TRIGGERPRIMITIVE_STRUCT()
+  DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter()
   {
     m_raw_tp_frame_chunksize = 0;
     m_first_timestamp = 0;
   }
 
-  using FrameType = RAW_WIB_TRIGGERPRIMITIVE_STRUCT;
+  using FrameType = DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter;
 
   // latency buffer 
-  bool operator<(const RAW_WIB_TRIGGERPRIMITIVE_STRUCT& other) const 
+  bool operator<(const DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter& other) const 
   {
     // std::cout << "other header" << std::endl;
     // if(m_first_timestamp != other.m_first_timestamp)
@@ -225,4 +225,4 @@ struct TpSubframe
 } // namespace fdreadoutlibs
 } // namespace dunedaq
 
-#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_RAWFW_TRIGGERPRIMITIVE_HPP_
+#endif // FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_DUNEWIBFIRMWARETRIGGERPRIMITIVESUPERCHUNKTYPEADAPTER_HPP_
