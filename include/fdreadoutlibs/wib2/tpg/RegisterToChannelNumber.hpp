@@ -51,10 +51,10 @@ get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WI
   for (size_t ich = 0; ich < dunedaq::detdataformats::wib2::WIB2Frame::s_num_ch_per_frame; ++ich) {
     auto offline_ch = ch_map->get_offline_channel_from_crate_slot_fiber_chan(
       frame->header.crate, frame->header.slot, frame->header.link, ich);
-    //TLOG_DEBUG(0) << " offline_ch " << offline_ch; 
+    TLOG_DEBUG(0) << " offline_ch " << offline_ch; 
     min_ch = std::min(min_ch, offline_ch);
   }
-  TLOG_DEBUG(0) << "get_register_to_offline_channel_map_wib2 for crate " << frame->header.crate << " slot "
+  TLOG() << "get_register_to_offline_channel_map_wib2 for crate " << frame->header.crate << " slot "
                 << frame->header.slot << " link " << frame->header.link << ". min_ch is "
                 << min_ch;
   // Now set each of the channels in our test frame to their

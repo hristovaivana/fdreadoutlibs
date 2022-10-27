@@ -87,14 +87,12 @@ public:
     }    
   }
 
-  // Making the following public members to avoid copying the unique ptr
-  //std::unique_ptr<WIB2TPHandler> tphandler;
   std::unique_ptr<swtpg_wib2::ProcessingInfo<swtpg_wib2::NUM_REGISTERS_PER_FRAME>> m_tpg_processing_info;
-  bool first_hits = true;
 
   // Map from expanded AVX register position to offline channel number
   swtpg_wib2::RegisterChannelMap register_channel_map; 
-                                                  
+
+  bool first_hit = true;                                                  
                                                   
   int get_registers_selector() {
     return m_register_selector;
@@ -105,6 +103,7 @@ public:
     m_tpg_taps_p = nullptr;
     delete[] m_primfind_dest;
     m_primfind_dest = nullptr;
+    first_hit = true;
   }
    
 
@@ -213,8 +212,6 @@ public:
     m_ts_error_ctr = 0;
 
     // Reset stats
-    m_first_hit = true;
-
     m_t0 = std::chrono::high_resolution_clock::now();
     m_new_hits = 0;
     m_new_tps = 0;
@@ -438,7 +435,9 @@ protected:
     expand_wib2_adcs(fp, &registers_array, register_selection); 
       
 
-    if (m_first_hit) {
+    if (frame_handler->first_hit) {
+
+      // Print thread ID and PID of the executing thread
       std::thread::id thread_id = std::this_thread::get_id();
       pid_t tid;
       tid = syscall(SYS_gettid);
@@ -457,11 +456,22 @@ protected:
       std::stringstream ss;
       ss << " Channels are:\n";
       for(size_t i=0; i<swtpg_wib2::NUM_REGISTERS_PER_FRAME*swtpg_wib2::SAMPLES_PER_REGISTER; ++i){
-        ss << i << "\t" << m_register_channel_map.channel[i] << "\n";
+        ss << i << "\t" << frame_handler->register_channel_map.channel[i] << "\n";
       }
       TLOG_DEBUG(2) << ss.str();      
 
-    } // end if (m_first_hit)
+      // Add WIB2FrameHandler channel map to the common m_register_channels
+      for (size_t i=0; i<swtpg_wib2::NUM_REGISTERS_PER_FRAME*swtpg_wib2::SAMPLES_PER_REGISTER; ++i) {
+          m_register_channels.push_back(frame_handler->register_channel_map.channel[i]);          
+      }
+
+      TLOG() << "Processed the first superchunk ";
+
+      // Set first hit bool to false so that registration of channel map is not executed twice
+      frame_handler->first_hit = false;
+
+
+    } // end if (frame_handler->first_hit)
     
     // Execute the SWTPG algorithm
     frame_handler->m_tpg_processing_info->input = &registers_array;
@@ -473,13 +483,6 @@ protected:
 
     // Push to the MPMC tphandler queue. Used the default timeout of 100 ms. 
     m_tphandler_queue.push(std::move(swtpg_processing_result), std::chrono::milliseconds(100));
-
-     
-
-    if (m_first_hit) {
-      TLOG() << "Processed the first superchunk ";//;      
-      m_first_hit = false;
-    }
         
   }
 
@@ -515,7 +518,7 @@ protected:
       for (int i = 0; i < 16; ++i) {
         if (hit_charge[i] && chan[i] != swtpg_wib2::MAGIC) {
           // This channel had a hit ending here, so we can create and output the hit here
-          const uint16_t offline_channel = m_register_channel_map.channel[chan[i]];
+          const uint16_t offline_channel = m_register_channels[chan[i]];
           uint64_t tp_t_begin =                                                        // NOLINT(build/unsigned)
             timestamp + clocksPerTPCTick * (int64_t(hit_end[i]) - hit_tover[i]);       // NOLINT(build/unsigned)
           uint64_t tp_t_end = timestamp + clocksPerTPCTick * int64_t(hit_end[i]);      // NOLINT(build/unsigned)
@@ -544,11 +547,6 @@ protected:
           trigprim.algorithm = triggeralgs::TriggerPrimitive::Algorithm::kTPCDefault;
           trigprim.version = 1;
 
-          if (m_first_hit) {
-            TLOG() << "TP makes sense? -> hit_t_begin:" << tp_t_begin << " hit_t_end:" << tp_t_end
-                   << " time_peak:" << (tp_t_begin + tp_t_end) / 2;
-          }
-
           if (!m_tphandler->add_tp(trigprim, timestamp)) {
             m_tps_dropped++;
           }
@@ -567,8 +565,9 @@ protected:
 
 
 
-
-
+  
+  // Function for the TPHandler threads. 
+  // Read the m_tpthread_queue and then process the hits
   void add_hits_to_tphandler() {
 
     std::stringstream thread_name;
@@ -613,8 +612,6 @@ private:
 
   std::atomic<int> m_num_tps_pushed{ 0 };
 
-  bool m_first_hit = true;
-
   std::atomic<bool> m_add_hits_tphandler_thread_should_run;
 
   uint8_t m_link; // NOLINT(build/unsigned)
@@ -623,9 +620,8 @@ private:
 
   std::shared_ptr<detchannelmaps::TPCChannelMap> m_channel_map;
 
-  // Map from expanded AVX register position to offline channel number
-  swtpg_wib2::RegisterChannelMap m_register_channel_map; 
-                                                    
+  // Mapping from expanded AVX register position to offline channel number
+  std::vector<uint> m_register_channels;                                                  
 
   // Frame error check
   bool m_current_frame_pushed = false;
@@ -649,6 +645,7 @@ private:
 
   int selection_of_register_second_half = 1; 
   std::unique_ptr<WIB2FrameHandler> m_wib2_frame_handler_second_half = std::make_unique<WIB2FrameHandler>(selection_of_register_second_half);
+  
 
   // AAA: TODO: make selection of the initial capacity of the queue configurable
   size_t m_initial_capacity_mpmc_queue = 100000; 
