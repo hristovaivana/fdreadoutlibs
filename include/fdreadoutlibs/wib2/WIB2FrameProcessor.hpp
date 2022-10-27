@@ -60,6 +60,11 @@ using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 using dunedaq::readoutlibs::logging::TLVL_TAKE_NOTE;
 
 namespace dunedaq {
+ERS_DECLARE_ISSUE(fdreadoutlibs,
+                  TPHandlerBacklog,
+                  "Failed to push hits to TP handler " << sid,
+                  ((int)sid))
+
 namespace fdreadoutlibs {
 
 
@@ -198,10 +203,6 @@ public:
 
       m_wib2_frame_handler->initialize();
       m_wib2_frame_handler_second_half->initialize();
-
-      
-
-
     } // end if(m_sw_tpg_enabled)
 
     // Reset timestamp check
@@ -230,7 +231,7 @@ public:
       m_wib2_frame_handler->reset();    
       m_wib2_frame_handler_second_half->reset();  
       
-      auto runtime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_t0).count();
+      //auto runtime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_t0).count();
       //TLOG() << "Ran for " << runtime << "ms.";
     }
 
@@ -298,8 +299,8 @@ public:
       m_add_hits_tphandler_thread_should_run.store(false);
       m_add_hits_tphandler_thread.join();
       TLOG() << "add_hits_tphandler_thread joined";
+      m_tphandler.reset();
    }    
-    m_tphandler.reset();
 
     TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::scrap(args);
   }
@@ -481,9 +482,17 @@ protected:
     // Insert output of the AVX processing into the swtpg_output 
     swtpg_output swtpg_processing_result = {frame_handler->get_primfind_dest(), timestamp};
 
-    // Push to the MPMC tphandler queue. Used the default timeout of 100 ms. 
-    m_tphandler_queue.push(std::move(swtpg_processing_result), std::chrono::milliseconds(100));
-        
+    // Push to the MPMC tphandler queue only if it's possible, else drop the TPs.
+    if(m_tphandler_queue.can_push()) {
+      if(!m_tphandler_queue.try_push(std::move(swtpg_processing_result), std::chrono::milliseconds(1))) {
+        // we're going to loose these hits
+        ers::warning(TPHandlerBacklog(ERS_HERE, m_sourceid.id));
+      }
+    }
+    else {
+        ers::warning(TPHandlerBacklog(ERS_HERE, m_sourceid.id));
+    } 
+       
   }
 
 
@@ -560,14 +569,8 @@ protected:
   }
 
 
-
-
-
-
-
-  
   // Function for the TPHandler threads. 
-  // Read the m_tpthread_queue and then process the hits
+  // Reads the m_tpthread_queue and then process the hits
   void add_hits_to_tphandler() {
 
     std::stringstream thread_name;
@@ -576,31 +579,19 @@ protected:
 
     while (m_add_hits_tphandler_thread_should_run.load()) {
       swtpg_output result_from_swtpg; 
-     
-      bool try_pop_from_tphandler_queue = m_tphandler_queue.try_pop(result_from_swtpg, std::chrono::milliseconds(100));
-      if (try_pop_from_tphandler_queue) {
+      while(m_tphandler_queue.can_pop()) {
+	      if(m_tphandler_queue.try_pop(result_from_swtpg, std::chrono::milliseconds(1))) {
+
         // Process the trigger primitve
         unsigned int nhits = process_swtpg_hits(result_from_swtpg.output_location, result_from_swtpg.timestamp);
-
-        // Debugging statement for TPHandler
-        //if (nhits > 0) {
-        //   TLOG_DEBUG(0) << "Non null hits: " << nhits << " for ts: " << result_from_swtpg.timestamp;
-        //}
     
         m_swtpg_hits_count += nhits;
-
         m_tphandler->try_sending_tpsets(result_from_swtpg.timestamp);
-
-      } 
-      
-    } // m_add_hits_tphandler_thread_should_run
-
+	      }
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    } 
   }
-
-
-
-
-
 
 private:
   bool m_sw_tpg_enabled;
@@ -649,14 +640,7 @@ private:
 
   // AAA: TODO: make selection of the initial capacity of the queue configurable
   size_t m_initial_capacity_mpmc_queue = 100000; 
-  // The boolean argument is `MayBlock`, where "block" appears to mean
-  // "make a system call". With `MayBlock` set to false, the queue
-  // just spin-waits, so we want true
-  //std::unique_ptr<folly::DMPMCQueue<WIB2FrameHandler*, true>> m_tphandler_queue = std::make_unique<folly::DMPMCQueue<WIB2FrameHandler*, true>>(m_initial_capacity_mpmc_queue);
-  //folly::DMPMCQueue<std::unique_ptr<WIB2FrameHandler>, true> m_tphandler_queue = folly::DMPMCQueue<std::unique_ptr<WIB2FrameHandler>, true>(m_initial_capacity_mpmc_queue);
-  //iomanager::FollyMPMCQueue<std::unique_ptr<WIB2FrameHandler>> m_tphandler_queue{"tphandler_queue", 100};
   iomanager::FollyMPMCQueue<swtpg_output> m_tphandler_queue{"tphandler_queue", m_initial_capacity_mpmc_queue};
-
 
 
   std::thread m_add_hits_tphandler_thread;
