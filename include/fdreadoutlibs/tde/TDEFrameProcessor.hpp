@@ -66,6 +66,7 @@ protected:
   bool m_first_ts_missmatch = true;
   bool m_problem_reported = false;
   std::atomic<int> m_ts_error_ctr{ 0 };
+  uint64_t m_clock_frequency; // NOLINT(build/unsigned)
 
 private:
 };

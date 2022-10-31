@@ -243,6 +243,7 @@ public:
     m_sourceid.subsystem = types::ProtoWIBSuperChunkTypeAdapter::subsystem;
     m_error_counter_threshold = config.error_counter_threshold;
     m_error_reset_freq = config.error_reset_freq;
+    m_clock_frequency = config.clock_speed_hz;
 
     if (config.enable_software_tpg) {
       m_sw_tpg_enabled = true;
@@ -362,7 +363,10 @@ protected:
 
     // Acquire timestamp
     auto wfptr = reinterpret_cast<dunedaq::detdataformats::wib::WIBFrame*>(fp); // NOLINT
-    m_current_ts = wfptr->get_wib_header()->get_timestamp();
+    auto wfhdrptr = wfptr->get_wib_header();
+    m_current_ts = wfhdrptr->get_timestamp();
+    double data_time = static_cast<double>(m_current_ts % (m_clock_frequency*1000)) / static_cast<double>(m_clock_frequency);  // NOLINT
+    TLOG_DEBUG(19) << "Received ProtoWIB frame timestamp value of " << m_current_ts << " ticks (..." << std::fixed << std::setprecision(8) << data_time << " sec), crate " << wfhdrptr->crate_no << ", slot " << wfhdrptr->slot_no;
 
     // Check timestamp
     if (m_current_ts - m_previous_ts != 300) {
@@ -713,6 +717,7 @@ private:
   const int m_num_frame_error_bits = 16;
   int m_error_occurrence_counters[16] = { 0 };
   int m_error_reset_freq;
+  uint64_t m_clock_frequency; // NOLINT(build/unsigned)
 
   // Collection
   const uint16_t m_coll_threshold = 5;                    // units of sigma // NOLINT(build/unsigned)
