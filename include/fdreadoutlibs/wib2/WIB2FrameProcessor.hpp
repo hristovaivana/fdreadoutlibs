@@ -483,16 +483,10 @@ protected:
     swtpg_output swtpg_processing_result = {frame_handler->get_primfind_dest(), timestamp};
 
     // Push to the MPMC tphandler queue only if it's possible, else drop the TPs.
-    if(m_tphandler_queue.can_push()) {
-      if(!m_tphandler_queue.try_push(std::move(swtpg_processing_result), std::chrono::milliseconds(1))) {
+    if(!m_tphandler_queue.try_push(std::move(swtpg_processing_result), std::chrono::milliseconds(0))) {
         // we're going to loose these hits
         ers::warning(TPHandlerBacklog(ERS_HERE, m_sourceid.id));
-      }
     }
-    else {
-        ers::warning(TPHandlerBacklog(ERS_HERE, m_sourceid.id));
-    } 
-       
   }
 
 
@@ -580,7 +574,7 @@ protected:
     while (m_add_hits_tphandler_thread_should_run.load()) {
       swtpg_output result_from_swtpg; 
       while(m_tphandler_queue.can_pop()) {
-	      if(m_tphandler_queue.try_pop(result_from_swtpg, std::chrono::milliseconds(1))) {
+	if(m_tphandler_queue.try_pop(result_from_swtpg, std::chrono::milliseconds(0))) {
 
         // Process the trigger primitve
         unsigned int nhits = process_swtpg_hits(result_from_swtpg.output_location, result_from_swtpg.timestamp);
