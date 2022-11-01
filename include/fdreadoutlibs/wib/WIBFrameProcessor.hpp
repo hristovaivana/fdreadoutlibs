@@ -54,6 +54,7 @@
 
 using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 using dunedaq::readoutlibs::logging::TLVL_TAKE_NOTE;
+using dunedaq::readoutlibs::logging::TLVL_FRAME_RECEIVED;
 
 namespace {
 enum CollectionOrInduction {
@@ -366,7 +367,7 @@ protected:
     auto wfhdrptr = wfptr->get_wib_header();
     m_current_ts = wfhdrptr->get_timestamp();
     double data_time = static_cast<double>(m_current_ts % (m_clock_frequency*1000)) / static_cast<double>(m_clock_frequency);  // NOLINT
-    TLOG_DEBUG(19) << "Received ProtoWIB frame timestamp value of " << m_current_ts << " ticks (..." << std::fixed << std::setprecision(8) << data_time << " sec), crate " << wfhdrptr->crate_no << ", slot " << wfhdrptr->slot_no;
+    TLOG_DEBUG(TLVL_FRAME_RECEIVED) << "Received ProtoWIB frame timestamp value of " << m_current_ts << " ticks (..." << std::fixed << std::setprecision(8) << data_time << " sec), crate " << wfhdrptr->crate_no << ", slot " << wfhdrptr->slot_no;
 
     // Check timestamp
     if (m_current_ts - m_previous_ts != 300) {

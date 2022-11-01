@@ -10,6 +10,7 @@
 #include "fdreadoutlibs/tde/TDEFrameProcessor.hpp"
 
 using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
+using dunedaq::readoutlibs::logging::TLVL_FRAME_RECEIVED;
 
 namespace dunedaq {
 namespace fdreadoutlibs {
@@ -48,7 +49,7 @@ TDEFrameProcessor::timestamp_check(frameptr fp)
   m_current_ts = tdefptr->get_timestamp();
   auto tdefh = tdefptr->get_tde_header();
   double data_time = static_cast<double>(m_current_ts % (m_clock_frequency*1000)) / static_cast<double>(m_clock_frequency);  // NOLINT
-  TLOG() << "Checking TDE frame timestamp value of " << m_current_ts << " ticks (..." << data_time << " sec), crate " << tdefh->crate << ", slot " << tdefh->slot << ", link " << tdefh->link;
+  TLOG_DEBUG(TLVL_FRAME_RECEIVED) << "Checking TDE frame timestamp value of " << m_current_ts << " ticks (..." << data_time << " sec), crate " << tdefh->crate << ", slot " << tdefh->slot << ", link " << tdefh->link;
 
   // Check timestamp
   if (m_current_ts - m_previous_ts != 1000) {
