@@ -581,7 +581,7 @@ protected:
     
         m_swtpg_hits_count += nhits;
         m_tphandler->try_sending_tpsets(result_from_swtpg.timestamp);
-	      }
+	}
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
     } 
@@ -623,8 +623,9 @@ private:
   std::unique_ptr<WIB2TPHandler> m_tphandler;
 
   // Select the registers where to process the frame expansion
-  // E.g.: {0} --> divide registers by 2 (= 16/2) and select the first half
-  // E.g.: {1} --> divide registers by 2 (= 16/2) and select the second half
+  // AAA: TODO: automatically divide the registers based on the number of processing tasks
+  // E.g.: 0 --> divide registers by 2 (= 16/2) and select the first half
+  // E.g.: 1 --> divide registers by 2 (= 16/2) and select the second half
   int selection_of_register = 0; 
   std::unique_ptr<WIB2FrameHandler> m_wib2_frame_handler = std::make_unique<WIB2FrameHandler>(selection_of_register);
 
