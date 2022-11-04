@@ -11,7 +11,8 @@
 
 #include "TPGConstants.hpp"
 #include "detdataformats/wib/WIBFrame.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+
+#include "fdreadoutlibs/ProtoWIBSuperChunkTypeAdapter.hpp"
 
 #include <array>
 #include <immintrin.h>
@@ -576,7 +577,7 @@ expand_message_adcs(const SUPERCHUNK_CHAR_STRUCT& __restrict__ ucs)
 
 //======================================================================
 inline void
-expand_message_adcs_inplace(const dunedaq::fdreadoutlibs::types::WIB_SUPERCHUNK_STRUCT* __restrict__ ucs,
+expand_message_adcs_inplace(const dunedaq::fdreadoutlibs::types::ProtoWIBSuperChunkTypeAdapter* __restrict__ ucs,
                             MessageRegistersCollection* __restrict__ collection_registers,
                             MessageRegistersInduction* __restrict__ induction_registers)
 {
