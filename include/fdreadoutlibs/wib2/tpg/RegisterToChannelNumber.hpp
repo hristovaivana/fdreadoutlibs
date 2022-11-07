@@ -25,8 +25,7 @@ namespace swtpg_wib2 {
 struct RegisterChannelMap
 {
   // TODO: Make these the right size
-  uint collection[256];
-  uint induction[256];
+  uint channel[256];
 };
 
 
@@ -41,7 +40,9 @@ struct RegisterChannelMap
  */
 RegisterChannelMap
 get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WIB2Frame* frame,
-                                    std::shared_ptr<dunedaq::detchannelmaps::TPCChannelMap>& ch_map)
+                                    std::shared_ptr<dunedaq::detchannelmaps::TPCChannelMap>& ch_map,
+                                    int registers_selection
+                                    )
 {
   auto start_time = std::chrono::steady_clock::now();
 
@@ -50,10 +51,10 @@ get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WI
   for (size_t ich = 0; ich < dunedaq::detdataformats::wib2::WIB2Frame::s_num_ch_per_frame; ++ich) {
     auto offline_ch = ch_map->get_offline_channel_from_crate_slot_fiber_chan(
       frame->header.crate, frame->header.slot, frame->header.link, ich);
-    TLOG_DEBUG(0) << "AAA: offline_ch " << offline_ch; 
+    TLOG_DEBUG(0) << " offline_ch " << offline_ch; 
     min_ch = std::min(min_ch, offline_ch);
   }
-  TLOG_DEBUG(0) << "get_register_to_offline_channel_map_wib2 for crate " << frame->header.crate << " slot "
+  TLOG() << "get_register_to_offline_channel_map_wib2 for crate " << frame->header.crate << " slot "
                 << frame->header.slot << " link " << frame->header.link << ". min_ch is "
                 << min_ch;
   // Now set each of the channels in our test frame to their
@@ -68,31 +69,22 @@ get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WI
   for (size_t ich = 0; ich < dunedaq::detdataformats::wib2::WIB2Frame::s_num_ch_per_frame; ++ich) {
     auto offline_ch = ch_map->get_offline_channel_from_crate_slot_fiber_chan(
       frame->header.crate, frame->header.slot, frame->header.link, ich);
-      //test_frame->set_channel(ich, offline_ch - min_ch);
       test_frame->set_adc(ich, offline_ch - min_ch);
   }
 
   // Expand the test frame, so the offline channel numbers are now in the relevant places in the output registers
-  swtpg_wib2::MessageRegistersCollection collection_registers;
-  swtpg_wib2::MessageRegistersInduction induction_registers;
-  expand_message_adcs_inplace_wib2(&superchunk, &collection_registers, &induction_registers);
+  swtpg_wib2::MessageRegisters register_array;
+  expand_wib2_adcs(&superchunk, &register_array, registers_selection); 
+
 
   RegisterChannelMap ret;
-  for (size_t i = 0; i < 6 * SAMPLES_PER_REGISTER; ++i) {
+  for (size_t i = 0; i < swtpg_wib2::NUM_REGISTERS_PER_FRAME * SAMPLES_PER_REGISTER; ++i) {
     // expand_message_adcs_inplace reorders the output so
     // adjacent-in-time registers are adjacent in memory, hence the
     // need for this indexing. See the comment in that function for a
     // diagram
     size_t index = (i/16)*16*12 + (i%16);
-    ret.collection[i] = collection_registers.uint16(index) + min_ch;
-  }
-  for (size_t i = 0; i < 10 * SAMPLES_PER_REGISTER; ++i) {
-    // expand_message_adcs_inplace reorders the output so
-    // adjacent-in-time registers are adjacent in memory, hence the
-    // need for this indexing. See the comment in that function for a
-    // diagram
-    size_t index = (i/16)*16*12 + (i%16);
-    ret.induction[i] = induction_registers.uint16(index) + min_ch;
+    ret.channel[i] = register_array.uint16(index) + min_ch;
   }
 
   auto end_time = std::chrono::steady_clock::now();
@@ -102,10 +94,10 @@ get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WI
 }
 
 RegisterChannelMap
-get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WIB2Frame* frame, std::string channel_map_name)
+get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WIB2Frame* frame, std::string channel_map_name, int registers_selection)
 {
   auto ch_map = dunedaq::detchannelmaps::make_map(channel_map_name);
-  return get_register_to_offline_channel_map_wib2(frame, ch_map);
+  return get_register_to_offline_channel_map_wib2(frame, ch_map, registers_selection);
 }
 
 
