@@ -9,13 +9,6 @@
 
 namespace dunedaq::fdreadoutlibs::types {
 
-  // // JCF, Nov-8-2022: Need to double check the size of the chunk
-  // Originally I calculated 12 DAPHNE frames x size of the frame (8 byte header + 484 bytes for ADCs + 4 byte trailer)
-  // const constexpr std::size_t kDAPHNEStreamSuperChunkSize = \
-  //   sizeof(DAPHNEStreamFrame::Header) + \
-  //   DAPHNEStreamFrame::s_num_adc_words * sizeof(DAPHNEStreamFrame::word_t) + \
-  //   sizeof(DAPHNEStreamFrame::Trailer);
-
   /**                                                                                                                       
    * @brief For DAPHNE Stream the numbers are similar to DUNE-WIB                                                           
    * 12[DAPHNE frames] x 472[Bytes] = 5664[Bytes]                                                                           
@@ -52,8 +45,8 @@ namespace dunedaq::fdreadoutlibs::types {
     void fake_timestamps(uint64_t first_timestamp, uint64_t offset = 64) // NOLINT(build/unsigned)                          
     {
       uint64_t ts_next = first_timestamp; // NOLINT(build/unsigned)                                                         
-      for (unsigned int i = 0; i < 12; ++i) {
-	auto df = reinterpret_cast<dunedaq::detdataformats::daphne::DAPHNEStreamFrame*>(((uint8_t*)(&data)) + i * 472);
+      for (unsigned int i = 0; i < get_num_frames(); ++i) {
+	auto df = reinterpret_cast<dunedaq::detdataformats::daphne::DAPHNEStreamFrame*>(((uint8_t*)(&data)) + i * get_frame_size());
 	df->daq_header.timestamp_1 = ts_next;
 	df->daq_header.timestamp_2 = ts_next >> 32;
 	ts_next += offset;
@@ -75,11 +68,11 @@ namespace dunedaq::fdreadoutlibs::types {
       return reinterpret_cast<FrameType*>(data + kDAPHNEStreamSuperChunkSize); // NOLINT                                  
     }
 
-    size_t get_payload_size() { return 5664; }
+    constexpr size_t get_payload_size() const { return get_num_frames() * get_frame_size(); } // 12*472 -> 5664
 
-    size_t get_num_frames() { return 12; }
+    constexpr size_t get_num_frames() const { return 12; }
 
-    size_t get_frame_size() { return 472; }
+    constexpr size_t get_frame_size() const { return 472; }
 
     static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kDetectorReadout;
     static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kDAPHNE;
