@@ -23,7 +23,11 @@
 
 #include "detchannelmaps/TPCChannelMap.hpp"
 #include "detdataformats/wib2/WIB2Frame.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+
+
+#include "fdreadoutlibs/DUNEWIBSuperChunkTypeAdapter.hpp"
+#include "fdreadoutlibs/TriggerPrimitiveTypeAdapter.hpp"
+
 #include "fdreadoutlibs/wib2/WIB2TPHandler.hpp"
 #include "rcif/cmd/Nljs.hpp"
 #include "trigger/TPSet.hpp"
@@ -52,16 +56,22 @@ using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 using dunedaq::readoutlibs::logging::TLVL_TAKE_NOTE;
 
 
+
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-class WIB2FrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>
+enum WIB2CollectionOrInduction {
+  kCollection,
+  kInduction
+};
+
+class WIB2FrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>
 {
 
 public:
-  using inherited = readoutlibs::TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>;
-  using frameptr = types::WIB2_SUPERCHUNK_STRUCT*;
-  using constframeptr = const types::WIB2_SUPERCHUNK_STRUCT*;
+  using inherited = readoutlibs::TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>;
+  using frameptr = types::DUNEWIBSuperChunkTypeAdapter*;
+  using constframeptr = const types::DUNEWIBSuperChunkTypeAdapter*;
   using wibframeptr = dunedaq::detdataformats::wib2::WIB2Frame*;
   using timestamp_t = std::uint64_t; // NOLINT(build/unsigned)
 
@@ -69,7 +79,7 @@ public:
   typedef int (*chan_map_fn_t)(int);
 
   explicit WIB2FrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
-    : TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>(error_registry)
+    : TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>(error_registry)
     , m_sw_tpg_enabled(false)
     , m_ind_thread_should_run(false)
     , m_coll_primfind_dest(nullptr)
@@ -215,7 +225,7 @@ public:
     try {
       auto queue_index = appfwk::connection_index(args, {});
       if (queue_index.find("tp_out") != queue_index.end()) {
-        m_tp_sink = get_iom_sender<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>(queue_index["tp_out"]);
+        m_tp_sink = get_iom_sender<types::TriggerPrimitiveTypeAdapter>(queue_index["tp_out"]);
       }
       if (queue_index.find("tpset_out") != queue_index.end()) {
         m_tpset_sink = get_iom_sender<trigger::TPSet>(queue_index["tpset_out"]);
@@ -231,7 +241,7 @@ public:
   {
     auto config = cfg["rawdataprocessorconf"].get<readoutlibs::readoutconfig::RawDataProcessorConf>();
     m_sourceid.id = config.source_id;
-    m_sourceid.subsystem = types::WIB2_SUPERCHUNK_STRUCT::subsystem;
+    m_sourceid.subsystem = types::DUNEWIBSuperChunkTypeAdapter::subsystem;
     m_error_counter_threshold = config.error_counter_threshold;
     m_error_reset_freq = config.error_reset_freq;
 
@@ -247,7 +257,7 @@ public:
       //   200000, false, 0, true, 64); // 64 byte aligned
 
       // Setup parallel post-processing
-      TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_postprocess_task(
+      TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::add_postprocess_task(
         std::bind(&WIB2FrameProcessor::find_collection_hits, this, std::placeholders::_1));
 
       // start the thread for induction hit finding
@@ -257,10 +267,10 @@ public:
     }
 
     // Setup pre-processing pipeline
-    TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::add_preprocess_task(
+    TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::add_preprocess_task(
       std::bind(&WIB2FrameProcessor::timestamp_check, this, std::placeholders::_1));
 
-    TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::conf(cfg);
+    TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::conf(cfg);
   }
 
   void scrap(const nlohmann::json& args) override
@@ -273,7 +283,7 @@ public:
    }
       m_tphandler.reset();
 
-    TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::scrap(args);
+    TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::scrap(args);
   }
 
   void get_info(opmonlib::InfoCollector& ci, int level)
@@ -298,7 +308,7 @@ public:
     }
     m_t0 = now;
 
-    readoutlibs::TaskRawDataProcessorModel<types::WIB2_SUPERCHUNK_STRUCT>::get_info(ci, level);
+    readoutlibs::TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::get_info(ci, level);
     ci.add(info);
   }
 
@@ -324,7 +334,7 @@ protected:
     static constexpr uint64_t END_OF_MESSAGES = UINT64_MAX; // NOLINT(build/unsigned)
   };
 
-  void postprocess_example(const types::WIB2_SUPERCHUNK_STRUCT* fp)
+  void postprocess_example(const types::DUNEWIBSuperChunkTypeAdapter* fp)
   {
     TLOG() << "Postprocessing: " << fp->get_first_timestamp();
   }
@@ -335,7 +345,7 @@ protected:
   void timestamp_check(frameptr fp)
   {
 
-    uint16_t wib2_tick_difference = types::WIB2_SUPERCHUNK_STRUCT::expected_tick_difference;
+    uint16_t wib2_tick_difference = types::DUNEWIBSuperChunkTypeAdapter::expected_tick_difference;
     uint16_t wib2_superchunk_tick_difference = wib2_tick_difference * fp->get_num_frames();
 
     // If EMU data, emulate perfectly incrementing timestamp
@@ -489,7 +499,7 @@ protected:
     *m_coll_primfind_dest = swtpg_wib2::MAGIC;
     swtpg_wib2::process_window_avx2(*m_coll_tpg_pi);
 
-    unsigned int nhits = add_hits_to_tphandler(m_coll_primfind_dest, timestamp, types::kCollection);
+    unsigned int nhits = add_hits_to_tphandler(m_coll_primfind_dest, timestamp, kCollection);
 
     if (nhits > 0) {
        TLOG_DEBUG(0) << "Non null collection hits: " << nhits << " for ts: " << timestamp;
@@ -512,7 +522,7 @@ protected:
       // std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
 
-    m_num_hits_ind += add_hits_to_tphandler(m_ind_primfind_dest, timestamp, types::kInduction);
+    m_num_hits_ind += add_hits_to_tphandler(m_ind_primfind_dest, timestamp, kInduction);
 
     if (m_num_hits_ind > 0) {
        TLOG_DEBUG(2) << "NON null induction hits: " << m_num_hits_ind << " for ts: " << timestamp;
@@ -579,7 +589,7 @@ protected:
     TLOG() << "Induction hit-finding thread stopping after processing " << n_items << " frames";
   }
 
-  unsigned int add_hits_to_tphandler(uint16_t* primfind_it, timestamp_t timestamp, types::CollectionOrInduction coll_or_ind)
+  unsigned int add_hits_to_tphandler(uint16_t* primfind_it, timestamp_t timestamp, WIB2CollectionOrInduction coll_or_ind)
   {
 
     constexpr int clocksPerTPCTick = 32;
@@ -624,7 +634,7 @@ protected:
       for (int i = 0; i < 16; ++i) {
         if (hit_charge[i] && chan[i] != swtpg_wib2::MAGIC) {
           // This channel had a hit ending here, so we can create and output the hit here
-          const uint16_t offline_channel = (coll_or_ind == types::kCollection) ?
+          const uint16_t offline_channel = (coll_or_ind == kCollection) ?
             m_register_channel_map.collection[chan[i]] : m_register_channel_map.induction[chan[i]];
           uint64_t tp_t_begin =                                                        // NOLINT(build/unsigned)
             timestamp + clocksPerTPCTick * (int64_t(hit_end[i]) - hit_tover[i]);       // NOLINT(build/unsigned)
@@ -734,7 +744,7 @@ private:
   std::unique_ptr<swtpg_wib2::ProcessingInfo<swtpg_wib2::INDUCTION_REGISTERS_PER_FRAME>> m_ind_tpg_pi;
   std::thread m_induction_thread;
 
-  std::shared_ptr<iomanager::SenderConcept<types::SW_WIB_TRIGGERPRIMITIVE_STRUCT>> m_tp_sink;
+  std::shared_ptr<iomanager::SenderConcept<types::TriggerPrimitiveTypeAdapter>> m_tp_sink;
   std::shared_ptr<iomanager::SenderConcept<trigger::TPSet>> m_tpset_sink;
   std::shared_ptr<iomanager::SenderConcept<detdataformats::wib2::WIB2Frame>> m_err_frame_sink;
 
