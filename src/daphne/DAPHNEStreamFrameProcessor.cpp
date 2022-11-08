@@ -22,10 +22,10 @@ namespace fdreadoutlibs {
 void 
 DAPHNEStreamFrameProcessor::conf(const nlohmann::json& args)
 {
-  readoutlibs::TaskRawDataProcessorModel<types::DAPHNE_STREAM_SUPERCHUNK_STRUCT>::add_preprocess_task(
+  readoutlibs::TaskRawDataProcessorModel<types::DAPHNEStreamSuperChunkTypeAdapter>::add_preprocess_task(
     std::bind(&DAPHNEStreamFrameProcessor::timestamp_check, this, std::placeholders::_1));
   // m_tasklist.push_back( std::bind(&DAPHNEStreamFrameProcessor::frame_error_check, this, std::placeholders::_1) );
-  TaskRawDataProcessorModel<types::DAPHNE_STREAM_SUPERCHUNK_STRUCT>::conf(args);
+  TaskRawDataProcessorModel<types::DAPHNEStreamSuperChunkTypeAdapter>::conf(args);
 }
 
 /**

@@ -17,7 +17,7 @@
 #include "readoutlibs/models/TaskRawDataProcessorModel.hpp"
 
 #include "detdataformats/daphne/DAPHNEStreamFrame.hpp"
-#include "fdreadoutlibs/FDReadoutTypes.hpp"
+#include "fdreadoutlibs/DAPHNEStreamSuperChunkTypeAdapter.hpp"
 
 #include <atomic>
 #include <functional>
@@ -29,18 +29,17 @@ using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-class DAPHNEStreamFrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::DAPHNE_STREAM_SUPERCHUNK_STRUCT>
+class DAPHNEStreamFrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::DAPHNEStreamSuperChunkTypeAdapter>
 {
 
 public:
-  using inherited = readoutlibs::TaskRawDataProcessorModel<types::DAPHNE_STREAM_SUPERCHUNK_STRUCT>;
-  using frameptr = types::DAPHNE_STREAM_SUPERCHUNK_STRUCT*;
+  using inherited = readoutlibs::TaskRawDataProcessorModel<types::DAPHNEStreamSuperChunkTypeAdapter>;
+  using frameptr = types::DAPHNEStreamSuperChunkTypeAdapter*;
   using daphneframeptr = dunedaq::detdataformats::daphne::DAPHNEStreamFrame*;
   using timestamp_t = std::uint64_t; // NOLINT(build/unsigned)
 
-  // Constructor
   explicit DAPHNEStreamFrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
-    : readoutlibs::TaskRawDataProcessorModel<types::DAPHNE_STREAM_SUPERCHUNK_STRUCT>(error_registry)
+    : readoutlibs::TaskRawDataProcessorModel<types::DAPHNEStreamSuperChunkTypeAdapter>(error_registry)
   {}
 
   // Override config for pipeline setup
@@ -65,7 +64,6 @@ protected:
   bool m_problem_reported = false;
   std::atomic<int> m_ts_error_ctr{ 0 };
 
-private:
 };
 
 } // namespace fdreadoutlibs
