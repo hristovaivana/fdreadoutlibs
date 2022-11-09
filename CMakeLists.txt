@@ -17,7 +17,7 @@ find_package(detdataformats REQUIRED)
 find_package(trigger REQUIRED)
 find_package(triggeralgs REQUIRED)
 find_package(folly REQUIRED)
-find_package(Boost COMPONENTS iostreams REQUIRED)
+find_package(Boost COMPONENTS iostreams unit_test_framework REQUIRED)
 set(BOOST_LIBS Boost::iostreams ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} ${Boost_LIBRARIES})
 
 #daq_codegen( readoutconfig.jsonnet datalinkhandler.jsonnet  datarecorder.jsonnet  sourceemulatorconfig.jsonnet TEMPLATES Structs.hpp.j2 Nljs.hpp.j2 )
@@ -68,6 +68,9 @@ daq_add_library(
 daq_add_application(TDEFileCreator TDEFileCreator.cxx TEST LINK_LIBRARIES fdreadoutlibs)
 daq_add_application(WIB2TestBench WIB2TestBench.cxx TEST LINK_LIBRARIES fdreadoutlibs)
 
+##############################################################################
+
+daq_add_unit_test(DAPHNEStreamSuperChunkTypeAdapter_test LINK_LIBRARIES fdreadoutlibs)
 
 ##############################################################################
 # Installation

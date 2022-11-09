@@ -24,20 +24,19 @@ namespace dunedaq::fdreadoutlibs::types {
     // comparable based on first timestamp
     bool operator<(const DAPHNEStreamSuperChunkTypeAdapter& other) const
     {
-      auto thisptr = reinterpret_cast<const dunedaq::detdataformats::daphne::DAPHNEStreamFrame*>(&data);        // NOLINT
-      auto otherptr = reinterpret_cast<const dunedaq::detdataformats::daphne::DAPHNEStreamFrame*>(&other.data); // NOLINT
+      auto thisptr = reinterpret_cast<const FrameType*>(&data);        // NOLINT
+      auto otherptr = reinterpret_cast<const FrameType*>(&other.data); // NOLINT
       return thisptr->get_timestamp() < otherptr->get_timestamp() ? true : false;
     }
 
     uint64_t get_first_timestamp() const // NOLINT(build/unsigned)                                                          
     {
-      return reinterpret_cast<const dunedaq::detdataformats::daphne::DAPHNEStreamFrame*>(&data)->daq_header.get_timestamp()\
-	; // NOLINT                                                                                                               
+      return reinterpret_cast<const FrameType*>(&data)->daq_header.get_timestamp(); // NOLINT                                                                                                               
     }
 
     void set_first_timestamp(uint64_t ts) // NOLINT(build/unsigned)                                                         
     {
-      auto frame = reinterpret_cast<dunedaq::detdataformats::daphne::DAPHNEStreamFrame*>(&data); // NOLINT                  
+      auto frame = reinterpret_cast<FrameType*>(&data); // NOLINT                  
       frame->daq_header.timestamp_1 = ts;
       frame->daq_header.timestamp_2 = ts >> 32;
     }
@@ -46,7 +45,7 @@ namespace dunedaq::fdreadoutlibs::types {
     {
       uint64_t ts_next = first_timestamp; // NOLINT(build/unsigned)                                                         
       for (unsigned int i = 0; i < get_num_frames(); ++i) {
-	auto df = reinterpret_cast<dunedaq::detdataformats::daphne::DAPHNEStreamFrame*>(((uint8_t*)(&data)) + i * get_frame_size());
+	auto df = reinterpret_cast<FrameType*>((reinterpret_cast<uint8_t*>(&data)) + i * get_frame_size());
 	df->daq_header.timestamp_1 = ts_next;
 	df->daq_header.timestamp_2 = ts_next >> 32;
 	ts_next += offset;
