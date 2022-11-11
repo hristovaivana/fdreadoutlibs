@@ -34,8 +34,6 @@
 #include "trigger/TPSet.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 
-#include "iomanager/FollyQueue.hpp"
-
 
 #include "tpg/DesignFIR.hpp"
 #include "tpg/FrameExpand.hpp"
