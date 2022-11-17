@@ -366,8 +366,7 @@ protected:
     auto wfptr = reinterpret_cast<dunedaq::detdataformats::wib::WIBFrame*>(fp); // NOLINT
     auto wfhdrptr = wfptr->get_wib_header();
     m_current_ts = wfhdrptr->get_timestamp();
-    double data_time = static_cast<double>(m_current_ts % (m_clock_frequency*1000)) / static_cast<double>(m_clock_frequency);  // NOLINT
-    TLOG_DEBUG(TLVL_FRAME_RECEIVED) << "Received ProtoWIB frame timestamp value of " << m_current_ts << " ticks (..." << std::fixed << std::setprecision(8) << data_time << " sec), crate " << wfhdrptr->crate_no << ", slot " << wfhdrptr->slot_no;
+    TLOG_DEBUG(TLVL_FRAME_RECEIVED) << "Received ProtoWIB frame timestamp value of " << m_current_ts << " ticks (..." << std::fixed << std::setprecision(8) << (static_cast<double>(m_current_ts % (m_clock_frequency*1000)) / static_cast<double>(m_clock_frequency)) << " sec), crate " << wfhdrptr->crate_no << ", slot " << wfhdrptr->slot_no; // NOLINT
 
     // Check timestamp
     if (m_current_ts - m_previous_ts != 300) {
