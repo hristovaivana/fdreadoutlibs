@@ -21,6 +21,7 @@
 #include "detchannelmaps/TPCChannelMap.hpp"
 #include "fdreadoutlibs/wib2/WIB2TPHandler.hpp"
 #include "fdreadoutlibs/DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter.hpp"
+#include "fdreadoutlibs/TriggerPrimitiveTypeAdapter.hpp"
 #include "rcif/cmd/Nljs.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 #include "trigger/TPSet.hpp"
@@ -62,6 +63,8 @@ public:
   void conf(const nlohmann::json& args) override
   {
     auto config = args["rawdataprocessorconf"].get<readoutlibs::readoutconfig::RawDataProcessorConf>();
+    m_sourceid.id = config.source_id;
+    m_sourceid.subsystem = types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter::subsystem;
 
     TaskRawDataProcessorModel<types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter>::add_preprocess_task(
                 std::bind(&RAWWIBTriggerPrimitiveProcessor::tp_unpack, this, std::placeholders::_1));
