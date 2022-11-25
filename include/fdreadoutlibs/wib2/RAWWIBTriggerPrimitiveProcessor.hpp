@@ -326,16 +326,18 @@ void tp_unpack(frame_ptr fr)
  
     auto now = std::chrono::high_resolution_clock::now();
     // Count number of subframes in a TP frame
-    int n = 1;
+    int n;
     bool ped_found { false };
-    for (n=1; offset+(n-1)*RAW_WIB_TP_SUBFRAME_SIZE<(size_t)num_elem; ++n) {
+    for (n=2; offset + n * RAW_WIB_TP_SUBFRAME_SIZE<(size_t)num_elem; ++n) {
       if (reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data()) // NOLINT
-           + offset + (n-1)*RAW_WIB_TP_SUBFRAME_SIZE)->word3 == 0xDEADBEEF) {
+           + offset + n*RAW_WIB_TP_SUBFRAME_SIZE)->word3 == 0xDEADBEEF) {
         ped_found = true;
         break; 
       }  
     }
     if (!ped_found) return;
+
+    if (n < 3) return;
 
     int bsize = n * RAW_WIB_TP_SUBFRAME_SIZE;
     std::vector<char> tmpbuffer;
