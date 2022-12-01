@@ -326,7 +326,7 @@ void tp_unpack(frame_ptr fr)
  
     auto now = std::chrono::high_resolution_clock::now();
     // Count number of subframes in a TP frame
-    int n;
+    int n=2;
     bool ped_found { false };
     for (n=2; offset + n * RAW_WIB_TP_SUBFRAME_SIZE<(size_t)num_elem; ++n) {
       if (reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data()) // NOLINT
@@ -337,13 +337,13 @@ void tp_unpack(frame_ptr fr)
     }
     // Found no pedestal block
     if (!ped_found) {
-      TLOG() << "Debug message: Raw WIB TP chunk contains no TP frames! Chunk size is " << num_elem;
+      TLOG() << "Debug message: Raw WIB TP chunk contains no TP frames! Chunk size / offset / n is " << num_elem << " / " << offset << " / " << n;
       return;
     }
     // Found pedestal block without hit block
-    if (n < 3) {
-      TLOG() << "Debug message: Raw WIB TP chunk contains no TP hits! Chunk size is " << num_elem;
-      return;
+    if (n < 3 && offset !=0) {
+      TLOG_DEBUG(20) << "Debug message: Raw WIB TP chunk contains no TP hits! Chunk size / offset / n is " << num_elem << " / " << offset << " / " << n;
+      //return;
     }
     // Quick timestamp check to discard chunks with bad header
     uint32_t ts1 = reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data())+ offset)->word1;
@@ -363,8 +363,8 @@ void tp_unpack(frame_ptr fr)
     double hour = std::chrono::seconds(360).count();
     // Check if time in header is within reasonable limits
     if (ts_epoch > ts_now || ts_epoch < ts_now - hour) {
-      TLOG() << "Debug message: Raw WIB TP frame contains no real timestamp! Chunk size is " << num_elem;
-      return;
+      TLOG_DEBUG(20) << "Debug message: Raw WIB TP frame contains no real timestamp! Chunk size is " << num_elem;
+      //return;
     }
 
     int bsize = n * RAW_WIB_TP_SUBFRAME_SIZE;
