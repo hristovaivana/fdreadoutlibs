@@ -353,7 +353,7 @@ void tp_unpack(frame_ptr fr)
     ts += static_cast<int64_t>(ts2 & 0xFFFF0000) << 16;
     ts += static_cast<int64_t>(ts2 & 0xFFFF) << 48;
     // Convert DUNE timestamp to UNIX timestamp
-    double ts_epoch = ts*0.000000016;
+    double ts_epoch = ts*0.000000016; // 16ns = 1/62.5MHz where 62.5MHz is the clock frequency
     // Convert current time to seconds
     auto ts_sys = std::chrono::system_clock::now();
     auto ts_sec = std::chrono::duration<double>(ts_sys.time_since_epoch());
