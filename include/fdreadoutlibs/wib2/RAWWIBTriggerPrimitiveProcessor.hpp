@@ -326,9 +326,9 @@ void tp_unpack(frame_ptr fr)
  
     auto now = std::chrono::high_resolution_clock::now();
     // Count number of subframes in a TP frame
-    int n=2;
+    int n;
     bool ped_found { false };
-    for (n=2; offset + n * RAW_WIB_TP_SUBFRAME_SIZE<(size_t)num_elem; ++n) {
+    for (n=2; offset + n*RAW_WIB_TP_SUBFRAME_SIZE<(size_t)num_elem; ++n) {
       if (reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data()) // NOLINT
            + offset + n*RAW_WIB_TP_SUBFRAME_SIZE)->word3 == 0xDEADBEEF) {
         ped_found = true;
@@ -337,13 +337,8 @@ void tp_unpack(frame_ptr fr)
     }
     // Found no pedestal block
     if (!ped_found) {
-      TLOG() << "Debug message: Raw WIB TP chunk contains no TP frames! Chunk size / offset / n is " << num_elem << " / " << offset << " / " << n;
+      TLOG() << "Debug message: Raw WIB TP chunk contains no TP frames! Chunk size / offset / subframes is " << num_elem << " / " << offset << " / " << n;
       return;
-    }
-    // Found pedestal block without hit block
-    if (n < 3 && offset !=0) {
-      TLOG_DEBUG(20) << "Debug message: Raw WIB TP chunk contains no TP hits! Chunk size / offset / n is " << num_elem << " / " << offset << " / " << n;
-      //return;
     }
     // Quick timestamp check to discard chunks with bad header
     uint32_t ts1 = reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data())+ offset)->word1;
@@ -364,13 +359,13 @@ void tp_unpack(frame_ptr fr)
     // Check if time in header is within reasonable limits
     if (ts_epoch > ts_now || ts_epoch < ts_now - hour) {
       TLOG_DEBUG(20) << "Debug message: Raw WIB TP frame contains no real timestamp! Chunk size is " << num_elem;
-      //return;
+      return;
     }
 
     int bsize = n * RAW_WIB_TP_SUBFRAME_SIZE;
     std::vector<char> tmpbuffer;
     tmpbuffer.reserve(bsize);
-    int nhits = n - 2;
+    int nhits = n - 1;  // n is subframe counter (starting from 0, not 1)
     // add header block 
     ::memcpy(static_cast<void*>(tmpbuffer.data() + 0),
              static_cast<void*>(srcbuffer.data() + offset),
