@@ -341,8 +341,8 @@ void tp_unpack(frame_ptr fr)
       return;
     }
     // Quick timestamp check to discard chunks with bad header
-    uint32_t ts1 = reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data())+ offset)->word1;
-    uint32_t ts2 = reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data())+ offset)->word2;
+    uint32_t ts1 = reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data())+ offset)->word2;
+    uint32_t ts2 = reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data())+ offset)->word3;
     uint64_t ts = (ts1 & 0xFFFF0000) >> 16;
     ts += static_cast<int64_t>(ts1 & 0xFFFF) << 16;
     ts += static_cast<int64_t>(ts2 & 0xFFFF0000) << 16;
