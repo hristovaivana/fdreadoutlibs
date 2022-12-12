@@ -6,38 +6,38 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#include "detdataformats/tde/TDE16Frame.hpp"
 #include "fdreadoutlibs/tde/TDEFrameProcessor.hpp"
+#include "detdataformats/tde/TDE16Frame.hpp"
 
 using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-void 
+void
 TDEFrameProcessor::conf(const nlohmann::json& args)
 {
-  TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter
->::add_preprocess_task(
+  TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter>::add_preprocess_task(
     std::bind(&TDEFrameProcessor::timestamp_check, this, std::placeholders::_1));
   // m_tasklist.push_back( std::bind(&TDEFrameProcessor::frame_error_check, this, std::placeholders::_1) );
-  TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter
->::conf(args);
+  TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter>::conf(args);
 }
 
 /**
  * Pipeline Stage 1.: Check proper timestamp increments in TDE frames
  * */
-void 
+void
 TDEFrameProcessor::timestamp_check(frameptr fp)
 {
   // If EMU data, emulate perfectly incrementing timestamp
-  if (inherited::m_emulator_mode) {         // emulate perfectly incrementing timestamp
+  if (inherited::m_emulator_mode) {          // emulate perfectly incrementing timestamp
     uint64_t ts_next = m_previous_ts + 1000; // NOLINT(build/unsigned)
-    for (unsigned int i = 0; i < 64; ++i) { // NOLINT(build/unsigned)
+    for (unsigned int i = 0; i < 64; ++i) {  // NOLINT(build/unsigned)
       auto tdef = reinterpret_cast<dunedaq::detdataformats::tde::TDE16Frame*>(
         ((uint8_t*)fp) + i * sizeof(dunedaq::detdataformats::tde::TDE16Frame)); // NOLINT
-      auto tdefh = tdef->get_tde_header(); // const_cast<dunedaq::detdataformats::tde::TDE16Frame::Header*>(tdef->get_wib_header());
+      auto tdefh =
+        tdef
+          ->get_tde_header(); // const_cast<dunedaq::detdataformats::tde::TDE16Frame::Header*>(tdef->get_wib_header());
       tdefh->set_timestamp(ts_next);
     }
   }
@@ -73,7 +73,7 @@ TDEFrameProcessor::timestamp_check(frameptr fp)
 /**
  * Pipeline Stage 2.: Check TDE headers for error flags
  * */
-void 
+void
 TDEFrameProcessor::frame_error_check(frameptr /*fp*/)
 {
   // check error fields

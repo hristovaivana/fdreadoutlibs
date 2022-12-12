@@ -7,7 +7,7 @@ namespace dunedaq {
 namespace fdreadoutlibs {
 
 template<class ReadoutType>
-void 
+void
 TDECrateSourceEmulatorModel<ReadoutType>::set_sender(const std::string& conn_name)
 {
   if (!m_sender_is_set) {
@@ -19,9 +19,8 @@ TDECrateSourceEmulatorModel<ReadoutType>::set_sender(const std::string& conn_nam
 }
 
 template<class ReadoutType>
-void 
-TDECrateSourceEmulatorModel<ReadoutType>::conf(const nlohmann::json& args, 
-                                               const nlohmann::json& link_conf)
+void
+TDECrateSourceEmulatorModel<ReadoutType>::conf(const nlohmann::json& args, const nlohmann::json& link_conf)
 {
   if (m_is_configured) {
     TLOG_DEBUG(TLVL_WORK_STEPS) << "This emulator is already configured!";
@@ -65,7 +64,7 @@ TDECrateSourceEmulatorModel<ReadoutType>::conf(const nlohmann::json& args,
 }
 
 template<class ReadoutType>
-void 
+void
 TDECrateSourceEmulatorModel<ReadoutType>::start(const nlohmann::json& /*args*/)
 {
   m_packet_count_tot = 0;
@@ -77,7 +76,7 @@ TDECrateSourceEmulatorModel<ReadoutType>::start(const nlohmann::json& /*args*/)
 }
 
 template<class ReadoutType>
-void 
+void
 TDECrateSourceEmulatorModel<ReadoutType>::stop(const nlohmann::json& /*args*/)
 {
   while (!m_producer_thread.get_readiness()) {
@@ -86,7 +85,7 @@ TDECrateSourceEmulatorModel<ReadoutType>::stop(const nlohmann::json& /*args*/)
 }
 
 template<class ReadoutType>
-void 
+void
 TDECrateSourceEmulatorModel<ReadoutType>::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
   readoutlibs::sourceemulatorinfo::Info info;
@@ -97,7 +96,7 @@ TDECrateSourceEmulatorModel<ReadoutType>::get_info(opmonlib::InfoCollector& ci, 
 }
 
 template<class ReadoutType>
-void 
+void
 TDECrateSourceEmulatorModel<ReadoutType>::run_produce()
 {
   TLOG_DEBUG(TLVL_WORK_STEPS) << "Data generation thread " << m_this_link_number << " started";
@@ -131,7 +130,7 @@ TDECrateSourceEmulatorModel<ReadoutType>::run_produce()
     bool create_frame = m_dropouts[dropout_index]; // NOLINT(runtime/threadsafe_fn)
     dropout_index = (dropout_index + 1) % m_dropouts.size();
     if (create_frame) {
-      detdataformats::tde::TDE16Frame frames[12 * 64] ;
+      detdataformats::tde::TDE16Frame frames[12 * 64];
       ::memcpy(static_cast<void*>(frames),
                static_cast<void*>(source.data() + offset * sizeof(ReadoutType) * 12),
                sizeof(ReadoutType) * 12);
@@ -139,8 +138,7 @@ TDECrateSourceEmulatorModel<ReadoutType>::run_produce()
       std::vector<std::vector<detdataformats::tde::TDE16Frame>> v(12, std::vector<detdataformats::tde::TDE16Frame>(64));
       m_tde_frame_grouper->group(v, frames);
 
-      for (int i = 0; i < 12; i++)
-      {
+      for (int i = 0; i < 12; i++) {
         ReadoutType* payload = reinterpret_cast<ReadoutType*>(v[i].data());
 
         // Fake timestamp
@@ -149,16 +147,16 @@ TDECrateSourceEmulatorModel<ReadoutType>::run_produce()
         // Introducing frame errors
         std::vector<uint16_t> frame_errs; // NOLINT(build/unsigned)
         for (size_t i = 0; i < rptr->get_num_frames(); ++i) {
-        frame_errs.push_back(m_error_bit_generator.next());
+          frame_errs.push_back(m_error_bit_generator.next());
         }
         payload->fake_frame_errors(&frame_errs);
 
         // send it
         try {
-        m_raw_data_sender->send(std::move(*payload), m_raw_sender_timeout_ms);
+          m_raw_data_sender->send(std::move(*payload), m_raw_sender_timeout_ms);
         } catch (ers::Issue& excpt) {
           ers::warning(readoutlibs::CannotWriteToQueue(ERS_HERE, m_sourceid, "raw data input queue", excpt));
-        // std::runtime_error("Queue timed out...");
+          // std::runtime_error("Queue timed out...");
         }
       }
 

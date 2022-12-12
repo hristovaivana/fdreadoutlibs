@@ -12,8 +12,8 @@
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-void 
-TDEFrameGrouper::group(std::vector<std::vector<detdataformats::tde::TDE16Frame>>& v, 
+void
+TDEFrameGrouper::group(std::vector<std::vector<detdataformats::tde::TDE16Frame>>& v,
                        detdataformats::tde::TDE16Frame* frames)
 {
   for (int i = 0; i < 12 * 64; i++) {
@@ -23,5 +23,3 @@ TDEFrameGrouper::group(std::vector<std::vector<detdataformats::tde::TDE16Frame>>
 
 } // namespace fdreadoutlibs
 } // namespace dunedaq
-
-

@@ -6,10 +6,10 @@
 #include "detdataformats/wib/WIBFrame.hpp"
 
 #include <cstdint> // uint_t types
-#include <memory>  // unique_ptr
-#include <vector>
 #include <cstring> // memcpy
-#include <tuple> // tie
+#include <memory>  // unique_ptr
+#include <tuple>   // tie
+#include <vector>
 
 namespace dunedaq {
 namespace fdreadoutlibs {
@@ -38,7 +38,9 @@ struct ProtoWIBSuperChunkTypeAdapter
 
   uint64_t get_first_timestamp() const // NOLINT(build/unsigned)
   {
-    return reinterpret_cast<const dunedaq::detdataformats::wib::WIBFrame*>(&data)->get_wib_header()->get_timestamp(); // NOLINT
+    return reinterpret_cast<const dunedaq::detdataformats::wib::WIBFrame*>(&data)
+      ->get_wib_header()
+      ->get_timestamp(); // NOLINT
   }
 
   void set_first_timestamp(uint64_t ts) // NOLINT(build/unsigned)
@@ -48,7 +50,7 @@ struct ProtoWIBSuperChunkTypeAdapter
 
   void fake_timestamps(uint64_t first_timestamp, uint64_t offset = 25) // NOLINT(build/unsigned)
   {
-    uint64_t ts_next = first_timestamp;                                               // NOLINT(build/unsigned)
+    uint64_t ts_next = first_timestamp;                                                       // NOLINT(build/unsigned)
     auto wf = reinterpret_cast<dunedaq::detdataformats::wib::WIBFrame*>(((uint8_t*)(&data))); // NOLINT
     for (unsigned int i = 0; i < 12; ++i) {
       auto wfh = const_cast<dunedaq::detdataformats::wib::WIBHeader*>(wf->get_wib_header());
@@ -82,14 +84,15 @@ struct ProtoWIBSuperChunkTypeAdapter
   size_t get_num_frames() { return 12; }
 
   size_t get_frame_size() { return 464; }
-  
+
   static const constexpr size_t fixed_payload_size = 5568;
-  static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kDetectorReadout;
+  static const constexpr daqdataformats::SourceID::Subsystem subsystem =
+    daqdataformats::SourceID::Subsystem::kDetectorReadout;
   static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kProtoWIB;
   static const constexpr uint64_t expected_tick_difference = 25; // 2 MHz@50MHz clock // NOLINT(build/unsigned)
 };
 
-static_assert(sizeof(struct dunedaq::detdataformats::wib::WIBFrame)*12 == kProtoWIBSuperChunkSize,
+static_assert(sizeof(struct dunedaq::detdataformats::wib::WIBFrame) * 12 == kProtoWIBSuperChunkSize,
               "Check your assumptions on ProtoWIBSuperChunkTypeAdapter");
 
 } // namespace types

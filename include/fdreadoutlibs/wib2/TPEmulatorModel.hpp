@@ -8,8 +8,8 @@
 #ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_TPEMULATORMODEL_HPP_
 #define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_TPEMULATORMODEL_HPP_
 
-#include "iomanager/Sender.hpp"
 #include "iomanager/Receiver.hpp"
+#include "iomanager/Sender.hpp"
 
 #include "logging/Logging.hpp"
 
@@ -23,7 +23,6 @@
 #include "readoutlibs/utils/FileSourceBuffer.hpp"
 #include "readoutlibs/utils/RateLimiter.hpp"
 #include "readoutlibs/utils/ReusableThread.hpp"
-
 
 #include "fdreadoutlibs/DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter.hpp"
 
@@ -47,7 +46,6 @@ class TPEmulatorModel : public readoutlibs::SourceEmulatorConcept
 public:
   using sink_t = iomanager::SenderConcept<detdataformats::wib::RawWIBTp>;
 
-
   // Raw WIB TP
   static const constexpr std::size_t RAW_WIB2_TP_SUBFRAME_SIZE = 12;
   // same size for header, tp data, pedinfo: 3 words * 4 bytes/word
@@ -59,7 +57,8 @@ public:
     , m_raw_data_sink(nullptr)
     , m_producer_thread(0)
     , m_rate_khz(rate_khz)
-  {}
+  {
+  }
 
   void init(const nlohmann::json& /*args*/) {}
 
@@ -136,14 +135,15 @@ protected:
 
     int offset = 0;
     auto& source = m_file_source->get();
-    int num_elem = m_file_source->num_elements(); // bytes 
+    int num_elem = m_file_source->num_elements(); // bytes
 
     if (num_elem == 0) {
       TLOG_DEBUG(TLVL_WORK_STEPS) << "No raw WIB2 TP elements to read from buffer! Sleeping...";
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       num_elem = m_file_source->num_elements();
     }
-    TLOG_DEBUG(TLVL_WORK_STEPS) << "Raw WIB2 TP bytes to read from buffer: " << num_elem * static_cast<int>(RAW_WIB2_TP_SUBFRAME_SIZE);
+    TLOG_DEBUG(TLVL_WORK_STEPS) << "Raw WIB2 TP bytes to read from buffer: "
+                                << num_elem * static_cast<int>(RAW_WIB2_TP_SUBFRAME_SIZE);
     while (m_run_marker.load()) {
       // Which element to push to the buffer
       if (offset == num_elem * static_cast<int>(RAW_WIB2_TP_SUBFRAME_SIZE)) { // NOLINT(build/unsigned)
@@ -152,9 +152,7 @@ protected:
       int bsize = num_elem * static_cast<int>(RAW_WIB2_TP_SUBFRAME_SIZE);
       std::vector<char> tmpbuffer;
       tmpbuffer.reserve(bsize);
-      ::memcpy(static_cast<void*>(tmpbuffer.data()),
-               static_cast<void*>(source.data() + offset),
-               bsize);
+      ::memcpy(static_cast<void*>(tmpbuffer.data()), static_cast<void*>(source.data() + offset), bsize);
       m_payload_wrapper.set_raw_tp_frame_chunk(tmpbuffer);
 
       offset += bsize;
@@ -173,7 +171,6 @@ protected:
     }
     TLOG_DEBUG(TLVL_WORK_STEPS) << "Data generation thread " << m_this_link_number << " finished";
   }
-
 
 private:
   // Constuctor params
@@ -212,7 +209,6 @@ private:
   daqdataformats::SourceID m_sourceid;
 
   types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter m_payload_wrapper;
-
 };
 
 } // namespace fdreadoutlibs

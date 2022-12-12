@@ -6,8 +6,8 @@
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#include "detdataformats/daphne/DAPHNEFrame.hpp"
 #include "fdreadoutlibs/daphne/DAPHNEFrameProcessor.hpp"
+#include "detdataformats/daphne/DAPHNEFrame.hpp"
 
 #include <atomic>
 #include <functional>
@@ -19,7 +19,7 @@ using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-void 
+void
 DAPHNEFrameProcessor::conf(const nlohmann::json& args)
 {
   readoutlibs::TaskRawDataProcessorModel<types::DAPHNESuperChunkTypeAdapter>::add_preprocess_task(
@@ -31,7 +31,7 @@ DAPHNEFrameProcessor::conf(const nlohmann::json& args)
 /**
  * Pipeline Stage 1.: Check proper timestamp increments in DAPHNE frame
  * */
-void 
+void
 DAPHNEFrameProcessor::timestamp_check(frameptr fp)
 {
   // If EMU data, emulate perfectly incrementing timestamp
@@ -69,7 +69,7 @@ DAPHNEFrameProcessor::timestamp_check(frameptr fp)
 /**
  * Pipeline Stage 2.: Check DAPHNE headers for error flags
  * */
-void 
+void
 DAPHNEFrameProcessor::frame_error_check(frameptr /*fp*/)
 {
   // check error fields

@@ -6,10 +6,10 @@
 #include "detdataformats/tde/TDE16Frame.hpp"
 
 #include <cstdint> // uint_t types
-#include <memory>  // unique_ptr
-#include <vector>
 #include <cstring> // memcpy
-#include <tuple> // tie
+#include <memory>  // unique_ptr
+#include <tuple>   // tie
+#include <vector>
 
 namespace dunedaq {
 namespace fdreadoutlibs {
@@ -23,8 +23,7 @@ struct TDEAMCFrameTypeAdapter
 
   char data[kTDEAMCFrameSize];
 
-  bool operator<(const TDEAMCFrameTypeAdapter
-& other) const
+  bool operator<(const TDEAMCFrameTypeAdapter& other) const
   {
     auto thisptr = reinterpret_cast<const FrameType*>(&data);        // NOLINT
     auto otherptr = reinterpret_cast<const FrameType*>(&other.data); // NOLINT
@@ -77,12 +76,11 @@ struct TDEAMCFrameTypeAdapter
   }
 
   // static const constexpr size_t fixed_payload_size = 5568;
-  static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kDetectorReadout;
+  static const constexpr daqdataformats::SourceID::Subsystem subsystem =
+    daqdataformats::SourceID::Subsystem::kDetectorReadout;
   static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTDE_AMC;
   static const constexpr uint64_t expected_tick_difference = 1000; // NOLINT(build/unsigned)
-
 };
-
 
 } // namespace types
 } // namespace fdreadoutlibs
