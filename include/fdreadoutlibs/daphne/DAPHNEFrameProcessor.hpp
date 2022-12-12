@@ -19,6 +19,7 @@
 
 #include "fdreadoutlibs/DAPHNESuperChunkTypeAdapter.hpp"
 
+
 #include <atomic>
 #include <functional>
 #include <memory>
@@ -41,8 +42,7 @@ public:
   // Constructor
   explicit DAPHNEFrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
     : readoutlibs::TaskRawDataProcessorModel<types::DAPHNESuperChunkTypeAdapter>(error_registry)
-  {
-  }
+  {}
 
   // Override config for pipeline setup
   void conf(const nlohmann::json& args) override;

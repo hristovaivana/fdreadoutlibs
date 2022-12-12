@@ -9,14 +9,15 @@
 #define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_VARIABLESIZEPAYLOADTYPEADAPTER_HPP_
 
 #include <cstdint> // uint_t types
-#include <cstring> // memcpy
 #include <memory>  // unique_ptr
-#include <tuple>   // tie
 #include <vector>
+#include <cstring> // memcpy
+#include <tuple> // tie
 
 namespace dunedaq {
 namespace fdreadoutlibs {
 namespace types {
+
 
 /**
  * @brief Convencience wrapper to take ownership over char pointers with
@@ -28,8 +29,7 @@ struct VariableSizePayloadTypeAdapter
   VariableSizePayloadTypeAdapter(size_t size, char* data)
     : size(size)
     , data(data)
-  {
-  }
+  {}
 
   size_t size = 0;
   std::unique_ptr<char> data = nullptr;

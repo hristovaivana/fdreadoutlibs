@@ -44,9 +44,9 @@ class DAPHNEListRequestHandler
 {
 public:
   // Using shorter typenames
-  using inherited = readoutlibs::DefaultRequestHandlerModel<
-    types::DAPHNESuperChunkTypeAdapter,
-    readoutlibs::SkipListLatencyBufferModel<types::DAPHNESuperChunkTypeAdapter>>;
+  using inherited =
+    readoutlibs::DefaultRequestHandlerModel<types::DAPHNESuperChunkTypeAdapter,
+                                            readoutlibs::SkipListLatencyBufferModel<types::DAPHNESuperChunkTypeAdapter>>;
   using SkipListAcc = typename folly::ConcurrentSkipList<types::DAPHNESuperChunkTypeAdapter>::Accessor;
   using SkipListSkip = typename folly::ConcurrentSkipList<types::DAPHNESuperChunkTypeAdapter>::Skipper;
 

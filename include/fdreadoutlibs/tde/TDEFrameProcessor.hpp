@@ -29,19 +29,22 @@ using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-class TDEFrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter>
+class TDEFrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter
+>
 {
 
 public:
-  using inherited = readoutlibs::TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter>;
-  using frameptr = types::TDEAMCFrameTypeAdapter*;
+  using inherited = readoutlibs::TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter
+>;
+  using frameptr = types::TDEAMCFrameTypeAdapter
+*;
   using tdeframeptr = dunedaq::detdataformats::tde::TDE16Frame*;
   using timestamp_t = std::uint64_t; // NOLINT(build/unsigned)
 
   explicit TDEFrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
-    : TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter>(error_registry)
-  {
-  }
+    : TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter
+>(error_registry)
+  {}
 
   // Override configuration to register pipeline
   void conf(const nlohmann::json& args) override;
