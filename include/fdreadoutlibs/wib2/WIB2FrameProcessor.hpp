@@ -25,6 +25,7 @@
 #include "detchannelmaps/TPCChannelMap.hpp"
 #include "detdataformats/wib2/WIB2Frame.hpp"
 
+
 #include "fdreadoutlibs/DUNEWIBSuperChunkTypeAdapter.hpp"
 #include "fdreadoutlibs/TriggerPrimitiveTypeAdapter.hpp"
 
@@ -32,6 +33,7 @@
 #include "rcif/cmd/Nljs.hpp"
 #include "trigger/TPSet.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
+
 
 #include "tpg/DesignFIR.hpp"
 #include "tpg/FrameExpand.hpp"
@@ -56,56 +58,62 @@ using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 using dunedaq::readoutlibs::logging::TLVL_TAKE_NOTE;
 
 namespace dunedaq {
-ERS_DECLARE_ISSUE(fdreadoutlibs, TPHandlerBacklog, "Failed to push hits to TP handler " << sid, ((int)sid))
+ERS_DECLARE_ISSUE(fdreadoutlibs,
+                  TPHandlerBacklog,
+                  "Failed to push hits to TP handler " << sid,
+                  ((int)sid))
 
 namespace fdreadoutlibs {
 
-struct swtpg_output
-{
+
+
+struct swtpg_output{
   uint16_t* output_location;
   uint64_t timestamp;
 };
 
-class WIB2FrameHandler
-{
+class WIB2FrameHandler {
 
-public:
-  explicit WIB2FrameHandler(int register_selector_params) { m_register_selector = register_selector_params; }
+public: 
+  explicit WIB2FrameHandler(int register_selector_params) {
+    m_register_selector = register_selector_params;
+  }
   WIB2FrameHandler(const WIB2FrameHandler&) = delete;
   WIB2FrameHandler& operator=(const WIB2FrameHandler&) = delete;
-  ~WIB2FrameHandler()
-  {
+  ~WIB2FrameHandler() {
     if (m_tpg_taps_p) {
       delete[] m_tpg_taps_p;
     }
 
     if (m_primfind_dest) {
       delete[] m_primfind_dest;
-    }
+    }    
   }
 
   std::unique_ptr<swtpg_wib2::ProcessingInfo<swtpg_wib2::NUM_REGISTERS_PER_FRAME>> m_tpg_processing_info;
 
   // Map from expanded AVX register position to offline channel number
-  swtpg_wib2::RegisterChannelMap register_channel_map;
+  swtpg_wib2::RegisterChannelMap register_channel_map; 
 
-  bool first_hit = true;
+  bool first_hit = true;                                                  
+                                                  
+  int get_registers_selector() {
+    return m_register_selector;
+  }
 
-  int get_registers_selector() { return m_register_selector; }
-
-  void reset()
-  {
+  void reset() {
     delete[] m_tpg_taps_p;
     m_tpg_taps_p = nullptr;
     delete[] m_primfind_dest;
     m_primfind_dest = nullptr;
     first_hit = true;
   }
+   
 
-  void initialize()
-  {
+  void initialize() {
     m_tpg_taps = swtpg_wib2::firwin_int(7, 0.1, m_tpg_multiplier);
-    m_tpg_taps.push_back(0);
+    m_tpg_taps.push_back(0);    
+
 
     if (m_tpg_taps_p == nullptr) {
       m_tpg_taps_p = new int16_t[m_tpg_taps.size()];
@@ -128,20 +136,30 @@ public:
       m_tpg_tap_exponent,
       m_tpg_threshold,
       0,
-      0);
+      0
+    );
+
   }
 
-  uint16_t* get_primfind_dest() { return m_primfind_dest; }
+  uint16_t* get_primfind_dest() {
+    return m_primfind_dest;
+  }
 
-private:
-  int m_register_selector;
-  uint16_t* m_primfind_dest = nullptr;
-  const uint16_t m_tpg_threshold = 5;                   // units of sigma // NOLINT(build/unsigned)
-  const uint8_t m_tpg_tap_exponent = 6;                 // NOLINT(build/unsigned)
-  const int m_tpg_multiplier = 1 << m_tpg_tap_exponent; // 64
-  std::vector<int16_t> m_tpg_taps;                      // firwin_int(7, 0.1, multiplier);
+
+private: 
+  int m_register_selector;    
+  uint16_t* m_primfind_dest = nullptr;  
+  const uint16_t m_tpg_threshold = 5;                    // units of sigma // NOLINT(build/unsigned)
+  const uint8_t m_tpg_tap_exponent = 6;                  // NOLINT(build/unsigned)
+  const int m_tpg_multiplier = 1 << m_tpg_tap_exponent;  // 64
+  std::vector<int16_t> m_tpg_taps;                       // firwin_int(7, 0.1, multiplier);
   int16_t* m_tpg_taps_p = nullptr;
+
+
 };
+
+
+
 
 class WIB2FrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>
 {
@@ -159,14 +177,14 @@ public:
   explicit WIB2FrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
     : TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>(error_registry)
     , m_sw_tpg_enabled(false)
-    , m_add_hits_tphandler_thread_should_run(false)
-  {
-  }
+    , m_add_hits_tphandler_thread_should_run(false)    
+  {}
 
   ~WIB2FrameProcessor()
   {
     m_wib2_frame_handler->reset();
     m_wib2_frame_handler_second_half->reset();
+
   }
 
   void start(const nlohmann::json& args) override
@@ -176,7 +194,7 @@ public:
 
       rcif::cmd::StartParams start_params = args.get<rcif::cmd::StartParams>();
       m_tphandler->set_run_number(start_params.run);
-
+  
       m_tphandler->reset();
 
       m_tps_dropped = 0;
@@ -208,12 +226,13 @@ public:
     inherited::stop(args);
     if (m_sw_tpg_enabled) {
       // Make temp. buffers reusable on next start.
-      m_wib2_frame_handler->reset();
-      m_wib2_frame_handler_second_half->reset();
-
-      // auto runtime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()
-      // - m_t0).count(); TLOG() << "Ran for " << runtime << "ms.";
+      m_wib2_frame_handler->reset();    
+      m_wib2_frame_handler_second_half->reset();  
+      
+      //auto runtime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_t0).count();
+      //TLOG() << "Ran for " << runtime << "ms.";
     }
+
   }
 
   void init(const nlohmann::json& args) override
@@ -260,7 +279,8 @@ public:
       // Launch the thread for adding hits to tphandler
       m_add_hits_tphandler_thread_should_run.store(true);
       m_add_hits_tphandler_thread = std::thread(&WIB2FrameProcessor::add_hits_to_tphandler, this);
-      TLOG() << "Launched thread for adding hits to tphandler";
+      TLOG() << "Launched thread for adding hits to tphandler"; 
+      
     }
 
     // Setup pre-processing pipeline
@@ -272,13 +292,13 @@ public:
 
   void scrap(const nlohmann::json& args) override
   {
-    if (m_sw_tpg_enabled) {
+   if(m_sw_tpg_enabled) {	  
       TLOG() << "Waiting to join add_hits_tphandler_thread";
       m_add_hits_tphandler_thread_should_run.store(false);
       m_add_hits_tphandler_thread.join();
       TLOG() << "add_hits_tphandler_thread joined";
       m_tphandler.reset();
-    }
+   }    
 
     TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::scrap(args);
   }
@@ -317,6 +337,8 @@ protected:
   bool m_problem_reported = false;
   std::atomic<int> m_ts_error_ctr{ 0 };
 
+
+
   void postprocess_example(const types::DUNEWIBSuperChunkTypeAdapter* fp)
   {
     TLOG() << "Postprocessing: " << fp->get_first_timestamp();
@@ -332,11 +354,11 @@ protected:
     uint16_t wib2_superchunk_tick_difference = wib2_tick_difference * fp->get_num_frames();
 
     // If EMU data, emulate perfectly incrementing timestamp
-    if (inherited::m_emulator_mode) {                                     // emulate perfectly incrementing timestamp
-      uint64_t ts_next = m_previous_ts + wib2_superchunk_tick_difference; // NOLINT(build/unsigned)
-      auto wf = reinterpret_cast<wibframeptr>(((uint8_t*)fp));            // NOLINT
-      for (unsigned int i = 0; i < fp->get_num_frames(); ++i) {           // NOLINT(build/unsigned)
-        // auto wfh = const_cast<dunedaq::detdataformats::wib2::WIB2Header*>(wf->get_wib_header());
+    if (inherited::m_emulator_mode) {                           // emulate perfectly incrementing timestamp
+      uint64_t ts_next = m_previous_ts + wib2_superchunk_tick_difference;                   // NOLINT(build/unsigned)
+      auto wf = reinterpret_cast<wibframeptr>(((uint8_t*)fp));  // NOLINT
+      for (unsigned int i = 0; i < fp->get_num_frames(); ++i) { // NOLINT(build/unsigned)
+        //auto wfh = const_cast<dunedaq::detdataformats::wib2::WIB2Header*>(wf->get_wib_header());
         wf->set_timestamp(ts_next);
         ts_next += wib2_tick_difference;
         wf++;
@@ -350,9 +372,8 @@ protected:
     // Check timestamp
     if (m_current_ts - m_previous_ts != wib2_superchunk_tick_difference) {
       ++m_ts_error_ctr;
-      m_error_registry->add_error(
-        "MISSING_FRAMES",
-        readoutlibs::FrameErrorRegistry::ErrorInterval(m_previous_ts + wib2_superchunk_tick_difference, m_current_ts));
+      m_error_registry->add_error("MISSING_FRAMES",
+                                  readoutlibs::FrameErrorRegistry::ErrorInterval(m_previous_ts + wib2_superchunk_tick_difference, m_current_ts));
       if (m_first_ts_missmatch) { // log once
         TLOG_DEBUG(TLVL_BOOKKEEPING) << "First timestamp MISSMATCH! -> | previous: " << std::to_string(m_previous_ts)
                                      << " current: " + std::to_string(m_current_ts);
@@ -391,6 +412,7 @@ protected:
 
       m_current_frame_pushed = false;
 
+
       wf++;
       m_frames_processed++;
     }
@@ -404,12 +426,13 @@ protected:
     if (!fp)
       return;
     auto wfptr = reinterpret_cast<dunedaq::detdataformats::wib2::WIB2Frame*>((uint8_t*)fp); // NOLINT
-    uint64_t timestamp = wfptr->get_timestamp();                                            // NOLINT(build/unsigned)
+    uint64_t timestamp = wfptr->get_timestamp();                        // NOLINT(build/unsigned)
 
     // Frame expansion
     swtpg_wib2::MessageRegisters registers_array;
-    int register_selection = frame_handler->get_registers_selector();
-    expand_wib2_adcs(fp, &registers_array, register_selection);
+    int register_selection = frame_handler->get_registers_selector();    
+    expand_wib2_adcs(fp, &registers_array, register_selection); 
+      
 
     if (frame_handler->first_hit) {
 
@@ -417,29 +440,28 @@ protected:
       std::thread::id thread_id = std::this_thread::get_id();
       pid_t tid;
       tid = syscall(SYS_gettid);
-      TLOG() << " Thread ID " << thread_id << " PID " << tid;
+      TLOG() << " Thread ID " << thread_id << " PID " << tid ;
 
-      frame_handler->register_channel_map =
-        swtpg_wib2::get_register_to_offline_channel_map_wib2(wfptr, m_channel_map, register_selection);
+      frame_handler->register_channel_map = swtpg_wib2::get_register_to_offline_channel_map_wib2(wfptr, m_channel_map, register_selection);
 
       frame_handler->m_tpg_processing_info->setState(registers_array);
 
-      // Debugging statements
+      // Debugging statements 
       m_link = wfptr->header.link;
       m_crate_no = wfptr->header.crate;
       m_slot_no = wfptr->header.slot;
-      TLOG() << "Got first item, link/crate/slot=" << m_link << "/" << m_crate_no << "/" << m_slot_no;
+      TLOG() << "Got first item, link/crate/slot=" << m_link << "/" << m_crate_no << "/" << m_slot_no;      
 
       std::stringstream ss;
       ss << " Channels are:\n";
-      for (size_t i = 0; i < swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::SAMPLES_PER_REGISTER; ++i) {
+      for(size_t i=0; i<swtpg_wib2::NUM_REGISTERS_PER_FRAME*swtpg_wib2::SAMPLES_PER_REGISTER; ++i){
         ss << i << "\t" << frame_handler->register_channel_map.channel[i] << "\n";
       }
-      TLOG_DEBUG(2) << ss.str();
+      TLOG_DEBUG(2) << ss.str();      
 
       // Add WIB2FrameHandler channel map to the common m_register_channels
-      for (size_t i = 0; i < swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::SAMPLES_PER_REGISTER; ++i) {
-        m_register_channels.push_back(frame_handler->register_channel_map.channel[i]);
+      for (size_t i=0; i<swtpg_wib2::NUM_REGISTERS_PER_FRAME*swtpg_wib2::SAMPLES_PER_REGISTER; ++i) {
+          m_register_channels.push_back(frame_handler->register_channel_map.channel[i]);          
       }
 
       TLOG() << "Processed the first superchunk ";
@@ -447,22 +469,25 @@ protected:
       // Set first hit bool to false so that registration of channel map is not executed twice
       frame_handler->first_hit = false;
 
-    } // end if (frame_handler->first_hit)
 
+    } // end if (frame_handler->first_hit)
+    
     // Execute the SWTPG algorithm
     frame_handler->m_tpg_processing_info->input = &registers_array;
     *frame_handler->get_primfind_dest() = swtpg_wib2::MAGIC;
     swtpg_wib2::process_window_avx2(*frame_handler->m_tpg_processing_info);
-
-    // Insert output of the AVX processing into the swtpg_output
-    swtpg_output swtpg_processing_result = { frame_handler->get_primfind_dest(), timestamp };
+    
+    // Insert output of the AVX processing into the swtpg_output 
+    swtpg_output swtpg_processing_result = {frame_handler->get_primfind_dest(), timestamp};
 
     // Push to the MPMC tphandler queue only if it's possible, else drop the TPs.
-    if (!m_tphandler_queue.try_push(std::move(swtpg_processing_result), std::chrono::milliseconds(0))) {
-      // we're going to loose these hits
-      ers::warning(TPHandlerBacklog(ERS_HERE, m_sourceid.id));
+    if(!m_tphandler_queue.try_push(std::move(swtpg_processing_result), std::chrono::milliseconds(0))) {
+        // we're going to loose these hits
+        ers::warning(TPHandlerBacklog(ERS_HERE, m_sourceid.id));
     }
   }
+
+
 
   unsigned int process_swtpg_hits(uint16_t* primfind_it, timestamp_t timestamp)
   {
@@ -495,9 +520,9 @@ protected:
         if (hit_charge[i] && chan[i] != swtpg_wib2::MAGIC) {
           // This channel had a hit ending here, so we can create and output the hit here
           const uint16_t offline_channel = m_register_channels[chan[i]];
-          uint64_t tp_t_begin =                                                   // NOLINT(build/unsigned)
-            timestamp + clocksPerTPCTick * (int64_t(hit_end[i]) - hit_tover[i]);  // NOLINT(build/unsigned)
-          uint64_t tp_t_end = timestamp + clocksPerTPCTick * int64_t(hit_end[i]); // NOLINT(build/unsigned)
+          uint64_t tp_t_begin =                                                        // NOLINT(build/unsigned)
+            timestamp + clocksPerTPCTick * (int64_t(hit_end[i]) - hit_tover[i]);       // NOLINT(build/unsigned)
+          uint64_t tp_t_end = timestamp + clocksPerTPCTick * int64_t(hit_end[i]);      // NOLINT(build/unsigned)
 
           // May be needed for TPSet:
           // uint64_t tspan = clocksPerTPCTick * hit_tover[i]; // is/will be this needed?
@@ -508,7 +533,7 @@ protected:
           //
           // sed -n -e 's/.*Hit: \(.*\) \(.*\).*/\1 \2/p' log.txt  > hits.txt
           //
-          // TLOG_DEBUG(0) << "Hit: " << tp_t_begin << " " << offline_channel;
+          //TLOG_DEBUG(0) << "Hit: " << tp_t_begin << " " << offline_channel;
 
           triggeralgs::TriggerPrimitive trigprim;
           trigprim.time_start = tp_t_begin;
@@ -517,7 +542,8 @@ protected:
           trigprim.channel = offline_channel;
           trigprim.adc_integral = hit_charge[i];
           trigprim.adc_peak = hit_charge[i] / 20;
-          trigprim.detid = m_link; // TODO: convert crate/slot/link to SourceID Roland Sipos rsipos@cern.ch July-22-2021
+          trigprim.detid =
+            m_link; // TODO: convert crate/slot/link to SourceID Roland Sipos rsipos@cern.ch July-22-2021
           trigprim.type = triggeralgs::TriggerPrimitive::Type::kTPC;
           trigprim.algorithm = triggeralgs::TriggerPrimitive::Algorithm::kTPCDefault;
           trigprim.version = 1;
@@ -534,29 +560,29 @@ protected:
     return nhits;
   }
 
-  // Function for the TPHandler threads.
+
+  // Function for the TPHandler threads. 
   // Reads the m_tpthread_queue and then process the hits
-  void add_hits_to_tphandler()
-  {
+  void add_hits_to_tphandler() {
 
     std::stringstream thread_name;
     thread_name << "tphandler-" << m_sourceid.id;
-    pthread_setname_np(pthread_self(), thread_name.str().c_str());
+    pthread_setname_np(pthread_self(), thread_name.str().c_str());    
 
     while (m_add_hits_tphandler_thread_should_run.load()) {
-      swtpg_output result_from_swtpg;
-      while (m_tphandler_queue.can_pop()) {
-        if (m_tphandler_queue.try_pop(result_from_swtpg, std::chrono::milliseconds(0))) {
+      swtpg_output result_from_swtpg; 
+      while(m_tphandler_queue.can_pop()) {
+	if(m_tphandler_queue.try_pop(result_from_swtpg, std::chrono::milliseconds(0))) {
 
-          // Process the trigger primitve
-          unsigned int nhits = process_swtpg_hits(result_from_swtpg.output_location, result_from_swtpg.timestamp);
-
-          m_swtpg_hits_count += nhits;
-          m_tphandler->try_sending_tpsets(result_from_swtpg.timestamp);
-        }
+        // Process the trigger primitve
+        unsigned int nhits = process_swtpg_hits(result_from_swtpg.output_location, result_from_swtpg.timestamp);
+    
+        m_swtpg_hits_count += nhits;
+        m_tphandler->try_sending_tpsets(result_from_swtpg.timestamp);
+	}
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
+    } 
   }
 
 private:
@@ -571,14 +597,14 @@ private:
 
   std::atomic<bool> m_add_hits_tphandler_thread_should_run;
 
-  uint8_t m_link;     // NOLINT(build/unsigned)
+  uint8_t m_link; // NOLINT(build/unsigned)
   uint8_t m_slot_no;  // NOLINT(build/unsigned)
   uint8_t m_crate_no; // NOLINT(build/unsigned)
 
   std::shared_ptr<detchannelmaps::TPCChannelMap> m_channel_map;
 
   // Mapping from expanded AVX register position to offline channel number
-  std::vector<uint> m_register_channels;
+  std::vector<uint> m_register_channels;                                                  
 
   // Frame error check
   bool m_current_frame_pushed = false;
@@ -586,6 +612,7 @@ private:
   const int m_num_frame_error_bits = 16;
   int m_error_occurrence_counters[16] = { 0 };
   int m_error_reset_freq;
+
 
   std::shared_ptr<iomanager::SenderConcept<types::TriggerPrimitiveTypeAdapter>> m_tp_sink;
   std::shared_ptr<iomanager::SenderConcept<trigger::TPSet>> m_tpset_sink;
@@ -597,16 +624,17 @@ private:
   // AAA: TODO: automatically divide the registers based on the number of processing tasks
   // E.g.: 0 --> divide registers by 2 (= 16/2) and select the first half
   // E.g.: 1 --> divide registers by 2 (= 16/2) and select the second half
-  int selection_of_register = 0;
+  int selection_of_register = 0; 
   std::unique_ptr<WIB2FrameHandler> m_wib2_frame_handler = std::make_unique<WIB2FrameHandler>(selection_of_register);
 
-  int selection_of_register_second_half = 1;
-  std::unique_ptr<WIB2FrameHandler> m_wib2_frame_handler_second_half =
-    std::make_unique<WIB2FrameHandler>(selection_of_register_second_half);
+  int selection_of_register_second_half = 1; 
+  std::unique_ptr<WIB2FrameHandler> m_wib2_frame_handler_second_half = std::make_unique<WIB2FrameHandler>(selection_of_register_second_half);
+  
 
   // AAA: TODO: make selection of the initial capacity of the queue configurable
-  size_t m_initial_capacity_mpmc_queue = 100000;
-  iomanager::FollyMPMCQueue<swtpg_output> m_tphandler_queue{ "tphandler_queue", m_initial_capacity_mpmc_queue };
+  size_t m_initial_capacity_mpmc_queue = 100000; 
+  iomanager::FollyMPMCQueue<swtpg_output> m_tphandler_queue{"tphandler_queue", m_initial_capacity_mpmc_queue};
+
 
   std::thread m_add_hits_tphandler_thread;
 

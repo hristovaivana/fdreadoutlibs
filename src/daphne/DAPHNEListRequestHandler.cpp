@@ -1,20 +1,20 @@
 /**
- * @file DAPHNEListRequestHandler.cpp Trigger matching mechanism for
+ * @file DAPHNEListRequestHandler.cpp Trigger matching mechanism for 
  * DAPHNE frames with SkipList latency buffer.
  *
  * This is part of the DUNE DAQ , copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#include "fdreadoutlibs/daphne/DAPHNEListRequestHandler.hpp"
 #include "detdataformats/daphne/DAPHNEFrame.hpp"
+#include "fdreadoutlibs/daphne/DAPHNEListRequestHandler.hpp"
 
 using dunedaq::readoutlibs::logging::TLVL_WORK_STEPS;
 
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-void
+void 
 DAPHNEListRequestHandler::daphne_cleanup_request()
 {
   // size_t occupancy_guess = m_latency_buffer->occupancy();

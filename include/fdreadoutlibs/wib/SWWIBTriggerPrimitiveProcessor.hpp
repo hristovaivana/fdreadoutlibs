@@ -33,7 +33,8 @@ using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-class SWWIBTriggerPrimitiveProcessor : public readoutlibs::TaskRawDataProcessorModel<types::TriggerPrimitiveTypeAdapter>
+class SWWIBTriggerPrimitiveProcessor
+  : public readoutlibs::TaskRawDataProcessorModel<types::TriggerPrimitiveTypeAdapter>
 {
 
 public:
@@ -44,8 +45,7 @@ public:
 
   explicit SWWIBTriggerPrimitiveProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
     : TaskRawDataProcessorModel<types::TriggerPrimitiveTypeAdapter>(error_registry)
-  {
-  }
+  {}
 
 private:
 };

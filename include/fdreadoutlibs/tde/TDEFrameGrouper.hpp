@@ -18,7 +18,8 @@ namespace fdreadoutlibs {
 class TDEFrameGrouper
 {
 public:
-  void group(std::vector<std::vector<detdataformats::tde::TDE16Frame>>& v, detdataformats::tde::TDE16Frame* frames);
+  void group(std::vector<std::vector<detdataformats::tde::TDE16Frame>>& v, 
+             detdataformats::tde::TDE16Frame* frames); 
 
 private:
 };

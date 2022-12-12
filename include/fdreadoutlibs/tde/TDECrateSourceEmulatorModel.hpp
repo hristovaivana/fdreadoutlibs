@@ -65,8 +65,7 @@ public:
     , m_producer_thread(0)
     , m_name(name)
     , m_rate_khz(rate_khz)
-  {
-  }
+  {}
 
   // No-op init
   void init(const nlohmann::json& /*args*/) {}

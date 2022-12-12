@@ -34,13 +34,18 @@ public:
     , m_tp_timeout(tp_timeout)
     , m_tpset_window_size(tpset_window_size)
     , m_sourceid(sourceId)
+  {}
+
+  void set_run_number(daqdataformats::run_number_t run_number)
   {
+    m_run_number = run_number;
   }
 
-  void set_run_number(daqdataformats::run_number_t run_number) { m_run_number = run_number; }
-
-  daqdataformats::run_number_t get_run_number() { return m_run_number; }
-
+  daqdataformats::run_number_t get_run_number()
+  {
+    return m_run_number;
+  }
+  
   bool add_tp(triggeralgs::TriggerPrimitive trigprim, uint64_t currentTime) // NOLINT(build/unsigned)
   {
     if (trigprim.time_start + m_tp_timeout > currentTime) {
@@ -61,13 +66,13 @@ public:
       tpset.seqno = m_next_tpset_seqno++; // NOLINT(runtime/increment_decrement)
       tpset.type = trigger::TPSet::Type::kPayload;
       tpset.origin = m_sourceid;
-
+      
       while (!m_tp_buffer.empty() && m_tp_buffer.top().time_start < tpset.end_time) {
         triggeralgs::TriggerPrimitive tp = m_tp_buffer.top();
         types::TriggerPrimitiveTypeAdapter* tp_readout_type =
           reinterpret_cast<types::TriggerPrimitiveTypeAdapter*>(&tp); // NOLINT
         try {
-          types::TriggerPrimitiveTypeAdapter tp_copy(*tp_readout_type);
+            types::TriggerPrimitiveTypeAdapter tp_copy(*tp_readout_type);
           m_tp_sink.send(std::move(tp_copy), std::chrono::milliseconds(10));
           m_sent_tps++;
         } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
@@ -108,7 +113,7 @@ private:
   uint64_t m_tpset_window_size;    // NOLINT(build/unsigned)
   uint64_t m_next_tpset_seqno = 0; // NOLINT(build/unsigned)
   daqdataformats::SourceID m_sourceid;
-
+  
   std::atomic<size_t> m_sent_tps{ 0 };    // NOLINT(build/unsigned)
   std::atomic<size_t> m_sent_tpsets{ 0 }; // NOLINT(build/unsigned)
 

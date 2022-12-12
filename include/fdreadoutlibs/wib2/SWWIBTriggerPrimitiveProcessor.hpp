@@ -21,6 +21,7 @@
 
 #include "detdataformats/wib2/WIB2Frame.hpp"
 
+
 #include <atomic>
 #include <functional>
 #include <memory>
@@ -43,8 +44,7 @@ public:
 
   explicit SWWIB2TriggerPrimitiveProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
     : TaskRawDataProcessorModel<types::SW_WIB2_TRIGGERPRIMITIVE_STRUCT>(error_registry)
-  {
-  }
+  {}
 
 private:
 };

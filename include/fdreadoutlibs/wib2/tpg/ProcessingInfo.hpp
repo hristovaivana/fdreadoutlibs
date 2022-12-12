@@ -84,8 +84,7 @@ struct ProcessingInfo
     , adcMax(INT16_MAX / multiplier)
     , nhits(nhits_)
     , absTimeModNTAPS(absTimeModNTAPS_)
-  {
-  }
+  {}
 
   // Set the initial state from the window starting at first_msg_p
   template<size_t N>

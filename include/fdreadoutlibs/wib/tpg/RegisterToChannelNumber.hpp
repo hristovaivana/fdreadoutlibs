@@ -9,11 +9,11 @@
 #ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_TPG_REGISTERTOCHANNELNUMBER_HPP_
 #define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB_TPG_REGISTERTOCHANNELNUMBER_HPP_
 
-#include "FrameExpand.hpp"
-#include "TPGConstants.hpp"
 #include "detchannelmaps/TPCChannelMap.hpp"
 #include "detdataformats/wib/WIBFrame.hpp"
 #include "readoutlibs/ReadoutTypes.hpp"
+#include "FrameExpand.hpp"
+#include "TPGConstants.hpp"
 
 #include <boost/chrono/duration.hpp>
 #include <chrono>
@@ -79,7 +79,7 @@ get_register_to_offline_channel_map(const dunedaq::detdataformats::wib::WIBFrame
     // adjacent-in-time registers are adjacent in memory, hence the
     // need for this indexing. See the comment in that function for a
     // diagram
-    size_t index = (i / 16) * 16 * 12 + (i % 16);
+    size_t index = (i/16)*16*12 + (i%16);
     ret.collection[i] = collection_registers.uint16(index) + min_ch;
   }
   for (size_t i = 0; i < 10 * SAMPLES_PER_REGISTER; ++i) {
@@ -87,7 +87,7 @@ get_register_to_offline_channel_map(const dunedaq::detdataformats::wib::WIBFrame
     // adjacent-in-time registers are adjacent in memory, hence the
     // need for this indexing. See the comment in that function for a
     // diagram
-    size_t index = (i / 16) * 16 * 12 + (i % 16);
+    size_t index = (i/16)*16*12 + (i%16);
     ret.induction[i] = induction_registers.uint16(index) + min_ch;
   }
 

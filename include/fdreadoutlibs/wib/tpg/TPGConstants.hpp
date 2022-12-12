@@ -43,7 +43,7 @@ const constexpr std::size_t SAMPLES_PER_REGISTER = 16;
 // expansion: 12 frames per message times 8 registers per frame times
 // 32 bytes (256 bits) per register
 const constexpr std::size_t COLLECTION_ADCS_SIZE = BYTES_PER_REGISTER * COLLECTION_REGISTERS_PER_FRAME * FRAMES_PER_MSG;
-const constexpr std::size_t INDUCTION_ADCS_SIZE = BYTES_PER_REGISTER * INDUCTION_REGISTERS_PER_FRAME * FRAMES_PER_MSG;
+const constexpr std::size_t INDUCTION_ADCS_SIZE  = BYTES_PER_REGISTER * INDUCTION_REGISTERS_PER_FRAME  * FRAMES_PER_MSG;
 
 } // namespace swtpg
 
