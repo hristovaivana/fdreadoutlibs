@@ -6,10 +6,10 @@
 #include "detdataformats/ssp/SSPTypes.hpp"
 
 #include <cstdint> // uint_t types
-#include <memory>  // unique_ptr
-#include <vector>
 #include <cstring> // memcpy
-#include <tuple> // tie
+#include <memory>  // unique_ptr
+#include <tuple>   // tie
+#include <vector>
 
 namespace dunedaq {
 namespace fdreadoutlibs {
@@ -32,7 +32,7 @@ struct SSPFrameTypeAdapter
     return this->get_first_timestamp() < other.get_first_timestamp() ? true : false;
   }
 
-  uint64_t get_timestamp() const  // NOLINT(build/unsigned)
+  uint64_t get_timestamp() const // NOLINT(build/unsigned)
   {
     return get_first_timestamp();
   }
@@ -42,7 +42,7 @@ struct SSPFrameTypeAdapter
     auto ehptr = &header;
     unsigned long ts = 0; // NOLINT(runtime/int)
     for (unsigned int iword = 0; iword <= 3; ++iword) {
-      ts += ((unsigned long)(ehptr->timestamp[iword])) << 16 * iword; //NOLINT(runtime/int)
+      ts += ((unsigned long)(ehptr->timestamp[iword])) << 16 * iword; // NOLINT(runtime/int)
     }
     return ts;
   }
@@ -65,26 +65,20 @@ struct SSPFrameTypeAdapter
 
   FrameType* end() { return (this + 1); } // NOLINT
 
-  size_t get_payload_size() {
-    return kSSPFrameSize;
-  }
+  size_t get_payload_size() { return kSSPFrameSize; }
 
-  size_t get_num_frames() {
-    return 1;
-  }
+  size_t get_num_frames() { return 1; }
 
-  size_t get_frame_size() {
-    return kSSPFrameSize;
-  }
+  size_t get_frame_size() { return kSSPFrameSize; }
 
-  static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kDetectorReadout;
+  static const constexpr daqdataformats::SourceID::Subsystem subsystem =
+    daqdataformats::SourceID::Subsystem::kDetectorReadout;
   static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kUnknown;
   static const constexpr uint64_t expected_tick_difference = 25; // NOLINT(build/unsigned)
 };
 
 static_assert(sizeof(struct SSPFrameTypeAdapter) == sizeof(detdataformats::ssp::EventHeader) + kSSPFrameSize,
               "Check your assumptions on SSPFrameTypeAdapter");
-
 
 } // namespace types
 } // namespace fdreadoutlibs

@@ -6,10 +6,10 @@
 #include "detdataformats/wib2/WIB2Frame.hpp"
 
 #include <cstdint> // uint_t types
-#include <memory>  // unique_ptr
-#include <vector>
 #include <cstring> // memcpy
-#include <tuple> // tie
+#include <memory>  // unique_ptr
+#include <tuple>   // tie
+#include <vector>
 
 namespace dunedaq {
 namespace fdreadoutlibs {
@@ -77,14 +77,14 @@ struct DUNEWIBSuperChunkTypeAdapter
 
   size_t get_frame_size() { return 472; }
 
-  static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kDetectorReadout;
+  static const constexpr daqdataformats::SourceID::Subsystem subsystem =
+    daqdataformats::SourceID::Subsystem::kDetectorReadout;
   static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kWIB;
   static const constexpr uint64_t expected_tick_difference = 32; // NOLINT(build/unsigned)
 };
 
-static_assert(sizeof(struct dunedaq::detdataformats::wib2::WIB2Frame)*12 == kDUNEWIBSuperChunkSize,
+static_assert(sizeof(struct dunedaq::detdataformats::wib2::WIB2Frame) * 12 == kDUNEWIBSuperChunkSize,
               "Check your assumptions on DUNEWIBSuperChunkTypeAdapter");
-
 
 } // namespace types
 } // namespace fdreadoutlibs

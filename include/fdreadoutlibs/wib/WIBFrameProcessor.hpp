@@ -24,7 +24,6 @@
 #include "detchannelmaps/TPCChannelMap.hpp"
 #include "detdataformats/wib/WIBFrame.hpp"
 
-
 #include "fdreadoutlibs/TriggerPrimitiveTypeAdapter.hpp"
 
 #include "fdreadoutlibs/ProtoWIBSuperChunkTypeAdapter.hpp"
@@ -56,7 +55,8 @@ using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 using dunedaq::readoutlibs::logging::TLVL_TAKE_NOTE;
 
 namespace {
-enum CollectionOrInduction {
+enum CollectionOrInduction
+{
   kCollection,
   kInduction
 };
@@ -88,7 +88,8 @@ public:
     , m_coll_taps_p(nullptr)
     , m_ind_primfind_dest(nullptr)
     , m_ind_taps_p(nullptr)
-  {}
+  {
+  }
 
   ~WIBFrameProcessor()
   {
@@ -113,7 +114,7 @@ public:
 
       rcif::cmd::StartParams start_params = args.get<rcif::cmd::StartParams>();
       m_tphandler->set_run_number(start_params.run);
-  
+
       m_tphandler->reset();
       m_tps_dropped = 0;
 
@@ -173,7 +174,7 @@ public:
         0,
         0);
 
-      //m_induction_thread = std::thread(&WIBFrameProcessor::find_induction_hits_thread, this);
+      // m_induction_thread = std::thread(&WIBFrameProcessor::find_induction_hits_thread, this);
     } // end if(m_sw_tpg_enabled)
 
     // Reset timestamp check
@@ -216,10 +217,11 @@ public:
         delete[] m_ind_primfind_dest;
         m_ind_primfind_dest = nullptr;
       }
-      auto runtime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_t0).count();
-      TLOG() << "Ran for " << runtime << "ms. Found " << m_num_hits_coll << " collection hits and " << m_num_hits_ind << " induction hits";
+      auto runtime =
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_t0).count();
+      TLOG() << "Ran for " << runtime << "ms. Found " << m_num_hits_coll << " collection hits and " << m_num_hits_ind
+             << " induction hits";
     }
-
   }
 
   void init(const nlohmann::json& args) override
@@ -265,7 +267,7 @@ public:
         std::bind(&WIBFrameProcessor::find_collection_hits, this, std::placeholders::_1));
 
       // start the thread for induction hit finding
-      TLOG() << "Launch induction hit finding thread"; 
+      TLOG() << "Launch induction hit finding thread";
       m_ind_thread_should_run.store(true);
       m_induction_thread = std::thread(&WIBFrameProcessor::find_induction_hits_thread, this);
     }
@@ -273,21 +275,21 @@ public:
     // Setup pre-processing pipeline
     TaskRawDataProcessorModel<types::ProtoWIBSuperChunkTypeAdapter>::add_preprocess_task(
       std::bind(&WIBFrameProcessor::timestamp_check, this, std::placeholders::_1));
-    //TaskRawDataProcessorModel<types::ProtoWIBSuperChunkTypeAdapter>::add_preprocess_task(
-      //std::bind(&WIBFrameProcessor::frame_error_check, this, std::placeholders::_1));
+    // TaskRawDataProcessorModel<types::ProtoWIBSuperChunkTypeAdapter>::add_preprocess_task(
+    // std::bind(&WIBFrameProcessor::frame_error_check, this, std::placeholders::_1));
 
     TaskRawDataProcessorModel<types::ProtoWIBSuperChunkTypeAdapter>::conf(cfg);
   }
 
   void scrap(const nlohmann::json& args) override
   {
-   if(m_sw_tpg_enabled) {	  
+    if (m_sw_tpg_enabled) {
       TLOG() << "Waiting to join induction thread";
       m_ind_thread_should_run.store(false);
       m_induction_thread.join();
       TLOG() << "Induction thread joined";
-   }
-      m_tphandler.reset();
+    }
+    m_tphandler.reset();
 
     TaskRawDataProcessorModel<types::ProtoWIBSuperChunkTypeAdapter>::scrap(args);
   }
@@ -419,7 +421,7 @@ protected:
             m_error_occurrence_counters[j]++;
             if (!m_current_frame_pushed) {
               try {
-                  dunedaq::detdataformats::wib::WIBFrame wf_copy(*wf);
+                dunedaq::detdataformats::wib::WIBFrame wf_copy(*wf);
                 m_err_frame_sink->send(std::move(wf_copy), std::chrono::milliseconds(10));
                 m_current_frame_pushed = true;
               } catch (const ers::Issue& excpt) {
@@ -471,14 +473,14 @@ protected:
 
       std::stringstream ss;
       ss << "Collection channels are:\n";
-      for(size_t i=0; i<swtpg::COLLECTION_REGISTERS_PER_FRAME*swtpg::SAMPLES_PER_REGISTER; ++i){
+      for (size_t i = 0; i < swtpg::COLLECTION_REGISTERS_PER_FRAME * swtpg::SAMPLES_PER_REGISTER; ++i) {
         ss << i << "\t" << m_register_channel_map.collection[i] << "\n";
       }
       TLOG_DEBUG(2) << ss.str();
 
       std::stringstream ss2;
       ss2 << "Induction channels are:\n";
-      for(size_t i=0; i<swtpg::INDUCTION_REGISTERS_PER_FRAME*swtpg::SAMPLES_PER_REGISTER; ++i){
+      for (size_t i = 0; i < swtpg::INDUCTION_REGISTERS_PER_FRAME * swtpg::SAMPLES_PER_REGISTER; ++i) {
         ss2 << i << "\t" << m_register_channel_map.induction[i] << "\n";
       }
       TLOG_DEBUG(2) << ss2.str();
@@ -535,7 +537,6 @@ protected:
     swtpg::process_window_avx2(*m_ind_tpg_pi);
 
     m_first_ind = false;
-
   }
 
   // Stage: induction hit finding port
@@ -545,7 +546,7 @@ protected:
     thread_name << "ind-hits-" << m_sourceid.id;
     pthread_setname_np(pthread_self(), thread_name.str().c_str());
 
-    size_t n_items=0;
+    size_t n_items = 0;
     while (m_ind_thread_should_run.load()) {
       // There must be a nicer way to write this
       while (!m_induction_item_ready.load()) {
@@ -564,9 +565,11 @@ protected:
 
         // std::this_thread::sleep_for(std::chrono::microseconds(1));
         _mm_pause();
-        if(!m_ind_thread_should_run.load()) break;
+        if (!m_ind_thread_should_run.load())
+          break;
       }
-      if(!m_ind_thread_should_run.load()) break;
+      if (!m_ind_thread_should_run.load())
+        break;
 
       find_induction_hits(m_induction_item_to_process);
 
@@ -624,11 +627,11 @@ protected:
       for (int i = 0; i < 16; ++i) {
         if (hit_charge[i] && chan[i] != swtpg::MAGIC) {
           // This channel had a hit ending here, so we can create and output the hit here
-          const uint16_t offline_channel = (coll_or_ind == kCollection) ?
-            m_register_channel_map.collection[chan[i]] : m_register_channel_map.induction[chan[i]];
-          uint64_t tp_t_begin =                                                        // NOLINT(build/unsigned)
-            timestamp + clocksPerTPCTick * (int64_t(hit_end[i]) - hit_tover[i]);       // NOLINT(build/unsigned)
-          uint64_t tp_t_end = timestamp + clocksPerTPCTick * int64_t(hit_end[i]);      // NOLINT(build/unsigned)
+          const uint16_t offline_channel = (coll_or_ind == kCollection) ? m_register_channel_map.collection[chan[i]]
+                                                                        : m_register_channel_map.induction[chan[i]];
+          uint64_t tp_t_begin =                                                   // NOLINT(build/unsigned)
+            timestamp + clocksPerTPCTick * (int64_t(hit_end[i]) - hit_tover[i]);  // NOLINT(build/unsigned)
+          uint64_t tp_t_end = timestamp + clocksPerTPCTick * int64_t(hit_end[i]); // NOLINT(build/unsigned)
 
           // May be needed for TPSet:
           // uint64_t tspan = clocksPerTPCTick * hit_tover[i]; // is/will be this needed?
@@ -677,7 +680,7 @@ private:
   std::atomic<bool> m_ind_thread_should_run;
 
   InductionItemToProcess* m_induction_item_to_process;
-  std::atomic<bool> m_induction_item_ready{false};
+  std::atomic<bool> m_induction_item_ready{ false };
 
   size_t m_num_msg = 0;
   size_t m_num_push_fail = 0;

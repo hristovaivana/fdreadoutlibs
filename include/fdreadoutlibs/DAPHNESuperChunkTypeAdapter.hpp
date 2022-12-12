@@ -6,10 +6,10 @@
 #include "detdataformats/daphne/DAPHNEFrame.hpp"
 
 #include <cstdint> // uint_t types
-#include <memory>  // unique_ptr
-#include <vector>
 #include <cstring> // memcpy
-#include <tuple> // tie
+#include <memory>  // unique_ptr
+#include <tuple>   // tie
+#include <vector>
 
 namespace dunedaq {
 namespace fdreadoutlibs {
@@ -49,7 +49,8 @@ struct DAPHNESuperChunkTypeAdapter
   {
     uint64_t ts_next = first_timestamp; // NOLINT(build/unsigned)
     for (unsigned int i = 0; i < 12; ++i) {
-      auto df = reinterpret_cast<dunedaq::detdataformats::daphne::DAPHNEFrame*>(((uint8_t*)(&data)) + i * 584); // NOLINT
+      auto df =
+        reinterpret_cast<dunedaq::detdataformats::daphne::DAPHNEFrame*>(((uint8_t*)(&data)) + i * 584); // NOLINT
       df->header.timestamp_wf_1 = ts_next;
       df->header.timestamp_wf_2 = ts_next >> 32;
       ts_next += offset;
@@ -77,14 +78,14 @@ struct DAPHNESuperChunkTypeAdapter
 
   size_t get_frame_size() { return 584; }
 
-  static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kDetectorReadout;
+  static const constexpr daqdataformats::SourceID::Subsystem subsystem =
+    daqdataformats::SourceID::Subsystem::kDetectorReadout;
   static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kDAPHNE;
   static const constexpr uint64_t expected_tick_difference = 16; // NOLINT(build/unsigned)
 };
 
 static_assert(sizeof(struct DAPHNESuperChunkTypeAdapter) == kDAPHNESuperChunkSize,
               "Check your assumptions on DAPHNESuperChunkTypeAdapter");
-
 
 } // namespace types
 } // namespace fdreadoutlibs

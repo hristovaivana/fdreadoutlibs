@@ -1,16 +1,15 @@
 #ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_SW_PROTOWIB_TRIGGERPRIMITIVETYPEADAPTER_HPP_
 #define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_SW_PROTOWIB_TRIGGERPRIMITIVETYPEADAPTER_HPP_
 
-
 #include "daqdataformats/FragmentHeader.hpp"
 #include "daqdataformats/SourceID.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 
 #include <cstdint> // uint_t types
-#include <memory>  // unique_ptr
-#include <vector>
 #include <cstring> // memcpy
-#include <tuple> // tie
+#include <memory>  // unique_ptr
+#include <tuple>   // tie
+#include <vector>
 
 namespace dunedaq {
 namespace fdreadoutlibs {

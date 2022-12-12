@@ -29,7 +29,8 @@ using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
 namespace dunedaq {
 namespace fdreadoutlibs {
 
-class DAPHNEStreamFrameProcessor : public readoutlibs::TaskRawDataProcessorModel<types::DAPHNEStreamSuperChunkTypeAdapter>
+class DAPHNEStreamFrameProcessor
+  : public readoutlibs::TaskRawDataProcessorModel<types::DAPHNEStreamSuperChunkTypeAdapter>
 {
 
 public:
@@ -40,7 +41,8 @@ public:
 
   explicit DAPHNEStreamFrameProcessor(std::unique_ptr<readoutlibs::FrameErrorRegistry>& error_registry)
     : readoutlibs::TaskRawDataProcessorModel<types::DAPHNEStreamSuperChunkTypeAdapter>(error_registry)
-  {}
+  {
+  }
 
   // Override config for pipeline setup
   void conf(const nlohmann::json& args) override;
@@ -63,7 +65,6 @@ protected:
   bool m_first_ts_missmatch = true;
   bool m_problem_reported = false;
   std::atomic<int> m_ts_error_ctr{ 0 };
-
 };
 
 } // namespace fdreadoutlibs

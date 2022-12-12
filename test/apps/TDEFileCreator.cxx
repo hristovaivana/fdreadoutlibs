@@ -8,15 +8,16 @@
 
 #include "detdataformats/tde/TDE16Frame.hpp"
 
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <random>
 #include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <random>
+#include <vector>
 
 using namespace dunedaq;
 
-int main()
+int
+main()
 {
   int num_batches = 5;
 
@@ -25,30 +26,25 @@ int main()
   std::random_device rd;
   std::default_random_engine rng(rd());
 
-
-  for (int batch = 0; batch < num_batches; batch++)
-  {
+  for (int batch = 0; batch < num_batches; batch++) {
     std::vector<detdataformats::tde::TDE16Frame> v;
     uint64_t timestamp = batch;
-    for (int amc = 0; amc < 12; amc++)
-    {
-      for (int i = 0; i < 64; i++)
-      {
+    for (int amc = 0; amc < 12; amc++) {
+      for (int i = 0; i < 64; i++) {
         detdataformats::tde::TDE16Frame fr;
         // Timestamp
         fr.set_timestamp(timestamp);
         // Channel
         fr.get_tde_header()->slot = amc;
         fr.get_tde_header()->link = i;
-        fr.set_adc_samples(batch,0);
+        fr.set_adc_samples(batch, 0);
         v.push_back(fr);
       }
     }
     std::shuffle(v.begin(), v.end(), rng);
-    for (auto& fr: v) {
-        out.write(reinterpret_cast<char*>(&fr), sizeof(detdataformats::tde::TDE16Frame));
+    for (auto& fr : v) {
+      out.write(reinterpret_cast<char*>(&fr), sizeof(detdataformats::tde::TDE16Frame));
     }
   }
   out.close();
-
 }

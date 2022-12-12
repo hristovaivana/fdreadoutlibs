@@ -30,7 +30,8 @@ struct WindowCollectionADCs
   WindowCollectionADCs(size_t numMessages_, MessageCollectionADCs* fragments_)
     : numMessages(numMessages_)
     , fragments(fragments_)
-  {}
+  {
+  }
 
   // Get a pointer to register `ireg` at time `itime`, as an AVX2 int register
   const __m256i* get256(size_t ireg, size_t itime) const
