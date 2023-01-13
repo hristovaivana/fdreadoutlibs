@@ -38,6 +38,7 @@
 #include "tpg/DesignFIR.hpp"
 #include "tpg/FrameExpand.hpp"
 #include "tpg/ProcessAVX2.hpp"
+#include "tpg/ProcessRSAVX2.hpp"
 #include "tpg/ProcessingInfo.hpp"
 #include "tpg/RegisterToChannelNumber.hpp"
 #include "tpg/TPGConstants_wib2.hpp"
@@ -62,6 +63,13 @@ ERS_DECLARE_ISSUE(fdreadoutlibs,
                   TPHandlerBacklog,
                   "Failed to push hits to TP handler " << sid,
                   ((int)sid))
+
+ERS_DECLARE_ISSUE(fdreadoutlibs,
+                  TPGAlgorithmInexistent,
+                  "The selected algorithm does not exist: " << algorithm_selection << " . Select either SWTPG or RS.",
+                  ((std::string)algorithm_selection))
+
+
 
 namespace fdreadoutlibs {
 
@@ -257,6 +265,8 @@ public:
     m_sourceid.subsystem = types::DUNEWIBSuperChunkTypeAdapter::subsystem;
     m_error_counter_threshold = config.error_counter_threshold;
     m_error_reset_freq = config.error_reset_freq;
+    m_tpg_algorithm = "SWTPG";//config.algorithm_selection;
+
 
     if (config.enable_software_tpg) {
       m_sw_tpg_enabled = true;
@@ -475,7 +485,15 @@ protected:
     // Execute the SWTPG algorithm
     frame_handler->m_tpg_processing_info->input = &registers_array;
     *frame_handler->get_primfind_dest() = swtpg_wib2::MAGIC;
-    swtpg_wib2::process_window_avx2(*frame_handler->m_tpg_processing_info);
+    
+    if (m_tpg_algorithm == "SWTPG") {
+      swtpg_wib2::process_window_avx2(*frame_handler->m_tpg_processing_info);
+    } else if (m_tpg_algorithm == "RS" ){
+      swtpg_wib2::process_window_rs_avx2(*frame_handler->m_tpg_processing_info);
+    } else {
+      TLOG() << "AAA: issue ERS message";       
+      throw TPGAlgorithmInexistent(ERS_HERE, "m_tpg_algo");
+    }     
     
     // Insert output of the AVX processing into the swtpg_output 
     swtpg_output swtpg_processing_result = {frame_handler->get_primfind_dest(), timestamp};
@@ -587,6 +605,7 @@ protected:
 
 private:
   bool m_sw_tpg_enabled;
+  std::string m_tpg_algorithm;
 
   size_t m_num_msg = 0;
   size_t m_num_push_fail = 0;
