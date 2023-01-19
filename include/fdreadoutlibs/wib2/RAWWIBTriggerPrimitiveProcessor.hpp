@@ -340,27 +340,6 @@ void tp_unpack(frame_ptr fr)
       TLOG() << "Debug message: Raw WIB TP chunk contains no TP frames! Chunk size / offset / subframes is " << num_elem << " / " << offset << " / " << n;
       return;
     }
-    // Quick timestamp check to discard chunks with bad header
-    uint32_t ts1 = reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data())+ offset)->word2;
-    uint32_t ts2 = reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data())+ offset)->word3;
-    uint64_t ts = (ts1 & 0xFFFF0000) >> 16;
-    ts += static_cast<int64_t>(ts1 & 0xFFFF) << 16;
-    ts += static_cast<int64_t>(ts2 & 0xFFFF0000) << 16;
-    ts += static_cast<int64_t>(ts2 & 0xFFFF) << 48;
-    // Convert DUNE timestamp to UNIX timestamp
-    double ts_epoch = ts*0.000000016; // 16ns = 1/62.5MHz where 62.5MHz is the clock frequency
-    // Convert current time to seconds
-    auto ts_sys = std::chrono::system_clock::now();
-    auto ts_sec = std::chrono::duration<double>(ts_sys.time_since_epoch());
-    double ts_now = ts_sec.count();
-    // Period duration in seconds
-    double day = std::chrono::seconds(86400).count();
-    double hour = std::chrono::seconds(360).count();
-    // Check if time in header is within reasonable limits
-    if (ts_epoch > ts_now || ts_epoch < ts_now - hour) {
-      TLOG_DEBUG(20) << "Debug message: Raw WIB TP frame contains no real timestamp! Chunk size is " << num_elem;
-      return;
-    }
 
     int bsize = n * RAW_WIB_TP_SUBFRAME_SIZE;
     std::vector<char> tmpbuffer;
