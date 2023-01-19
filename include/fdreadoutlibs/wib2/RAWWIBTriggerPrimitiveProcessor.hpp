@@ -21,6 +21,7 @@
 #include "detchannelmaps/TPCChannelMap.hpp"
 #include "fdreadoutlibs/wib2/WIB2TPHandler.hpp"
 #include "fdreadoutlibs/DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter.hpp"
+#include "fdreadoutlibs/TriggerPrimitiveTypeAdapter.hpp"
 #include "rcif/cmd/Nljs.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 #include "trigger/TPSet.hpp"
@@ -62,6 +63,8 @@ public:
   void conf(const nlohmann::json& args) override
   {
     auto config = args["rawdataprocessorconf"].get<readoutlibs::readoutconfig::RawDataProcessorConf>();
+    m_sourceid.id = config.source_id;
+    m_sourceid.subsystem = types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter::subsystem;
 
     TaskRawDataProcessorModel<types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter>::add_preprocess_task(
                 std::bind(&RAWWIBTriggerPrimitiveProcessor::tp_unpack, this, std::placeholders::_1));
@@ -73,7 +76,7 @@ public:
       tpset_sourceid.id = config.tpset_sourceid;
       tpset_sourceid.subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
       m_tphandler.reset(
-            new WIB2TPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, tpset_sourceid));
+            new WIB2TPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, tpset_sourceid, config.tpset_topic));
     }
 
     m_channel_map = dunedaq::detchannelmaps::make_map(config.channel_map_name);
@@ -323,21 +326,47 @@ void tp_unpack(frame_ptr fr)
  
     auto now = std::chrono::high_resolution_clock::now();
     // Count number of subframes in a TP frame
-    int n = 1;
+    int n;
     bool ped_found { false };
-    for (n=1; offset+(n-1)*RAW_WIB_TP_SUBFRAME_SIZE<(size_t)num_elem; ++n) {
+    for (n=2; offset + n*RAW_WIB_TP_SUBFRAME_SIZE<(size_t)num_elem; ++n) {
       if (reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data()) // NOLINT
-           + offset + (n-1)*RAW_WIB_TP_SUBFRAME_SIZE)->word3 == 0xDEADBEEF) {
+           + offset + n*RAW_WIB_TP_SUBFRAME_SIZE)->word3 == 0xDEADBEEF) {
         ped_found = true;
         break; 
       }  
     }
-    if (!ped_found) return;
+    // Found no pedestal block
+    if (!ped_found) {
+      TLOG() << "Debug message: Raw WIB TP chunk contains no TP frames! Chunk size / offset / subframes is " << num_elem << " / " << offset << " / " << n;
+      return;
+    }
+    // Quick timestamp check to discard chunks with bad header
+    uint32_t ts1 = reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data())+ offset)->word2;
+    uint32_t ts2 = reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data())+ offset)->word3;
+    uint64_t ts = (ts1 & 0xFFFF0000) >> 16;
+    ts += static_cast<int64_t>(ts1 & 0xFFFF) << 16;
+    ts += static_cast<int64_t>(ts2 & 0xFFFF0000) << 16;
+    ts += static_cast<int64_t>(ts2 & 0xFFFF) << 48;
+    // Convert DUNE timestamp to UNIX timestamp
+    uint64_t ts_epoch = ts*0.000000016; // 16ns = 1/62.5MHz where 62.5MHz is the clock frequency
+    // Convert current time to seconds
+    auto ts_sys = std::chrono::system_clock::now();
+    auto ts_sec = std::chrono::duration<double>(ts_sys.time_since_epoch());
+    uint64_t ts_now = ts_sec.count();
+    // Period duration in seconds
+    uint64_t day = std::chrono::seconds(86400).count();
+    //double hour = std::chrono::seconds(360).count();
+    // Check if time in header is within reasonable limits
+    if (ts_epoch > ts_now || ts_epoch < ts_now - day) {
+      TLOG() << "Debug message: Raw WIB TP frame contains no valid timestamp: " << ts << "! Chunk size is / offset / subframes is " << num_elem << num_elem << " / " << offset << " / " << n;
+      TLOG() << "Debug message: Raw WIB TP ts / now / min / max: " << ts_epoch << " / " << ts_now << " / " << ts_now - day << " / " << ts_now;
+      return;
+    }
 
     int bsize = n * RAW_WIB_TP_SUBFRAME_SIZE;
     std::vector<char> tmpbuffer;
     tmpbuffer.reserve(bsize);
-    int nhits = n - 2;
+    int nhits = n - 1;  // n is subframe counter (starting from 0, not 1)
     // add header block 
     ::memcpy(static_cast<void*>(tmpbuffer.data() + 0),
              static_cast<void*>(srcbuffer.data() + offset),
