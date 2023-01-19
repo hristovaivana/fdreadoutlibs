@@ -67,6 +67,8 @@ daq_add_library(
 
 daq_add_application(TDEFileCreator TDEFileCreator.cxx TEST LINK_LIBRARIES fdreadoutlibs)
 daq_add_application(WIB2TestBench WIB2TestBench.cxx TEST LINK_LIBRARIES fdreadoutlibs)
+daq_add_application(WIBEthTestBench WIBEthTestBench.cxx TEST LINK_LIBRARIES fdreadoutlibs)
+daq_add_application(WIBEthAddFakeHits WIBEthAddFakeHits.cxx TEST LINK_LIBRARIES fdreadoutlibs hdf5libs::hdf5libs)
 
 ##############################################################################
 
