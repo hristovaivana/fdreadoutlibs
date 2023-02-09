@@ -7,3 +7,4 @@
 #include "fdreadoutlibs/wib/TPEmulatorModel.hpp"
 #include "fdreadoutlibs/wib/WIBFrameProcessor.hpp"
 #include "fdreadoutlibs/wib2/WIB2FrameProcessor.hpp"
+#include "fdreadoutlibs/wibeth/WIBEthFrameProcessor.hpp"
