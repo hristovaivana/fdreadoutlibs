@@ -10,6 +10,7 @@
 #include "fdreadoutlibs/tde/TDEFrameProcessor.hpp"
 
 using dunedaq::readoutlibs::logging::TLVL_BOOKKEEPING;
+using dunedaq::readoutlibs::logging::TLVL_FRAME_RECEIVED;
 
 namespace dunedaq {
 namespace fdreadoutlibs {
@@ -17,12 +18,13 @@ namespace fdreadoutlibs {
 void 
 TDEFrameProcessor::conf(const nlohmann::json& args)
 {
-  TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter
->::add_preprocess_task(
-    std::bind(&TDEFrameProcessor::timestamp_check, this, std::placeholders::_1));
+  TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter>::add_preprocess_task(
+      std::bind(&TDEFrameProcessor::timestamp_check, this, std::placeholders::_1));
   // m_tasklist.push_back( std::bind(&TDEFrameProcessor::frame_error_check, this, std::placeholders::_1) );
-  TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter
->::conf(args);
+  TaskRawDataProcessorModel<types::TDEAMCFrameTypeAdapter>::conf(args);
+
+  auto config = args["rawdataprocessorconf"].get<readoutlibs::readoutconfig::RawDataProcessorConf>();
+  m_clock_frequency = config.clock_speed_hz;
 }
 
 /**
@@ -45,6 +47,8 @@ TDEFrameProcessor::timestamp_check(frameptr fp)
   // Acquire timestamp
   auto tdefptr = reinterpret_cast<dunedaq::detdataformats::tde::TDE16Frame*>(fp); // NOLINT
   m_current_ts = tdefptr->get_timestamp();
+  auto tdefh = tdefptr->get_tde_header();
+  TLOG_DEBUG(TLVL_FRAME_RECEIVED) << "Checking TDE frame timestamp value of " << m_current_ts << " ticks (..." << (static_cast<double>(m_current_ts % (m_clock_frequency*1000)) / static_cast<double>(m_clock_frequency)) << " sec), crate " << tdefh->crate << ", slot " << tdefh->slot << ", link " << tdefh->link; // NOLINT
 
   // Check timestamp
   if (m_current_ts - m_previous_ts != 1000) {
