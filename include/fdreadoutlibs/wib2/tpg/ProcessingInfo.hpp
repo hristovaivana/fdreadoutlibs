@@ -118,7 +118,7 @@ struct ProcessingInfo
         // The index in uint16_t of the start of the message we want. 
         // AAA: 6144 is the sizeof(MessageADCs) which is hardcoded here. TODO: put
         // MessageADCs in a location that can be included and used in the ProcessingInfo 
-        const size_t msg_start_index = msg_index * 6144 / sizeof(uint16_t); // NOLINT
+        const size_t msg_start_index = msg_index * swtpg_wib2::ADCS_SIZE / sizeof(uint16_t); // NOLINT
         const size_t offset_within_msg = register_t0_start + SAMPLES_PER_REGISTER * msg_time_offset + register_offset;
         const size_t index = msg_start_index + offset_within_msg;
 
@@ -133,8 +133,8 @@ struct ProcessingInfo
       chanState.pedestals[j] = ped;
       chanState.pedestalsRS[j] = 0;
       chanState.RS[j] = 0;
-      chanState.quantile25[j] = 0;
-      chanState.quantile75[j] = 0;
+      chanState.quantile25[j] = ped-50;
+      chanState.quantile75[j] = ped+50;
     }
   }  
 

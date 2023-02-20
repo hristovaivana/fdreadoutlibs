@@ -157,7 +157,7 @@ public:
 private: 
   int m_register_selector;    
   uint16_t* m_primfind_dest = nullptr;  
-  const uint16_t m_tpg_threshold = 5;                    // units of sigma // NOLINT(build/unsigned)
+  const uint16_t m_tpg_threshold = 10;                    // units of sigma // NOLINT(build/unsigned)
   const uint8_t m_tpg_tap_exponent = 6;                  // NOLINT(build/unsigned)
   const int m_tpg_multiplier = 1 << m_tpg_tap_exponent;  // 64
   std::vector<int16_t> m_tpg_taps;                       // firwin_int(7, 0.1, multiplier);
@@ -265,7 +265,7 @@ public:
     m_sourceid.subsystem = types::DUNEWIBSuperChunkTypeAdapter::subsystem;
     m_error_counter_threshold = config.error_counter_threshold;
     m_error_reset_freq = config.error_reset_freq;
-    m_tpg_algorithm = "SWTPG";//config.algorithm_selection;
+    m_tpg_algorithm = "RS";//config.algorithm_selection;
 
 
     if (config.enable_software_tpg) {
@@ -329,7 +329,7 @@ public:
       int new_hits = m_swtpg_hits_count.exchange(0);
       int new_tps = m_num_tps_pushed.exchange(0);
       double seconds = std::chrono::duration_cast<std::chrono::microseconds>(now - m_t0).count() / 1000000.;
-      TLOG_DEBUG(TLVL_TAKE_NOTE) << "Hit rate: " << std::to_string(new_hits / seconds / 1000.) << " [kHz]";
+      TLOG_DEBUG() << "Hit rate: " << std::to_string(new_hits / seconds / 1000.) << " [kHz]";
       TLOG_DEBUG(TLVL_TAKE_NOTE) << "Total new hits: " << new_hits << " new pushes: " << new_tps;
       info.rate_tp_hits = new_hits / seconds / 1000.;
     }
@@ -551,7 +551,7 @@ protected:
           //
           // sed -n -e 's/.*Hit: \(.*\) \(.*\).*/\1 \2/p' log.txt  > hits.txt
           //
-          //TLOG_DEBUG(0) << "Hit: " << tp_t_begin << " " << offline_channel;
+          TLOG_DEBUG(0) << "Hit: " << tp_t_begin << " " << offline_channel;
 
           triggeralgs::TriggerPrimitive trigprim;
           trigprim.time_start = tp_t_begin;
@@ -651,7 +651,7 @@ private:
   
 
   // AAA: TODO: make selection of the initial capacity of the queue configurable
-  size_t m_initial_capacity_mpmc_queue = 100000; 
+  size_t m_initial_capacity_mpmc_queue = 1000000; 
   iomanager::FollyMPMCQueue<swtpg_output> m_tphandler_queue{"tphandler_queue", m_initial_capacity_mpmc_queue};
 
 

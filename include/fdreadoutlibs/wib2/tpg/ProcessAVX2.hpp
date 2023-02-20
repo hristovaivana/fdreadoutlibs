@@ -160,6 +160,7 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info)
       // The current sample
       __m256i s = info.input->ymm(index);
 
+      //printf("ADC:        "); print256_as16_dec(s);        printf("\n");
       // First, find which channels are above/below the median,
       // since we need these as masks in the call to
       // frugal_accum_update_avx2
@@ -183,6 +184,7 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info)
 #pragma GCC diagnostic pop
       // Actually subtract the pedestal
       s = _mm256_sub_epi16(s, median);
+      //printf("after pedestal:        "); print256_as16_dec(s);        printf("\n");
 
       // Find the interquartile range
       __m256i sigma = _mm256_sub_epi16(quantile75, quantile25);
@@ -198,6 +200,7 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info)
       // Don't let the sample exceed adcMax, which is the value
       // at which its filtered version might overflow
       s = _mm256_min_epi16(s, adcMax);
+      //printf("after ADC max:        "); print256_as16_dec(s);        printf("\n");
 
       // NB we're doing integer multiplication of
       // (short)*(short) here, so the result can be larger than
@@ -251,6 +254,11 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info)
       // ADDTAP2(6);
       filt2 = _mm256_add_epi16(filt2, _mm256_mullo_epi16(tap_256[6], prev_samp[(6 + absTimeModNTAPS) % NTAPS]));
 
+      //printf("filt0:             "); print256_as16_dec(filt0);             printf("\n"); //printf("filt1:             "); print256_as16_dec(filt1);             printf("\n");
+      //printf("filt2:             "); print256_as16_dec(filt2);             printf("\n");
+      //printf("filt3:             "); print256_as16_dec(filt3);             printf("\n");
+
+
       __m256i filt = _mm256_add_epi16(_mm256_add_epi16(filt0, filt1), _mm256_add_epi16(filt2, filt3));
       prev_samp[absTimeModNTAPS] = s;
       // This is a reference to the value in the ProcessingInfo,
@@ -263,7 +271,10 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info)
       // --------------------------------------------------------------
       // Mask for channels that are over the threshold in this step
       // const uint16_t threshold=2000; // NOLINT(build/unsigned)
-      __m256i is_over = _mm256_cmpgt_epi16(filt, sigma * info.multiplier * info.threshold);
+      __m256i is_over = _mm256_cmpgt_epi16(filt, sigma * info.multiplier * info.threshold); // ORIGINAL
+      __m256i is_over2 = _mm256_cmpgt_epi16(filt, sigma * info.threshold); // ORIGINAL
+      //__m256i is_over = _mm256_cmpgt_epi16(s, sigma * info.threshold);
+
       // Mask for channels that left "over threshold" state this step
       __m256i left = _mm256_andnot_si256(is_over, prev_was_over);
 
@@ -287,6 +298,8 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info)
       //     printf("sigma:         "); print256_as16_dec(sigma);         printf("\n");
       //     printf("filt:          "); print256_as16_dec(filt);          printf("\n");
       //     printf("to_add_charge: "); print256_as16_dec(to_add_charge); printf("\n");
+      //     printf("threshold: "); print256_as16_dec(sigma * info.multiplier * info.threshold); printf("\n");
+      //     printf("threshold2: "); print256_as16_dec(sigma * info.threshold); printf("\n");
       //     printf("hit_charge:    "); print256_as16_dec(hit_charge);    printf("\n");
       //     printf("left:          "); print256_as16_dec(left);          printf("\n");
       // }
