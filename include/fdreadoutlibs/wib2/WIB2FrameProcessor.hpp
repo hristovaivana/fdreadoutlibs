@@ -265,7 +265,8 @@ public:
     m_sourceid.subsystem = types::DUNEWIBSuperChunkTypeAdapter::subsystem;
     m_error_counter_threshold = config.error_counter_threshold;
     m_error_reset_freq = config.error_reset_freq;
-    m_tpg_algorithm = "RS";//config.algorithm_selection;
+    m_tpg_algorithm = config.software_tpg_algorithm;
+    TLOG() << "Selected software TPG algorithm: " << m_tpg_algorithm;
 
 
     if (config.enable_software_tpg) {
@@ -488,7 +489,7 @@ protected:
     
     if (m_tpg_algorithm == "SWTPG") {
       swtpg_wib2::process_window_avx2(*frame_handler->m_tpg_processing_info);
-    } else if (m_tpg_algorithm == "RS" ){
+    } else if (m_tpg_algorithm == "AbsRS" ){
       swtpg_wib2::process_window_rs_avx2(*frame_handler->m_tpg_processing_info);
     } else {
       TLOG() << "AAA: issue ERS message";       
