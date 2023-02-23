@@ -224,13 +224,14 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info)
       // Divide by the multiplier before adding (implemented as a shift-right)
       hit_charge = _mm256_adds_epi16(hit_charge, _mm256_srai_epi16(to_add_charge, info.tap_exponent));
 
-      //if(ireg==2){
+      //if(ireg==0){
       //     printf("itime=%ld\n", itime);
       //     printf("s:             "); print256_as16_dec(s);             printf("\n");
       //     printf("median:        "); print256_as16_dec(median);        printf("\n");
       //     printf("sigma:         "); print256_as16_dec(sigma);         printf("\n");
       //     printf("to_add_charge: "); print256_as16_dec(to_add_charge); printf("\n");
       //     printf("hit_charge:    "); print256_as16_dec(hit_charge);    printf("\n");
+      //     printf("channels:    "); print256_as16_dec(channels);    printf("\n");
       //     printf("left:          "); print256_as16_dec(left);          printf("\n");
       //}
 

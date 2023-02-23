@@ -25,7 +25,7 @@ namespace swtpg_wib2 {
 struct RegisterChannelMap
 {
   // TODO: Make these the right size
-  uint channel[256];
+  uint channel[128];
 };
 
 
@@ -78,7 +78,7 @@ get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WI
 
 
   RegisterChannelMap ret;
-  for (size_t i = 0; i < swtpg_wib2::NUM_REGISTERS_PER_FRAME * SAMPLES_PER_REGISTER; ++i) {
+  for (size_t i = 0;  i < swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::SAMPLES_PER_REGISTER; ++i) {
     // expand_message_adcs_inplace reorders the output so
     // adjacent-in-time registers are adjacent in memory, hence the
     // need for this indexing. See the comment in that function for a

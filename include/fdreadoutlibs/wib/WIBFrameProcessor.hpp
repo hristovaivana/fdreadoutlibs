@@ -63,7 +63,6 @@ enum CollectionOrInduction {
 }
 
 namespace dunedaq {
-DUNE_DAQ_TYPESTRING(detdataformats::wib::WIBFrame, "WIBFrame")
 
 namespace fdreadoutlibs {
 

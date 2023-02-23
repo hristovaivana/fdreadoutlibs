@@ -65,6 +65,11 @@ ERS_DECLARE_ISSUE(fdreadoutlibs,
                   ((int)sid))
 
 ERS_DECLARE_ISSUE(fdreadoutlibs,
+                  FailedOpeningFile,
+                  "Failed to open the ChannelMaskFile: " << mask_file ,
+                  ((std::string)mask_file))                  
+
+ERS_DECLARE_ISSUE(fdreadoutlibs,
                   TPGAlgorithmInexistent,
                   "The selected algorithm does not exist: " << algorithm_selection << " . Select either SWTPG or RS.",
                   ((std::string)algorithm_selection))
@@ -79,6 +84,25 @@ struct swtpg_output{
   uint16_t* output_location;
   uint64_t timestamp;
 };
+
+
+std::set<uint> channel_mask_parser(std::string file_input) {
+    std::ifstream inputFile(file_input);
+
+    std::set<uint> channel_mask_set;
+    if (inputFile.is_open()) {
+        uint channel_val;
+        while (inputFile >> channel_val) {
+            channel_mask_set.insert(channel_val);
+        }
+        inputFile.close();
+    }
+    else {
+        throw FailedOpeningFile(ERS_HERE, file_input);
+    }
+    return channel_mask_set;
+}
+
 
 class WIB2FrameHandler {
 
@@ -266,8 +290,10 @@ public:
     m_error_counter_threshold = config.error_counter_threshold;
     m_error_reset_freq = config.error_reset_freq;
     m_tpg_algorithm = config.software_tpg_algorithm;
+    m_channel_mask_file = config.channel_mask_file;
     TLOG() << "Selected software TPG algorithm: " << m_tpg_algorithm;
-
+    TLOG() << "Channel mask file: " << m_channel_mask_file;
+    m_channel_mask_set = channel_mask_parser(m_channel_mask_file);
 
     if (config.enable_software_tpg) {
       m_sw_tpg_enabled = true;
@@ -464,15 +490,17 @@ protected:
       TLOG() << "Got first item, link/crate/slot=" << m_link << "/" << m_crate_no << "/" << m_slot_no;      
 
       std::stringstream ss;
-      ss << " Channels are:\n";
-      for(size_t i=0; i<swtpg_wib2::NUM_REGISTERS_PER_FRAME*swtpg_wib2::SAMPLES_PER_REGISTER; ++i){
+      ss << " Channels for register selection " << register_selection << " are:\n";
+      
+      for (size_t i = 0; i < swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::SAMPLES_PER_REGISTER; ++i) {
         ss << i << "\t" << frame_handler->register_channel_map.channel[i] << "\n";
       }
-      TLOG_DEBUG(2) << ss.str();      
+      TLOG() << ss.str();      
 
-      // Add WIB2FrameHandler channel map to the common m_register_channels
-      for (size_t i=0; i<swtpg_wib2::NUM_REGISTERS_PER_FRAME*swtpg_wib2::SAMPLES_PER_REGISTER; ++i) {
-          m_register_channels.push_back(frame_handler->register_channel_map.channel[i]);          
+      // Add WIB2FrameHandler channel map to the common m_register_channels. 
+      // Populate the array taking into account the position of the register selector
+      for (size_t i = 0; i < swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::SAMPLES_PER_REGISTER; ++i) {	      
+          m_register_channels[i+register_selection * swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::SAMPLES_PER_REGISTER] = frame_handler->register_channel_map.channel[i];          
       }
 
       TLOG() << "Processed the first superchunk ";
@@ -482,7 +510,7 @@ protected:
 
 
     } // end if (frame_handler->first_hit)
-    
+ 
     // Execute the SWTPG algorithm
     frame_handler->m_tpg_processing_info->input = &registers_array;
     *frame_handler->get_primfind_dest() = swtpg_wib2::MAGIC;
@@ -490,7 +518,7 @@ protected:
     if (m_tpg_algorithm == "SWTPG") {
       swtpg_wib2::process_window_avx2(*frame_handler->m_tpg_processing_info);
     } else if (m_tpg_algorithm == "AbsRS" ){
-      swtpg_wib2::process_window_rs_avx2(*frame_handler->m_tpg_processing_info);
+      swtpg_wib2::process_window_rs_avx2(*frame_handler->m_tpg_processing_info, 2);
     } else {
       TLOG() << "AAA: issue ERS message";       
       throw TPGAlgorithmInexistent(ERS_HERE, "m_tpg_algo");
@@ -539,40 +567,46 @@ protected:
         if (hit_charge[i] && chan[i] != swtpg_wib2::MAGIC) {
           // This channel had a hit ending here, so we can create and output the hit here
           const uint16_t offline_channel = m_register_channels[chan[i]];
-          uint64_t tp_t_begin =                                                        // NOLINT(build/unsigned)
-            timestamp + clocksPerTPCTick * (int64_t(hit_end[i]) - hit_tover[i]);       // NOLINT(build/unsigned)
-          uint64_t tp_t_end = timestamp + clocksPerTPCTick * int64_t(hit_end[i]);      // NOLINT(build/unsigned)
+          //TLOG() << "Channel containing TPs: " << chan[i] << " --> " << offline_channel;
+          if (m_channel_mask_set.find(offline_channel) == m_channel_mask_set.end()) {   
 
-          // May be needed for TPSet:
-          // uint64_t tspan = clocksPerTPCTick * hit_tover[i]; // is/will be this needed?
-          //
+            TLOG() << "Channel containing TPs: " << chan[i] << " --> " << offline_channel;         
 
-          // For quick n' dirty debugging: print out time/channel of hits.
-          // Can then make a text file suitable for numpy plotting with, eg:
-          //
-          // sed -n -e 's/.*Hit: \(.*\) \(.*\).*/\1 \2/p' log.txt  > hits.txt
-          //
-          TLOG_DEBUG(0) << "Hit: " << tp_t_begin << " " << offline_channel;
-
-          triggeralgs::TriggerPrimitive trigprim;
-          trigprim.time_start = tp_t_begin;
-          trigprim.time_peak = (tp_t_begin + tp_t_end) / 2;
-          trigprim.time_over_threshold = hit_tover[i] * clocksPerTPCTick;
-          trigprim.channel = offline_channel;
-          trigprim.adc_integral = hit_charge[i];
-          trigprim.adc_peak = hit_charge[i] / 20;
-          trigprim.detid =
-            m_link; // TODO: convert crate/slot/link to SourceID Roland Sipos rsipos@cern.ch July-22-2021
-          trigprim.type = triggeralgs::TriggerPrimitive::Type::kTPC;
-          trigprim.algorithm = triggeralgs::TriggerPrimitive::Algorithm::kTPCDefault;
-          trigprim.version = 1;
-
-          if (!m_tphandler->add_tp(trigprim, timestamp)) {
-            m_tps_dropped++;
+            uint64_t tp_t_begin =                                                        // NOLINT(build/unsigned)
+              timestamp + clocksPerTPCTick * (int64_t(hit_end[i]) - hit_tover[i]);       // NOLINT(build/unsigned)
+            uint64_t tp_t_end = timestamp + clocksPerTPCTick * int64_t(hit_end[i]);      // NOLINT(build/unsigned)
+  
+            // May be needed for TPSet:
+            // uint64_t tspan = clocksPerTPCTick * hit_tover[i]; // is/will be this needed?
+            //
+  
+            // For quick n' dirty debugging: print out time/channel of hits.
+            // Can then make a text file suitable for numpy plotting with, eg:
+            //
+            // sed -n -e 's/.*Hit: \(.*\) \(.*\).*/\1 \2/p' log.txt  > hits.txt
+            //
+            TLOG_DEBUG(0) << "Hit: " << tp_t_begin << " " << offline_channel;
+  
+            triggeralgs::TriggerPrimitive trigprim;
+            trigprim.time_start = tp_t_begin;
+            trigprim.time_peak = (tp_t_begin + tp_t_end) / 2;
+            trigprim.time_over_threshold = hit_tover[i] * clocksPerTPCTick;
+            trigprim.channel = offline_channel;
+            trigprim.adc_integral = hit_charge[i];
+            trigprim.adc_peak = hit_charge[i] / 20;
+            trigprim.detid =
+              m_link; // TODO: convert crate/slot/link to SourceID Roland Sipos rsipos@cern.ch July-22-2021
+            trigprim.type = triggeralgs::TriggerPrimitive::Type::kTPC;
+            trigprim.algorithm = triggeralgs::TriggerPrimitive::Algorithm::kTPCDefault;
+            trigprim.version = 1;
+  
+            if (!m_tphandler->add_tp(trigprim, timestamp)) {
+              m_tps_dropped++;
+            }
+  
+            m_new_tps++;
+            ++nhits;
           }
-
-          m_new_tps++;
-          ++nhits;
         }
       }
     }
@@ -591,14 +625,14 @@ protected:
     while (m_add_hits_tphandler_thread_should_run.load()) {
       swtpg_output result_from_swtpg; 
       while(m_tphandler_queue.can_pop()) {
-	if(m_tphandler_queue.try_pop(result_from_swtpg, std::chrono::milliseconds(0))) {
-
-        // Process the trigger primitve
-        unsigned int nhits = process_swtpg_hits(result_from_swtpg.output_location, result_from_swtpg.timestamp);
-    
-        m_swtpg_hits_count += nhits;
-        m_tphandler->try_sending_tpsets(result_from_swtpg.timestamp);
-	}
+	      if(m_tphandler_queue.try_pop(result_from_swtpg, std::chrono::milliseconds(0))) {
+      
+              // Process the trigger primitve
+              unsigned int nhits = process_swtpg_hits(result_from_swtpg.output_location, result_from_swtpg.timestamp);
+          
+              m_swtpg_hits_count += nhits;
+              m_tphandler->try_sending_tpsets(result_from_swtpg.timestamp);
+	      }
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
     } 
@@ -607,6 +641,8 @@ protected:
 private:
   bool m_sw_tpg_enabled;
   std::string m_tpg_algorithm;
+  std::string m_channel_mask_file;
+  std::set<uint> m_channel_mask_set;
 
   size_t m_num_msg = 0;
   size_t m_num_push_fail = 0;
@@ -624,7 +660,7 @@ private:
   std::shared_ptr<detchannelmaps::TPCChannelMap> m_channel_map;
 
   // Mapping from expanded AVX register position to offline channel number
-  std::vector<uint> m_register_channels;                                                  
+  std::array<uint, 256> m_register_channels;
 
   // Frame error check
   bool m_current_frame_pushed = false;

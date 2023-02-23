@@ -88,7 +88,7 @@ frugal_accum_update_rs_avx2(__m256i& __restrict__ median,
 
 template<size_t NREGISTERS>
 inline void
-process_window_rs_avx2(ProcessingInfo<NREGISTERS>& info)
+process_window_rs_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_selector)
 {
   // Start with taps as floats that add to 1. Multiply by some
   // power of two (2**N) and round to int. Before filtering, cap the
@@ -176,7 +176,7 @@ process_window_rs_avx2(ProcessingInfo<NREGISTERS>& info)
     ;
 
     // The channel numbers in each of the slots in the register
-    __m256i channel_base = _mm256_set1_epi16(ireg * SAMPLES_PER_REGISTER);
+    __m256i channel_base = _mm256_set1_epi16(ireg * SAMPLES_PER_REGISTER * channel_selector);
     __m256i channels = _mm256_add_epi16(channel_base, iota);
 
     for (size_t itime = 0; itime < info.timeWindowNumFrames; ++itime) {
@@ -188,7 +188,7 @@ process_window_rs_avx2(ProcessingInfo<NREGISTERS>& info)
 
 
       // --------------------------------------------------------------
-      // Pedestal finding/coherent noise removal
+      // Pedestal finding/coherent noise removal and quantiles calculation
       // --------------------------------------------------------------
 
 
@@ -198,19 +198,6 @@ process_window_rs_avx2(ProcessingInfo<NREGISTERS>& info)
       //short *input_adc_values_ptr = (short*)&s;
       //for (short i = 0; i < 16; ++i)
       //    std::cout << "Input ADC value:\t\t\t\t s[" << i << "] = " << input_adc_values_ptr[i] << std::endl;
-
-
-
-/*
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Woverflow"
-      frugal_accum_update_rs_avx2(median, s, accum, 10, _mm256_set1_epi16(0xffff));
-#pragma GCC diagnostic pop
-      // Actually subtract the pedestal
-      s = _mm256_sub_epi16(s, median);
-      //printf("s after ped subtraction:\t\t\t\t"); print256_as16_dec(s);         printf("\n");
-*/
-
 
 
       // First, find which channels are above/below the median,
@@ -239,9 +226,7 @@ process_window_rs_avx2(ProcessingInfo<NREGISTERS>& info)
       //printf("after pedestal:        "); print256_as16_dec(s);        printf("\n");
 
 
-
-
-      
+    
 
 
       //--------------------------------------------------------------
@@ -252,52 +237,35 @@ process_window_rs_avx2(ProcessingInfo<NREGISTERS>& info)
 
       // Instead of using floats in the calcualation of the RS we multiply by 10 and 
       // do operations on the integers. In the end we divide by 10. 
-      
-     __m256i first_part_div = _mm256_div_epi16(RS, 10);
-     __m256i first_part = _mm256_mullo_epi16(first_part_div, R_factor);
 
-     __m256i second_part_div = _mm256_div_epi16(_mm256_abs_epi16(s), 10);
-     __m256i second_part = _mm256_mullo_epi16(second_part_div, scale_factor);
+     __m256i first_part = _mm256_mullo_epi16(RS, R_factor);
+     //__m256i first_part_div = _mm256_div_epi16(RS, 10);
+
+     __m256i second_part = _mm256_mullo_epi16(_mm256_abs_epi16(s), scale_factor);
+     //__m256i second_part_div = _mm256_div_epi16(_mm256_abs_epi16(s), 10);
 
      //RS = _mm256_div_epi16(_mm256_add_epi16(first_part, second_part), 10);
-     RS = _mm256_add_epi16(first_part, second_part);
+     RS = _mm256_div_epi16(_mm256_add_epi16(first_part, second_part), 10);
 
      //printf("first_part:\t\t\t\t"); print256_as16_dec(first_part);         printf("\n"); 
      //printf("second_part:\t\t\t\t"); print256_as16_dec(second_part);         printf("\n"); 
      //printf("RS_value:\t\t\t\t"); print256_as16_dec(RS);         printf("\n"); 
 
-
-      // --------------------------------------------------------------
-      // Pedestal subtraction & inter-quantile range
-      // --------------------------------------------------------------
-
-      /* 
-      
-      // First, find which channels are above/below the median,
-      // since we need these as masks in the call to
-      // frugal_accum_update_rs_avx2
-      __m256i is_gt = _mm256_cmpgt_epi16(RS, medianRS);
-      __m256i is_eq = _mm256_cmpeq_epi16(RS, medianRS);
-      // Would like a "not", but there isn't one. Emulate it
-      // with xor against a register of all ones
-      __m256i gt_or_eq = _mm256_or_si256(is_gt, is_eq);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Woverflow"
-      __m256i is_lt = _mm256_xor_si256(gt_or_eq, _mm256_set1_epi16(0xffff));
-#pragma GCC diagnostic pop
-      // Update the 25th percentile in the channels that are below the median
-      frugal_accum_update_rs_avx2(quantile25, RS, accum25, 10, is_lt);
-      // Update the 75th percentile in the channels that are above the median
-      frugal_accum_update_rs_avx2(quantile75, RS, accum75, 10, is_gt);
-      */
-   
       // Update the medianRS itself in all channels
       //printf("MedianRS:\t\t\t\t"); print256_as16_dec(medianRS);         printf("\n"); 
 
       frugal_accum_update_rs_avx2(medianRS, RS, accumRS, 10, _mm256_set1_epi16(0xffff));
 
+      // __m256i sigma = _mm256_set1_epi16(2000); // 20 ADC
+      RS = _mm256_sub_epi16(RS, medianRS);
+
+      //printf("RS_after_medianRS:\t\t\t\t"); print256_as16_dec(RS);         printf("\n"); 
 
 
+
+      // --------------------------------------------------------------
+      // Pedestal subtraction & inter-quantile range
+      // --------------------------------------------------------------
 
       // Find the interquartile range
       __m256i sigma = _mm256_sub_epi16(quantile75, quantile25);
@@ -305,11 +273,6 @@ process_window_rs_avx2(ProcessingInfo<NREGISTERS>& info)
       // Clamp sigma to a range where it won't overflow when
       // multiplied by info.multiplier*5
       sigma = _mm256_min_epi16(sigma, sigmaMax);
-
-      // __m256i sigma = _mm256_set1_epi16(2000); // 20 ADC
-      RS = _mm256_sub_epi16(RS, medianRS);
-
-      //printf("RS_after_medianRS:\t\t\t\t"); print256_as16_dec(RS);         printf("\n"); 
 
 
 
@@ -346,6 +309,7 @@ process_window_rs_avx2(ProcessingInfo<NREGISTERS>& info)
       //     printf("filt:          "); print256_as16_dec(filt);          printf("\n");
       //     printf("to_add_charge: "); print256_as16_dec(to_add_charge); printf("\n");
       //     printf("hit_charge:    "); print256_as16_dec(hit_charge);    printf("\n");
+      //     printf("channels:    "); print256_as16_dec(channels);    printf("\n");     
       //     printf("is_over:          "); print256_as16_dec(is_over);          printf("\n");
       //     printf("left:          "); print256_as16_dec(left);          printf("\n");
       //}
