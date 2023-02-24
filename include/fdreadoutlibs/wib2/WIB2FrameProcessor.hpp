@@ -181,7 +181,7 @@ public:
 private: 
   int m_register_selector;    
   uint16_t* m_primfind_dest = nullptr;  
-  const uint16_t m_tpg_threshold = 10;                    // units of sigma // NOLINT(build/unsigned)
+  const uint16_t m_tpg_threshold = 15;                    // units of sigma // NOLINT(build/unsigned)
   const uint8_t m_tpg_tap_exponent = 6;                  // NOLINT(build/unsigned)
   const int m_tpg_multiplier = 1 << m_tpg_tap_exponent;  // 64
   std::vector<int16_t> m_tpg_taps;                       // firwin_int(7, 0.1, multiplier);
@@ -354,11 +354,21 @@ public:
     auto now = std::chrono::high_resolution_clock::now();
     if (m_sw_tpg_enabled) {
       int new_hits = m_swtpg_hits_count.exchange(0);
-      int new_tps = m_num_tps_pushed.exchange(0);
+      int new_tps = m_new_tps.exchange(0);
       double seconds = std::chrono::duration_cast<std::chrono::microseconds>(now - m_t0).count() / 1000000.;
-      TLOG_DEBUG() << "Hit rate: " << std::to_string(new_hits / seconds / 1000.) << " [kHz]";
-      TLOG_DEBUG(TLVL_TAKE_NOTE) << "Total new hits: " << new_hits << " new pushes: " << new_tps;
+      TLOG() << "Hit rate: " << std::to_string(new_hits / seconds / 1000.) << " [kHz]";
+      TLOG() << "Total new hits: " << new_hits << " new TPs: " << new_tps;
       info.rate_tp_hits = new_hits / seconds / 1000.;
+      
+      std::stringstream ss;      
+      for (const auto& entry : m_tp_channel_rate_map) {      
+        if (entry.second != 0) {
+          ss << "\nChannel: " << entry.first << ", TP rate: " << std::to_string(entry.second / seconds /1000.) << " [kHz]\n";
+          m_tp_channel_rate_map[entry.first].exchange(0);
+        }
+      }
+      TLOG() << ss.str();
+
     }
     m_t0 = now;
 
@@ -501,7 +511,12 @@ protected:
       // Populate the array taking into account the position of the register selector
       for (size_t i = 0; i < swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::SAMPLES_PER_REGISTER; ++i) {	      
           m_register_channels[i+register_selection * swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::SAMPLES_PER_REGISTER] = frame_handler->register_channel_map.channel[i];          
+
+          // Set up a map of channels and number of TPs for monitoring/debug
+          m_tp_channel_rate_map[frame_handler->register_channel_map.channel[i]] = 0;
       }
+
+
 
       TLOG() << "Processed the first superchunk ";
 
@@ -518,7 +533,7 @@ protected:
     if (m_tpg_algorithm == "SWTPG") {
       swtpg_wib2::process_window_avx2(*frame_handler->m_tpg_processing_info);
     } else if (m_tpg_algorithm == "AbsRS" ){
-      swtpg_wib2::process_window_rs_avx2(*frame_handler->m_tpg_processing_info, 2);
+      swtpg_wib2::process_window_rs_avx2(*frame_handler->m_tpg_processing_info, register_selection*swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::SAMPLES_PER_REGISTER);
     } else {
       TLOG() << "AAA: issue ERS message";       
       throw TPGAlgorithmInexistent(ERS_HERE, "m_tpg_algo");
@@ -570,7 +585,7 @@ protected:
           //TLOG() << "Channel containing TPs: " << chan[i] << " --> " << offline_channel;
           if (m_channel_mask_set.find(offline_channel) == m_channel_mask_set.end()) {   
 
-            TLOG() << "Channel containing TPs: " << chan[i] << " --> " << offline_channel;         
+            //TLOG() << "Channel containing TPs: " << chan[i] << " --> " << offline_channel;                     
 
             uint64_t tp_t_begin =                                                        // NOLINT(build/unsigned)
               timestamp + clocksPerTPCTick * (int64_t(hit_end[i]) - hit_tover[i]);       // NOLINT(build/unsigned)
@@ -606,6 +621,12 @@ protected:
   
             m_new_tps++;
             ++nhits;
+
+            // Update the channel/rate map. Increment the value associated with the TP channel 
+            m_tp_channel_rate_map[offline_channel]++;
+
+
+
           }
         }
       }
@@ -627,11 +648,11 @@ protected:
       while(m_tphandler_queue.can_pop()) {
 	      if(m_tphandler_queue.try_pop(result_from_swtpg, std::chrono::milliseconds(0))) {
       
-              // Process the trigger primitve
-              unsigned int nhits = process_swtpg_hits(result_from_swtpg.output_location, result_from_swtpg.timestamp);
-          
-              m_swtpg_hits_count += nhits;
-              m_tphandler->try_sending_tpsets(result_from_swtpg.timestamp);
+            // Process the trigger primitve
+            unsigned int nhits = process_swtpg_hits(result_from_swtpg.output_location, result_from_swtpg.timestamp);
+        
+            m_swtpg_hits_count += nhits;
+            m_tphandler->try_sending_tpsets(result_from_swtpg.timestamp);
 	      }
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -644,12 +665,12 @@ private:
   std::string m_channel_mask_file;
   std::set<uint> m_channel_mask_set;
 
+  std::map<uint, std::atomic<int>> m_tp_channel_rate_map;
+
   size_t m_num_msg = 0;
   size_t m_num_push_fail = 0;
 
   std::atomic<int> m_swtpg_hits_count{ 0 };
-
-  std::atomic<int> m_num_tps_pushed{ 0 };
 
   std::atomic<bool> m_add_hits_tphandler_thread_should_run;
 

@@ -133,8 +133,8 @@ struct ProcessingInfo
       chanState.pedestals[j] = ped;
       chanState.pedestalsRS[j] = 0;
       chanState.RS[j] = 0;
-      chanState.quantile25[j] = ped-50;
-      chanState.quantile75[j] = ped+50;
+      chanState.quantile25[j] = ped-20;
+      chanState.quantile75[j] = ped+20;
     }
   }  
 
