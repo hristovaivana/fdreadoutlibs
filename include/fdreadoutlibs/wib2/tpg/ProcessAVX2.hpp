@@ -206,7 +206,13 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info)
       // Hit finding
       // --------------------------------------------------------------
       // Mask for channels that are over the threshold in this step
-      // const uint16_t threshold=2000; // NOLINT(build/unsigned)
+      
+      // FIXED THRESHOLD
+      //const uint16_t threshold=2000; // NOLINT(build/unsigned)
+      //__m256i threshold = _mm256_set1_epi16(info.threshold);
+      //__m256i is_over = _mm256_cmpgt_epi16(s, threshold);
+      
+      // NO FIR
       __m256i is_over = _mm256_cmpgt_epi16(s, sigma * info.threshold);
       // Mask for channels that left "over threshold" state this step
       __m256i left = _mm256_andnot_si256(is_over, prev_was_over);
@@ -226,9 +232,10 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info)
 
       //if(ireg==0){
       //     printf("itime=%ld\n", itime);
-      //     printf("s:             "); print256_as16_dec(s);             printf("\n");
+      //     printf("ADC value:             "); print256_as16_dec(s);             printf("\n\n");
       //     printf("median:        "); print256_as16_dec(median);        printf("\n");
       //     printf("sigma:         "); print256_as16_dec(sigma);         printf("\n");
+      //     printf("threshold:         "); print256_as16_dec(sigma * info.threshold);         printf("\n");
       //     printf("to_add_charge: "); print256_as16_dec(to_add_charge); printf("\n");
       //     printf("hit_charge:    "); print256_as16_dec(hit_charge);    printf("\n");
       //     printf("channels:    "); print256_as16_dec(channels);    printf("\n");

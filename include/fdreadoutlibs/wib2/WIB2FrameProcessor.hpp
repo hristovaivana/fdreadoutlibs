@@ -142,9 +142,11 @@ public:
   }
    
 
-  void initialize() {
+  void initialize(int threshold_value) {
     m_tpg_taps = swtpg_wib2::firwin_int(7, 0.1, m_tpg_multiplier);
     m_tpg_taps.push_back(0);    
+
+    m_tpg_threshold = threshold_value;
 
 
     if (m_tpg_taps_p == nullptr) {
@@ -181,7 +183,7 @@ public:
 private: 
   int m_register_selector;    
   uint16_t* m_primfind_dest = nullptr;  
-  const uint16_t m_tpg_threshold = 15;                    // units of sigma // NOLINT(build/unsigned)
+  uint16_t m_tpg_threshold;                    // units of sigma // NOLINT(build/unsigned)
   const uint8_t m_tpg_tap_exponent = 6;                  // NOLINT(build/unsigned)
   const int m_tpg_multiplier = 1 << m_tpg_tap_exponent;  // 64
   std::vector<int16_t> m_tpg_taps;                       // firwin_int(7, 0.1, multiplier);
@@ -231,8 +233,8 @@ public:
 
       m_tps_dropped = 0;
 
-      m_wib2_frame_handler->initialize();
-      m_wib2_frame_handler_second_half->initialize();
+      m_wib2_frame_handler->initialize(m_tpg_threshold_selected);
+      m_wib2_frame_handler_second_half->initialize(m_tpg_threshold_selected);
     } // end if(m_sw_tpg_enabled)
 
     // Reset timestamp check
@@ -294,6 +296,8 @@ public:
     TLOG() << "Selected software TPG algorithm: " << m_tpg_algorithm;
     TLOG() << "Channel mask file: " << m_channel_mask_file;
     m_channel_mask_set = channel_mask_parser(m_channel_mask_file);
+    m_tpg_threshold_selected = config.software_tpg_threshold;
+    TLOG() << "Selected threshold value: " << m_tpg_threshold_selected;
 
     if (config.enable_software_tpg) {
       m_sw_tpg_enabled = true;
@@ -360,14 +364,15 @@ public:
       TLOG() << "Total new hits: " << new_hits << " new TPs: " << new_tps;
       info.rate_tp_hits = new_hits / seconds / 1000.;
       
-      std::stringstream ss;      
+      //std::stringstream ss;      
+      //ss << "Trigger rate for different channels: ";
       for (const auto& entry : m_tp_channel_rate_map) {      
         if (entry.second != 0) {
-          ss << "\nChannel: " << entry.first << ", TP rate: " << std::to_string(entry.second / seconds /1000.) << " [kHz]\n";
+          TLOG() << "\nChannel: " << entry.first << ", TP rate: " << std::to_string(entry.second / seconds /1000.) << " [kHz]\n";
           m_tp_channel_rate_map[entry.first].exchange(0);
         }
       }
-      TLOG() << ss.str();
+      //TLOG() << ss.str();
 
     }
     m_t0 = now;
@@ -664,6 +669,7 @@ private:
   std::string m_tpg_algorithm;
   std::string m_channel_mask_file;
   std::set<uint> m_channel_mask_set;
+  uint16_t m_tpg_threshold_selected;
 
   std::map<uint, std::atomic<int>> m_tp_channel_rate_map;
 
