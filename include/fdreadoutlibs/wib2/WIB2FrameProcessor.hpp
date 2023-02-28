@@ -364,15 +364,15 @@ public:
       TLOG() << "Total new hits: " << new_hits << " new TPs: " << new_tps;
       info.rate_tp_hits = new_hits / seconds / 1000.;
       
-      //std::stringstream ss;      
-      //ss << "Trigger rate for different channels: ";
+      std::stringstream ss_channel_map;      
+      ss_channel_map << "Trigger rate for different channels: ";
       for (const auto& entry : m_tp_channel_rate_map) {      
         if (entry.second != 0) {
-          TLOG() << "\nChannel: " << entry.first << ", TP rate: " << std::to_string(entry.second / seconds /1000.) << " [kHz]\n";
+          ss_channel_map << "\nChannel: " << entry.first << ", TP rate: " << std::to_string(entry.second / seconds /1000.) << " [kHz]\n";
           m_tp_channel_rate_map[entry.first].exchange(0);
         }
       }
-      //TLOG() << ss.str();
+      TLOG() << ss_channel_map.str();
 
     }
     m_t0 = now;
