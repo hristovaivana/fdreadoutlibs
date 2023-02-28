@@ -34,7 +34,7 @@
 #include "trigger/TPSet.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 
-
+#include "iomanager/FollyQueue.hpp"        
 #include "tpg/DesignFIR.hpp"
 #include "tpg/FrameExpand.hpp"
 #include "tpg/ProcessAVX2.hpp"
@@ -309,7 +309,7 @@ public:
       tpset_sourceid.subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
 
       m_tphandler.reset(
-        new WIB2TPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, tpset_sourceid));
+        new WIB2TPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, tpset_sourceid, config.tpset_topic));
 
       TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::add_postprocess_task(
         std::bind(&WIB2FrameProcessor::find_hits, this, std::placeholders::_1, m_wib2_frame_handler.get()));
@@ -715,7 +715,7 @@ private:
   
 
   // AAA: TODO: make selection of the initial capacity of the queue configurable
-  size_t m_initial_capacity_mpmc_queue = 1000000; 
+  size_t m_initial_capacity_mpmc_queue = 100000; 
   iomanager::FollyMPMCQueue<swtpg_output> m_tphandler_queue{"tphandler_queue", m_initial_capacity_mpmc_queue};
 
 

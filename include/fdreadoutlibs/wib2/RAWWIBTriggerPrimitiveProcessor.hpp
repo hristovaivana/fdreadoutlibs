@@ -21,6 +21,7 @@
 #include "detchannelmaps/TPCChannelMap.hpp"
 #include "fdreadoutlibs/wib2/WIB2TPHandler.hpp"
 #include "fdreadoutlibs/DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter.hpp"
+#include "fdreadoutlibs/TriggerPrimitiveTypeAdapter.hpp"
 #include "rcif/cmd/Nljs.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 #include "trigger/TPSet.hpp"
@@ -62,6 +63,8 @@ public:
   void conf(const nlohmann::json& args) override
   {
     auto config = args["rawdataprocessorconf"].get<readoutlibs::readoutconfig::RawDataProcessorConf>();
+    m_sourceid.id = config.source_id;
+    m_sourceid.subsystem = types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter::subsystem;
 
     TaskRawDataProcessorModel<types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter>::add_preprocess_task(
                 std::bind(&RAWWIBTriggerPrimitiveProcessor::tp_unpack, this, std::placeholders::_1));
@@ -73,7 +76,7 @@ public:
       tpset_sourceid.id = config.tpset_sourceid;
       tpset_sourceid.subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
       m_tphandler.reset(
-            new WIB2TPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, tpset_sourceid));
+            new WIB2TPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, tpset_sourceid, config.tpset_topic));
     }
 
     m_channel_map = dunedaq::detchannelmaps::make_map(config.channel_map_name);
@@ -323,21 +326,25 @@ void tp_unpack(frame_ptr fr)
  
     auto now = std::chrono::high_resolution_clock::now();
     // Count number of subframes in a TP frame
-    int n = 1;
+    int n;
     bool ped_found { false };
-    for (n=1; offset+(n-1)*RAW_WIB_TP_SUBFRAME_SIZE<(size_t)num_elem; ++n) {
+    for (n=2; offset + n*RAW_WIB_TP_SUBFRAME_SIZE<(size_t)num_elem; ++n) {
       if (reinterpret_cast<types::TpSubframe*>(((uint8_t*)srcbuffer.data()) // NOLINT
-           + offset + (n-1)*RAW_WIB_TP_SUBFRAME_SIZE)->word3 == 0xDEADBEEF) {
+           + offset + n*RAW_WIB_TP_SUBFRAME_SIZE)->word3 == 0xDEADBEEF) {
         ped_found = true;
         break; 
       }  
     }
-    if (!ped_found) return;
+    // Found no pedestal block
+    if (!ped_found) {
+      TLOG() << "Debug message: Raw WIB TP chunk contains no TP frames! Chunk size / offset / subframes is " << num_elem << " / " << offset << " / " << n;
+      return;
+    }
 
     int bsize = n * RAW_WIB_TP_SUBFRAME_SIZE;
     std::vector<char> tmpbuffer;
     tmpbuffer.reserve(bsize);
-    int nhits = n - 2;
+    int nhits = n - 1;  // n is subframe counter (starting from 0, not 1)
     // add header block 
     ::memcpy(static_cast<void*>(tmpbuffer.data() + 0),
              static_cast<void*>(srcbuffer.data() + offset),
