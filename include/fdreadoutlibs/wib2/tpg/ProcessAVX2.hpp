@@ -139,13 +139,10 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info)
 
     // Was the previous step over threshold?
     __m256i prev_was_over = _mm256_lddqu_si256(reinterpret_cast<__m256i*>(state.prev_was_over) + ireg); // NOLINT
-    ;
     // The integrated charge (so far) of the current hit
     __m256i hit_charge = _mm256_lddqu_si256(reinterpret_cast<__m256i*>(state.hit_charge) + ireg); // NOLINT
-    ;
     // The time-over-threshold (so far) of the current hit
     __m256i hit_tover = _mm256_lddqu_si256(reinterpret_cast<__m256i*>(state.hit_tover) + ireg); // NOLINT
-    ;
 
     // The channel numbers in each of the slots in the register
     __m256i channel_base = _mm256_set1_epi16(ireg * SAMPLES_PER_REGISTER);
@@ -209,12 +206,14 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info)
       
       // FIXED THRESHOLD
       //const uint16_t threshold=2000; // NOLINT(build/unsigned)
-      //__m256i threshold = _mm256_set1_epi16(info.threshold);
-      //__m256i is_over = _mm256_cmpgt_epi16(s, threshold);
+      __m256i threshold = _mm256_set1_epi16(info.threshold);
+      __m256i is_over = _mm256_cmpgt_epi16(s, threshold);
       
       // NO FIR
-      __m256i is_over = _mm256_cmpgt_epi16(s, sigma * info.threshold);
+      //__m256i is_over = _mm256_cmpgt_epi16(s, sigma * info.threshold);
+
       // Mask for channels that left "over threshold" state this step
+      // Comparison with previous TP
       __m256i left = _mm256_andnot_si256(is_over, prev_was_over);
 
       //-----------------------------------------

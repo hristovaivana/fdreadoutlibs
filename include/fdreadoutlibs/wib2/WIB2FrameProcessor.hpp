@@ -308,8 +308,10 @@ public:
       tpset_sourceid.id = config.tpset_sourceid;
       tpset_sourceid.subsystem = daqdataformats::SourceID::Subsystem::kTrigger;
 
+
       m_tphandler.reset(
         new WIB2TPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, tpset_sourceid, config.tpset_topic));
+
 
       TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::add_postprocess_task(
         std::bind(&WIB2FrameProcessor::find_hits, this, std::placeholders::_1, m_wib2_frame_handler.get()));
@@ -561,7 +563,7 @@ protected:
 
     constexpr int clocksPerTPCTick = 32;
 
-    uint16_t chan[16], hit_end[16], hit_charge[16], hit_tover[16]; // NOLINT(build/unsigned)
+    int16_t chan[16], hit_end[16], hit_charge[16], hit_tover[16]; // NOLINT(build/unsigned)
     unsigned int nhits = 0;
 
     while (*primfind_it != swtpg_wib2::MAGIC) {
@@ -577,6 +579,9 @@ protected:
       }
       for (int i = 0; i < 16; ++i) {
         hit_tover[i] = *primfind_it++; // NOLINT(runtime/increment_decrement)
+        if (hit_tover[i] > 1000) {
+           hit_tover[i] = 1000;
+        } 
       }
 
       // Now that we have all the register values in local
@@ -587,7 +592,7 @@ protected:
         if (hit_charge[i] && chan[i] != swtpg_wib2::MAGIC) {
           // This channel had a hit ending here, so we can create and output the hit here
           const uint16_t offline_channel = m_register_channels[chan[i]];
-          //TLOG() << "Channel containing TPs: " << chan[i] << " --> " << offline_channel;
+          // TLOG() << "Channel containing TPs: " << chan[i] << " --> " << offline_channel << " hit_charge: " << hit_charge[i] << " time_over_threshold: " << hit_tover[i];
           if (m_channel_mask_set.find(offline_channel) == m_channel_mask_set.end()) {   
 
             //TLOG() << "Channel containing TPs: " << chan[i] << " --> " << offline_channel;                     
