@@ -280,7 +280,12 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info)
         // STORE_MASK(hit_charge);
         _mm256_storeu_si256(output_loc++, // NOLINT(runtime/increment_decrement)
                             _mm256_blendv_epi8(_mm256_set1_epi16(0), hit_charge, left));
+
         _mm256_storeu_si256(output_loc++, hit_tover); // NOLINT(runtime/increment_decrement)
+
+
+        //printf("charge:"); print256_as16_dec(hit_charge);          printf("\n");
+
 
         // reset hit_start, hit_charge and hit_tover in the channels we saved
         const __m256i zero = _mm256_setzero_si256();
