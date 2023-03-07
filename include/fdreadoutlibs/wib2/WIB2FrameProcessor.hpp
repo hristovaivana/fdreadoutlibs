@@ -118,10 +118,7 @@ public:
       delete[] m_tpg_taps_p;
     }
 
-    if (m_primfind_dest) {
-      delete[] m_primfind_dest;
-    }    
-  }
+ }
 
   std::unique_ptr<swtpg_wib2::ProcessingInfo<swtpg_wib2::NUM_REGISTERS_PER_FRAME>> m_tpg_processing_info;
 
@@ -137,8 +134,6 @@ public:
   void reset() {
     delete[] m_tpg_taps_p;
     m_tpg_taps_p = nullptr;
-    delete[] m_primfind_dest;
-    m_primfind_dest = nullptr;
     first_hit = true;
   }
    
@@ -156,16 +151,13 @@ public:
     for (size_t i = 0; i < m_tpg_taps.size(); ++i) {
       m_tpg_taps_p[i] = m_tpg_taps[i];
     }
-    if (m_primfind_dest == nullptr) {
-      m_primfind_dest = new uint16_t[100000]; // NOLINT(build/unsigned)
-    }
 
     m_tpg_processing_info = std::make_unique<swtpg_wib2::ProcessingInfo<swtpg_wib2::NUM_REGISTERS_PER_FRAME>>(
       nullptr,
       swtpg_wib2::FRAMES_PER_MSG,
       0,
       swtpg_wib2::NUM_REGISTERS_PER_FRAME,
-      m_primfind_dest,
+      nullptr,
       m_tpg_taps_p,
       (uint8_t)m_tpg_taps.size(), // NOLINT(build/unsigned)
       m_tpg_tap_exponent,
@@ -178,7 +170,6 @@ public:
 
   // Pop one destination ptr for the frame handler
   uint16_t* get_primfind_dest() {
-      //return m_primfind_dest;
       while(m_dest_queue_frame_handler.can_pop()) {
         uint16_t* primfind_dest;
 	if(m_dest_queue_frame_handler.try_pop(primfind_dest, std::chrono::milliseconds(0))) {
@@ -191,7 +182,6 @@ public:
 private: 
   int m_register_selector;    
   iomanager::FollyMPMCQueue<uint16_t*> &m_dest_queue_frame_handler;
-  uint16_t* m_primfind_dest = nullptr;  
   uint16_t m_tpg_threshold;                    // units of sigma // NOLINT(build/unsigned)
   const uint8_t m_tpg_tap_exponent = 6;                  // NOLINT(build/unsigned)
   const int m_tpg_multiplier = 1 << m_tpg_tap_exponent;  // 64
@@ -296,7 +286,7 @@ public:
   void conf(const nlohmann::json& cfg) override
   {
     // Populate the queue of primfind destinations
-    for(int i=0; i<1000; ++i) {
+    for(int i=0; i<m_capacity_dest_queue; ++i) {
       uint16_t* dest = new uint16_t[100000];
       m_dest_queue.push(std::move(dest), std::chrono::milliseconds(0));    
     }
@@ -356,6 +346,14 @@ public:
       m_add_hits_tphandler_thread.join();
       TLOG() << "add_hits_tphandler_thread joined";
       m_tphandler.reset();
+
+      // Pop and delete all the elements of the destination queues
+      while (m_dest_queue.can_pop()) {
+        uint16_t* dest;
+        m_dest_queue.pop(dest, std::chrono::milliseconds(0));
+        delete[] dest;
+      }
+
    }    
 
     TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::scrap(args);
@@ -557,7 +555,7 @@ protected:
     frame_handler->m_tpg_processing_info->output = destination_ptr;
     
     if (m_tpg_algorithm == "SWTPG") {
-      swtpg_wib2::process_window_avx2(*frame_handler->m_tpg_processing_info);
+      swtpg_wib2::process_window_avx2(*frame_handler->m_tpg_processing_info, register_selection*swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::SAMPLES_PER_REGISTER);
     } else if (m_tpg_algorithm == "AbsRS" ){
       swtpg_wib2::process_window_rs_avx2(*frame_handler->m_tpg_processing_info, register_selection*swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::SAMPLES_PER_REGISTER);
     } else {
@@ -670,8 +668,6 @@ protected:
   } 
 
 
-
-
   // Function for the TPHandler threads. 
   // Reads the m_tpthread_queue and then process the hits
   void add_hits_to_tphandler() {
@@ -738,6 +734,12 @@ private:
 
   std::unique_ptr<WIB2TPHandler> m_tphandler;
 
+  // Destination queue represents the queue of primfind
+  // destinations after the execution of the SWTPG. The size
+  // was set to 1000 because a size of 10 was not enough and
+  // resulted in not keeping up with the rate. The size of each
+  // uint16_t buffer is 100000, therefore the total impact on 
+  // the memory is: 100000 * (16bit) * 100 ~ 190 MB
   size_t m_capacity_dest_queue = 1000; 
   iomanager::FollyMPMCQueue<uint16_t*> m_dest_queue{"dest_queue", m_capacity_dest_queue};
 

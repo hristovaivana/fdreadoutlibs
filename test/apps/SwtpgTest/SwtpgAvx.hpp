@@ -218,7 +218,7 @@ void find_hits(const dunedaq::fdreadoutlibs::types::DUNEWIBSuperChunkTypeAdapter
     // Execute the SWTPG algorithm
     m_tpg_processing_info->input = &registers_array;
     *m_primfind_dest = swtpg_wib2::MAGIC;
-    swtpg_wib2::process_window_avx2(*m_tpg_processing_info);
+    swtpg_wib2::process_window_avx2(*m_tpg_processing_info, 0);
 
     std::cout << "Finished processing window " << std::endl;
 

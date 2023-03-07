@@ -78,7 +78,7 @@ frugal_accum_update_avx2(__m256i& __restrict__ median,
 
 template<size_t NREGISTERS>
 inline void
-process_window_avx2(ProcessingInfo<NREGISTERS>& info)
+process_window_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
 {
   // Start with taps as floats that add to 1. Multiply by some
   // power of two (2**N) and round to int. Before filtering, cap the
@@ -145,7 +145,7 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info)
     __m256i hit_tover = _mm256_lddqu_si256(reinterpret_cast<__m256i*>(state.hit_tover) + ireg); // NOLINT
 
     // The channel numbers in each of the slots in the register
-    __m256i channel_base = _mm256_set1_epi16(ireg * SAMPLES_PER_REGISTER);
+    __m256i channel_base = _mm256_set1_epi16(ireg * SAMPLES_PER_REGISTER + channel_offset);
     __m256i channels = _mm256_add_epi16(channel_base, iota);
 
     for (size_t itime = 0; itime < info.timeWindowNumFrames; ++itime) {
