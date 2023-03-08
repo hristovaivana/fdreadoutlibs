@@ -170,12 +170,12 @@ public:
 
   // Pop one destination ptr for the frame handler
   uint16_t* get_primfind_dest() {
-      while(m_dest_queue_frame_handler.can_pop()) {
-        uint16_t* primfind_dest;
-	if(m_dest_queue_frame_handler.try_pop(primfind_dest, std::chrono::milliseconds(0))) {
-                return primfind_dest;
- 	}
+      uint16_t* primfind_dest;
+
+      while(!m_dest_queue_frame_handler.try_pop(primfind_dest, std::chrono::milliseconds(0))) {
+        std::this_thread::sleep_for(std::chrono::microseconds(10));        
       }
+      return primfind_dest;
   }
 
 
@@ -734,13 +734,18 @@ private:
 
   std::unique_ptr<WIB2TPHandler> m_tphandler;
 
+  // AAA: TODO: make selection of the initial capacity of the queue configurable
+  size_t m_capacity_mpmc_queue = 100000; 
+  iomanager::FollyMPMCQueue<swtpg_output> m_tphandler_queue{"tphandler_queue", m_capacity_mpmc_queue};
+
+
   // Destination queue represents the queue of primfind
   // destinations after the execution of the SWTPG. The size
   // was set to 1000 because a size of 10 was not enough and
   // resulted in not keeping up with the rate. The size of each
   // uint16_t buffer is 100000, therefore the total impact on 
   // the memory is: 100000 * (16bit) * 100 ~ 190 MB
-  size_t m_capacity_dest_queue = 1000; 
+  size_t m_capacity_dest_queue = m_capacity_mpmc_queue+4; 
   iomanager::FollyMPMCQueue<uint16_t*> m_dest_queue{"dest_queue", m_capacity_dest_queue};
 
 
@@ -754,10 +759,6 @@ private:
   int selection_of_register_second_half = 1; 
   std::unique_ptr<WIB2FrameHandler> m_wib2_frame_handler_second_half = std::make_unique<WIB2FrameHandler>(selection_of_register_second_half, m_dest_queue);
   
-
-  // AAA: TODO: make selection of the initial capacity of the queue configurable
-  size_t m_capacity_mpmc_queue = 100000; 
-  iomanager::FollyMPMCQueue<swtpg_output> m_tphandler_queue{"tphandler_queue", m_capacity_mpmc_queue};
 
 
 
