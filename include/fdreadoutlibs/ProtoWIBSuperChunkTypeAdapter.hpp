@@ -77,11 +77,11 @@ struct ProtoWIBSuperChunkTypeAdapter
     return reinterpret_cast<FrameType*>(data + kProtoWIBSuperChunkSize); // NOLINT
   }
 
-  size_t get_payload_size() { return 5568; }
+  size_t get_payload_size() { return get_num_frames()*get_frame_size(); }
 
   size_t get_num_frames() { return 12; }
 
-  size_t get_frame_size() { return 464; }
+  size_t get_frame_size() { return sizeof(struct dunedaq::detdataformats::wib::WIBFrame); }
   
   static const constexpr size_t fixed_payload_size = 5568;
   static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kDetectorReadout;

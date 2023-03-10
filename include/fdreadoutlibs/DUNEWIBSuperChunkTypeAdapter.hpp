@@ -71,11 +71,11 @@ struct DUNEWIBSuperChunkTypeAdapter
     return reinterpret_cast<FrameType*>(data + kDUNEWIBSuperChunkSize); // NOLINT
   }
 
-  size_t get_payload_size() { return 5664; }
+  size_t get_payload_size() { return get_num_frames()*get_frame_size(); }
 
   size_t get_num_frames() { return 12; }
 
-  size_t get_frame_size() { return 472; }
+  size_t get_frame_size() { return sizeof(struct dunedaq::detdataformats::wib2::WIB2Frame); }
 
   static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kDetectorReadout;
   static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kWIB;

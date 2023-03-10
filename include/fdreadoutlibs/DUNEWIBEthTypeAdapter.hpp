@@ -17,9 +17,9 @@ namespace types {
 
 /**
  * @brief For WIBEth the numbers are different.
- * Header + (64 channels * 64 time slices) = 7192[Bytes]
+ * Header + (64 channels * 64 time slices) = 7200[Bytes]
  * */
-const constexpr std::size_t kDUNEWIBEthSize = 7192; 
+const constexpr std::size_t kDUNEWIBEthSize = 7200; 
 struct DUNEWIBEthTypeAdapter
 {
   using FrameType = dunedaq::detdataformats::wibeth::WIBEthFrame;
@@ -66,11 +66,11 @@ struct DUNEWIBEthTypeAdapter
     return reinterpret_cast<FrameType*>(data + kDUNEWIBEthSize); // NOLINT
   }
 
-  size_t get_payload_size() { return 7192; }
+  size_t get_payload_size() { return kDUNEWIBEthSize; }
 
   size_t get_num_frames() { return 1; }
 
-  size_t get_frame_size() { return 7192; }
+  size_t get_frame_size() { return kDUNEWIBEthSize; }
 
   static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kDetectorReadout;
   static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kWIBEth;
