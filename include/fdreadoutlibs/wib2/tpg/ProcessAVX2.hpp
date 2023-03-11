@@ -160,19 +160,19 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
       // First, find which channels are above/below the median,
       // since we need these as masks in the call to
       // frugal_accum_update_avx2
-      __m256i is_gt = _mm256_cmpgt_epi16(s, median);
-      __m256i is_eq = _mm256_cmpeq_epi16(s, median);
+      //__m256i is_gt = _mm256_cmpgt_epi16(s, median);
+      //__m256i is_eq = _mm256_cmpeq_epi16(s, median);
       // Would like a "not", but there isn't one. Emulate it
       // with xor against a register of all ones
-      __m256i gt_or_eq = _mm256_or_si256(is_gt, is_eq);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Woverflow"
-      __m256i is_lt = _mm256_xor_si256(gt_or_eq, _mm256_set1_epi16(0xffff));
-#pragma GCC diagnostic pop
+      //__m256i gt_or_eq = _mm256_or_si256(is_gt, is_eq);
+//#pragma GCC diagnostic push
+//#pragma GCC diagnostic ignored "-Woverflow"
+      //__m256i is_lt = _mm256_xor_si256(gt_or_eq, _mm256_set1_epi16(0xffff));
+//#pragma GCC diagnostic pop
       // Update the 25th percentile in the channels that are below the median
-      frugal_accum_update_avx2(quantile25, s, accum25, 10, is_lt);
+      //frugal_accum_update_avx2(quantile25, s, accum25, 10, is_lt);
       // Update the 75th percentile in the channels that are above the median
-      frugal_accum_update_avx2(quantile75, s, accum75, 10, is_gt);
+      //frugal_accum_update_avx2(quantile75, s, accum75, 10, is_gt);
       // Update the median itself in all channels
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverflow"
@@ -182,10 +182,10 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
       s = _mm256_sub_epi16(s, median);
 
       // Find the interquartile range
-      __m256i sigma = _mm256_sub_epi16(quantile75, quantile25);
+      //__m256i sigma = _mm256_sub_epi16(quantile75, quantile25);
       // Clamp sigma to a range where it won't overflow when
       // multiplied by info.multiplier*5
-      sigma = _mm256_min_epi16(sigma, sigmaMax);
+      //sigma = _mm256_min_epi16(sigma, sigmaMax);
 
       // __m256i sigma = _mm256_set1_epi16(2000); // 20 ADC
 

@@ -25,8 +25,15 @@ namespace dunedaq {
 
 ERS_DECLARE_ISSUE(fdreadoutlibs,
                    TPHandlerTimestampIssue,
-                  "Continuity of timestamps broken. Start ts:  " << start_ts << " current ts: " << current_ts,
+                  "Continuity of timestamps broken. Start ts:  " << start_ts << " ts previous tpset: " << current_ts,
                    ((uint64_t)start_ts)((uint64_t)current_ts))
+
+ERS_DECLARE_ISSUE(fdreadoutlibs,
+                   TPHandlerConditionCheck,
+                  "Condition check. Start ts:  " << tp_buffer_time_start << " current time: " << currentTime << " window+timeout: " << window_timeout << " time_over_threshold: " << time_over_threshold, 
+                   ((uint64_t)tp_buffer_time_start)((uint64_t)currentTime)((uint64_t)window_timeout)((uint64_t)time_over_threshold))
+
+
 
 namespace fdreadoutlibs {
 
@@ -74,6 +81,13 @@ public:
       tpset.run_number = m_run_number;
       tpset.start_time = (m_tp_buffer.top().time_start / m_tpset_window_size) * m_tpset_window_size;
       tpset.end_time = tpset.start_time + m_tpset_window_size;
+
+      if (tpset.start_time < m_timestamp_counter) {
+        ers::warning(TPHandlerConditionCheck(ERS_HERE, m_tp_buffer.top().time_start, currentTime, m_tpset_window_size+m_tp_timeout, m_tp_buffer.top().time_over_threshold ));        
+        //return;
+      }
+ 
+
 
       //TLOG() << "TPHandler TPSET start time: " << tpset.start_time;
       //TLOG() << "TPHandler TPSET end time: " << tpset.end_time;

@@ -375,13 +375,13 @@ public:
       int new_hits = m_swtpg_hits_count.exchange(0);
       int new_tps = m_new_tps.exchange(0);
       double seconds = std::chrono::duration_cast<std::chrono::microseconds>(now - m_t0).count() / 1000000.;
-      TLOG() << "Hit rate: " << std::to_string(new_hits / seconds / 1000.) << " [kHz]";
-      TLOG() << "Total new hits: " << new_hits << " new TPs: " << new_tps;
+      //TLOG() << "Hit rate: " << std::to_string(new_hits / seconds / 1000.) << " [kHz]";
+      //TLOG() << "Total new hits: " << new_hits << " new TPs: " << new_tps;
       info.rate_tp_hits = new_hits / seconds / 1000.;
-      
-      /*
+    
+      /* 
       std::stringstream ss_channel_map;      
-      ss_channel_map << "Trigger rate for different channels: ";
+      ss_channel_map << "Trigger_rate for different channels: ";
       for (const auto& entry : m_tp_channel_rate_map) {      
         if (entry.second != 0) {
           ss_channel_map << "\nChannel: " << entry.first << ", TP rate: " << std::to_string(entry.second / seconds /1000.) << " [kHz]\n";
@@ -521,6 +521,8 @@ protected:
       m_slot_no = wfptr->header.slot;
       TLOG() << "Got first item, link/crate/slot=" << m_link << "/" << m_crate_no << "/" << m_slot_no;      
 
+
+      /*
       std::stringstream ss;
       ss << " Channels for register selection " << register_selection << " are:\n";
       
@@ -528,6 +530,7 @@ protected:
         ss << i << "\t" << frame_handler->register_channel_map.channel[i] << "\n";
       }
       TLOG() << ss.str();      
+      */
 
       // Add WIB2FrameHandler channel map to the common m_register_channels. 
       // Populate the array taking into account the position of the register selector
@@ -650,7 +653,7 @@ protected:
             ++nhits;
 
             // Update the channel/rate map. Increment the value associated with the TP channel 
-            m_tp_channel_rate_map[offline_channel]++;
+            //m_tp_channel_rate_map[offline_channel]++;
 
 
 
@@ -735,7 +738,7 @@ private:
   std::unique_ptr<WIB2TPHandler> m_tphandler;
 
   // AAA: TODO: make selection of the initial capacity of the queue configurable
-  size_t m_capacity_mpmc_queue = 100000; 
+  size_t m_capacity_mpmc_queue = 300000; 
   iomanager::FollyMPMCQueue<swtpg_output> m_tphandler_queue{"tphandler_queue", m_capacity_mpmc_queue};
 
 

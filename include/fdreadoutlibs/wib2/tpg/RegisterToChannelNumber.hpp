@@ -51,7 +51,7 @@ get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WI
   for (size_t ich = 0; ich < dunedaq::detdataformats::wib2::WIB2Frame::s_num_ch_per_frame; ++ich) {
     auto offline_ch = ch_map->get_offline_channel_from_crate_slot_fiber_chan(
       frame->header.crate, frame->header.slot, frame->header.link, ich);
-    TLOG_DEBUG(0) << " offline_ch " << offline_ch; 
+    TLOG_DEBUG(4) << " offline_ch " << offline_ch; 
     min_ch = std::min(min_ch, offline_ch);
   }
   TLOG() << "get_register_to_offline_channel_map_wib2 for crate " << frame->header.crate << " slot "
@@ -89,7 +89,7 @@ get_register_to_offline_channel_map_wib2(const dunedaq::detdataformats::wib2::WI
 
   auto end_time = std::chrono::steady_clock::now();
   auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
-  TLOG_DEBUG(0) << "get_register_to_offline_channel_map_wib2 built map in " << dur << "us";
+  TLOG_DEBUG(4) << "get_register_to_offline_channel_map_wib2 built map in " << dur << "us";
   return ret;
 }
 
