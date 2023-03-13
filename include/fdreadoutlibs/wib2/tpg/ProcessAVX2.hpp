@@ -299,12 +299,12 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
 
     // Store the state, ready for the next time round
     _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.pedestals) + ireg, median);      // NOLINT
-    _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.quantile25) + ireg, quantile25); // NOLINT
-    _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.quantile75) + ireg, quantile75); // NOLINT
+    //_mm256_storeu_si256(reinterpret_cast<__m256i*>(state.quantile25) + ireg, quantile25); // NOLINT
+    //_mm256_storeu_si256(reinterpret_cast<__m256i*>(state.quantile75) + ireg, quantile75); // NOLINT
 
     _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.accum) + ireg, accum);     // NOLINT
-    _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.accum25) + ireg, accum25); // NOLINT
-    _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.accum75) + ireg, accum75); // NOLINT
+    //_mm256_storeu_si256(reinterpret_cast<__m256i*>(state.accum25) + ireg, accum25); // NOLINT
+    //_mm256_storeu_si256(reinterpret_cast<__m256i*>(state.accum75) + ireg, accum75); // NOLINT
 
     for (size_t j = 0; j < NTAPS; ++j) {
       _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.prev_samp) + NTAPS * ireg + j, prev_samp[j]); // NOLINT
