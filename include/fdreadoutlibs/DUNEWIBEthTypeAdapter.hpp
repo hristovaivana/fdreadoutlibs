@@ -46,9 +46,8 @@ struct DUNEWIBEthTypeAdapter
 
   void fake_timestamps(uint64_t first_timestamp, uint64_t /*offset = 2048*/ ) // NOLINT(build/unsigned)
   {
-    uint64_t ts_next = first_timestamp; // NOLINT(build/unsigned)
     auto wef = reinterpret_cast<FrameType*>(((uint8_t*)(&data))); // NOLINT
-    wef->set_timestamp(ts_next);
+    wef->set_timestamp(first_timestamp);
   }
 
   void fake_frame_errors(std::vector<uint16_t>* /*fake_errors*/) // NOLINT
