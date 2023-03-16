@@ -80,23 +80,8 @@ template<size_t NREGISTERS>
 inline void
 process_window_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
 {
-  // Start with taps as floats that add to 1. Multiply by some
-  // power of two (2**N) and round to int. Before filtering, cap the
-  // value of the input to INT16_MAX/(2**N)
-  const size_t NTAPS = 8;
-  // int16_t taps[NTAPS] = {0};
-  // for (size_t i = 0; i < std::min(NTAPS, info.tapsv.size()); ++i) {
-  //  taps[i] = info.tapsv[i];
-  //}
-
   const __m256i adcMax = _mm256_set1_epi16(info.adcMax);
-  // The maximum value that sigma can have before the threshold overflows a 16-bit signed integer
-  const __m256i sigmaMax = _mm256_set1_epi16((1 << 15) / (info.multiplier * 5));
 
-  __m256i tap_256[NTAPS];
-  for (size_t i = 0; i < NTAPS; ++i) {
-    tap_256[i] = _mm256_set1_epi16(info.taps[i]);
-  }
   // Pointer to keep track of where we'll write the next output hit
   __m256i* output_loc = (__m256i*)(info.output); // NOLINT(readability/casting)
 
@@ -106,7 +91,7 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
 
   for (uint16_t ireg = info.first_register; ireg < info.last_register; ++ireg) { // NOLINT(build/unsigned)
 
-    uint16_t absTimeModNTAPS = info.absTimeModNTAPS; // NOLINT(build/unsigned)
+    //uint16_t absTimeModNTAPS = info.absTimeModNTAPS; // NOLINT(build/unsigned)
 
     // ------------------------------------
     // Variables for pedestal subtraction
@@ -116,23 +101,9 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
 
     ChanState<NREGISTERS>& state = info.chanState;
     __m256i median = _mm256_lddqu_si256(reinterpret_cast<__m256i*>(state.pedestals) + ireg);      // NOLINT
-    __m256i quantile25 = _mm256_lddqu_si256(reinterpret_cast<__m256i*>(state.quantile25) + ireg); // NOLINT
-    __m256i quantile75 = _mm256_lddqu_si256(reinterpret_cast<__m256i*>(state.quantile75) + ireg); // NOLINT
-
     // The accumulator that we increase/decrease when the current
     // sample is greater/less than the median
     __m256i accum = _mm256_lddqu_si256(reinterpret_cast<__m256i*>(state.accum) + ireg);     // NOLINT
-    __m256i accum25 = _mm256_lddqu_si256(reinterpret_cast<__m256i*>(state.accum25) + ireg); // NOLINT
-    __m256i accum75 = _mm256_lddqu_si256(reinterpret_cast<__m256i*>(state.accum75) + ireg); // NOLINT
-
-    // ------------------------------------
-    // Variables for filtering
-
-    // The (unfiltered) samples `n` places before the current one
-    __m256i prev_samp[NTAPS];
-    for (size_t j = 0; j < NTAPS; ++j) {
-      prev_samp[j] = _mm256_lddqu_si256(reinterpret_cast<__m256i*>(state.prev_samp) + NTAPS * ireg + j); // NOLINT
-    }
 
     // ------------------------------------
     // Variables for hit finding
@@ -157,23 +128,6 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
       // The current sample
       __m256i s = info.input->ymm(index);
 
-      // First, find which channels are above/below the median,
-      // since we need these as masks in the call to
-      // frugal_accum_update_avx2
-      //__m256i is_gt = _mm256_cmpgt_epi16(s, median);
-      //__m256i is_eq = _mm256_cmpeq_epi16(s, median);
-      // Would like a "not", but there isn't one. Emulate it
-      // with xor against a register of all ones
-      //__m256i gt_or_eq = _mm256_or_si256(is_gt, is_eq);
-//#pragma GCC diagnostic push
-//#pragma GCC diagnostic ignored "-Woverflow"
-      //__m256i is_lt = _mm256_xor_si256(gt_or_eq, _mm256_set1_epi16(0xffff));
-//#pragma GCC diagnostic pop
-      // Update the 25th percentile in the channels that are below the median
-      //frugal_accum_update_avx2(quantile25, s, accum25, 10, is_lt);
-      // Update the 75th percentile in the channels that are above the median
-      //frugal_accum_update_avx2(quantile75, s, accum75, 10, is_gt);
-      // Update the median itself in all channels
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverflow"
       frugal_accum_update_avx2(median, s, accum, 10, _mm256_set1_epi16(0xffff));
@@ -181,23 +135,9 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
       // Actually subtract the pedestal
       s = _mm256_sub_epi16(s, median);
 
-      // Find the interquartile range
-      //__m256i sigma = _mm256_sub_epi16(quantile75, quantile25);
-      // Clamp sigma to a range where it won't overflow when
-      // multiplied by info.multiplier*5
-      //sigma = _mm256_min_epi16(sigma, sigmaMax);
-
-      // __m256i sigma = _mm256_set1_epi16(2000); // 20 ADC
-
       // Don't let the sample exceed adcMax, which is the value
       // at which its filtered version might overflow
       s = _mm256_min_epi16(s, adcMax);
-
-      prev_samp[absTimeModNTAPS] = s;
-      // This is a reference to the value in the ProcessingInfo,
-      // so this line has the effect of directly modifying the
-      // `info` object
-      absTimeModNTAPS = (absTimeModNTAPS + 1) % NTAPS;
 
       // --------------------------------------------------------------
       // Hit finding
@@ -205,13 +145,9 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
       // Mask for channels that are over the threshold in this step
       
       // FIXED THRESHOLD
-      //const uint16_t threshold=2000; // NOLINT(build/unsigned)
       __m256i threshold = _mm256_set1_epi16(info.threshold);
       __m256i is_over = _mm256_cmpgt_epi16(s, threshold);
       
-      // NO FIR
-      //__m256i is_over = _mm256_cmpgt_epi16(s, sigma * info.threshold);
-
       // Mask for channels that left "over threshold" state this step
       // Comparison with previous TP
       __m256i left = _mm256_andnot_si256(is_over, prev_was_over);
@@ -299,16 +235,7 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
 
     // Store the state, ready for the next time round
     _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.pedestals) + ireg, median);      // NOLINT
-    //_mm256_storeu_si256(reinterpret_cast<__m256i*>(state.quantile25) + ireg, quantile25); // NOLINT
-    //_mm256_storeu_si256(reinterpret_cast<__m256i*>(state.quantile75) + ireg, quantile75); // NOLINT
-
     _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.accum) + ireg, accum);     // NOLINT
-    //_mm256_storeu_si256(reinterpret_cast<__m256i*>(state.accum25) + ireg, accum25); // NOLINT
-    //_mm256_storeu_si256(reinterpret_cast<__m256i*>(state.accum75) + ireg, accum75); // NOLINT
-
-    for (size_t j = 0; j < NTAPS; ++j) {
-      _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.prev_samp) + NTAPS * ireg + j, prev_samp[j]); // NOLINT
-    }
 
     _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.prev_was_over) + ireg, prev_was_over); // NOLINT
     _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.hit_charge) + ireg, hit_charge);       // NOLINT
@@ -316,7 +243,6 @@ process_window_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
 
   } // end loop over ireg (the 8 registers in this frame)
 
-  info.absTimeModNTAPS = (info.absTimeModNTAPS + info.timeWindowNumFrames) % NTAPS;
   // Store the output
   for (int i = 0; i < 4; ++i) {
     _mm256_storeu_si256(output_loc++, _mm256_set1_epi16(swtpg_wib2::MAGIC)); // NOLINT(runtime/increment_decrement)

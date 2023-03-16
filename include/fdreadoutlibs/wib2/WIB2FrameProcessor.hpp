@@ -528,13 +528,13 @@ protected:
 
 
       
-      std::stringstream ss;
-      ss << " Before_10_seconds: Channels for register selection " << register_selection << " are:\n";
+      //std::stringstream ss;
+      //ss << " Before_10_seconds: Channels for register selection " << register_selection << " are:\n";
       
-      for (size_t i = 0; i < swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::SAMPLES_PER_REGISTER; ++i) {
-        ss << i << "\t" << frame_handler->register_channel_map.channel[i] << "\t" << frame_handler->m_tpg_processing_info->chanState.pedestals[i] << "\n";
-      }
-      TLOG() << ss.str();      
+      //for (size_t i = 0; i < swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::SAMPLES_PER_REGISTER; ++i) {
+        //ss << i << "\t" << frame_handler->register_channel_map.channel[i] << "\t" << frame_handler->m_tpg_processing_info->chanState.pedestals[i] << "\n";
+      //}
+      //TLOG() << ss.str();      
       
 
       // Add WIB2FrameHandler channel map to the common m_register_channels. 
@@ -558,6 +558,7 @@ protected:
 
     if (timestamp - frame_handler->timestamp_first_hit > 625000000 && !frame_handler->produce_tps) {
       frame_handler->produce_tps = true;
+      /*
       std::stringstream ss_produce_tps;
       ss_produce_tps << "After_10_seconds: Channels for register selection " << register_selection << " are:\n";
       
@@ -565,6 +566,7 @@ protected:
         ss_produce_tps << i << "\t" << frame_handler->register_channel_map.channel[i] << "\t" << frame_handler->m_tpg_processing_info->chanState.pedestals[i] << "\n";
       }
       TLOG() << ss_produce_tps.str();      
+      */
  
     }
 
