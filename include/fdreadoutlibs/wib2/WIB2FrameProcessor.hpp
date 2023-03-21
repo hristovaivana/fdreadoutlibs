@@ -377,21 +377,34 @@ public:
       int new_hits = m_swtpg_hits_count.exchange(0);
       int new_tps = m_new_tps.exchange(0);
       double seconds = std::chrono::duration_cast<std::chrono::microseconds>(now - m_t0).count() / 1000000.;
-      //TLOG() << "Hit rate: " << std::to_string(new_hits / seconds / 1000.) << " [kHz]";
-      //TLOG() << "Total new hits: " << new_hits << " new TPs: " << new_tps;
+      TLOG_DEBUG(TLVL_BOOKKEEPING) << "Hit rate: " << std::to_string(new_hits / seconds / 1000.) << " [kHz]";
+      TLOG_DEBUG(TLVL_BOOKKEEPING) << "Total new hits: " << new_hits << " new TPs: " << new_tps;
       info.rate_tp_hits = new_hits / seconds / 1000.;
     
-      /* 
-      std::stringstream ss_channel_map;      
-      ss_channel_map << "Trigger_rate for different channels: ";
-      for (const auto& entry : m_tp_channel_rate_map) {      
-        if (entry.second != 0) {
-          ss_channel_map << "\nChannel: " << entry.first << ", TP rate: " << std::to_string(entry.second / seconds /1000.) << " [kHz]\n";
-          m_tp_channel_rate_map[entry.first].exchange(0);
+      // Find the channels with the top  TP rates
+      // Create a vector of pairs to store the map elements
+      std::vector<std::pair<uint, int>> channel_tp_rate_vec(m_tp_channel_rate_map.begin(), m_tp_channel_rate_map.end());
+      // Sort the vector in descending order of the value of the pairs
+      sort(channel_tp_rate_vec.begin(), channel_tp_rate_vec.end(), [](std::pair<uint, int>& a, std::pair<uint, int>& b) {
+        return a.second > b.second;
+      });
+      // Add the metrics to opmon
+      // For convenience we are selecting only the top 10 elements
+      if (channel_tp_rate_vec.size() != 0) {
+        int top_highest_values = 10;
+        if (channel_tp_rate_vec.size() < 10) {
+          top_highest_values = channel_tp_rate_vec.size();
+        }
+        for (int i = 0; i < top_highest_values; i++) {
+          std::stringstream info_name;
+          info_name << "channel_" <<  channel_tp_rate_vec[i].first;
+          opmonlib::InfoCollector tmp_ic;
+          readoutlibs::readoutinfo::TPChannelInfo tp_info;
+          tp_info.num_tp = channel_tp_rate_vec[i].second;
+          tmp_ic.add(tp_info);
+          ci.add(info_name.str(), tmp_ic);
         }
       }
-      TLOG() << ss_channel_map.str();
-      */
 
     }
     m_t0 = now;
@@ -514,7 +527,7 @@ protected:
       std::thread::id thread_id = std::this_thread::get_id();
       pid_t tid;
       tid = syscall(SYS_gettid);
-      TLOG() << " Thread ID " << thread_id << " PID " << tid ;
+      TLOG_DEBUG(TLVL_BOOKKEEPING) << " Thread ID " << thread_id << " PID " << tid ;
 
       frame_handler->register_channel_map = swtpg_wib2::get_register_to_offline_channel_map_wib2(wfptr, m_channel_map, register_selection);
 
