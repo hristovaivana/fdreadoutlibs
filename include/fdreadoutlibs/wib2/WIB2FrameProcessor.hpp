@@ -126,8 +126,6 @@ public:
   swtpg_wib2::RegisterChannelMap register_channel_map; 
 
   bool first_hit = true;                                                  
-  bool produce_tps = false;                                                  
-  uint64_t timestamp_first_hit = 0;
                                                   
   int get_registers_selector() {
     return m_register_selector;
@@ -521,8 +519,6 @@ protected:
 
     if (frame_handler->first_hit) {
 
-      frame_handler->timestamp_first_hit = timestamp;
-
       // Print thread ID and PID of the executing thread
       std::thread::id thread_id = std::this_thread::get_id();
       pid_t tid;
@@ -569,21 +565,6 @@ protected:
 
     } // end if (frame_handler->first_hit)
 
-    if (timestamp - frame_handler->timestamp_first_hit > 625000000 && !frame_handler->produce_tps) {
-      frame_handler->produce_tps = true;
-      /*
-      std::stringstream ss_produce_tps;
-      ss_produce_tps << "After_10_seconds: Channels for register selection " << register_selection << " are:\n";
-      
-      for (size_t i = 0; i < swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::SAMPLES_PER_REGISTER; ++i) {
-        ss_produce_tps << i << "\t" << frame_handler->register_channel_map.channel[i] << "\t" << frame_handler->m_tpg_processing_info->chanState.pedestals[i] << "\n";
-      }
-      TLOG() << ss_produce_tps.str();      
-      */
- 
-    }
-
-
     // Execute the SWTPG algorithm
     frame_handler->m_tpg_processing_info->input = &registers_array;
     uint16_t* destination_ptr = frame_handler->get_primfind_dest();
@@ -598,8 +579,6 @@ protected:
       throw TPGAlgorithmInexistent(ERS_HERE, "m_tpg_algo");
     }     
     
-
-    if (frame_handler->produce_tps) {
     // Insert output of the AVX processing into the swtpg_output 
     swtpg_output swtpg_processing_result = {destination_ptr, timestamp};
 
@@ -608,9 +587,7 @@ protected:
         // we're going to loose these hits
         ers::warning(TPHandlerBacklog(ERS_HERE, m_sourceid.id));
     }
-    } else {
-      free_primfind_dest(destination_ptr);
-    }
+
 
   }
 
