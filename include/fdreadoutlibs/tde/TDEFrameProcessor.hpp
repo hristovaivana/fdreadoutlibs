@@ -61,7 +61,7 @@ protected:
   void frame_error_check(frameptr /*fp*/);
 
   // Internals
-  timestamp_t m_previous_ts = 0;
+  timestamp_t m_previous_ts[64] = {0};
   timestamp_t m_current_ts = 0;
   bool m_first_ts_missmatch = true;
   bool m_problem_reported = false;

@@ -35,25 +35,26 @@ TDEFrameProcessor::timestamp_check(frameptr fp)
 {
   // If EMU data, emulate perfectly incrementing timestamp
   if (inherited::m_emulator_mode) {         // emulate perfectly incrementing timestamp
-    uint64_t ts_next = m_previous_ts + (4474*32); // NOLINT(build/unsigned)
     auto tdef = reinterpret_cast<dunedaq::detdataformats::tde::TDE16Frame*>((uint8_t*)fp); // NOLINT
     auto tdefh = tdef->get_tde_header(); // const_cast<dunedaq::detdataformats::tde::TDE16Frame::Header*>(tdef->get_wib_header());
+    auto ts_next = m_previous_ts[tdef->get_channel()] + (4474*32); // NOLINT(build/unsigned)
     tdefh->set_timestamp(ts_next);
   }
 
   // Acquire timestamp
   auto tdefptr = reinterpret_cast<dunedaq::detdataformats::tde::TDE16Frame*>(fp); // NOLINT
   m_current_ts = tdefptr->get_timestamp();
+  auto ch = tdefptr->get_channel();
   auto tdefh = tdefptr->get_tde_header();
   TLOG_DEBUG(TLVL_FRAME_RECEIVED) << "Checking TDE frame timestamp value of " << m_current_ts << " ticks (..." << (static_cast<double>(m_current_ts % (m_clock_frequency*1000)) / static_cast<double>(m_clock_frequency)) << " sec), crate " << tdefh->crate << ", slot " << tdefh->slot << ", link " << tdefh->link; // NOLINT
 
   // Check timestamp
-  if (m_current_ts - m_previous_ts != 4474*32) {
+  if (m_previous_ts[ch]!=0 && m_current_ts - m_previous_ts[ch] != 4474*32) {
     ++m_ts_error_ctr;
     m_error_registry->add_error("MISSING_FRAMES",
-                                readoutlibs::FrameErrorRegistry::ErrorInterval(m_previous_ts + 4474*32, m_current_ts));
+                                readoutlibs::FrameErrorRegistry::ErrorInterval(m_previous_ts[ch] + 4474*32, m_current_ts));
     if (m_first_ts_missmatch) { // log once
-      TLOG_DEBUG(TLVL_BOOKKEEPING) << "First timestamp MISSMATCH! -> | previous: " << std::to_string(m_previous_ts)
+      TLOG_DEBUG(TLVL_BOOKKEEPING) << "First timestamp MISSMATCH! -> | previous: " << std::to_string(m_previous_ts[ch])
                                    << " current: " + std::to_string(m_current_ts);
       m_first_ts_missmatch = false;
     }
@@ -67,7 +68,7 @@ TDEFrameProcessor::timestamp_check(frameptr fp)
     }
   }
 
-  m_previous_ts = m_current_ts;
+  m_previous_ts[ch] = m_current_ts;
   m_last_processed_daq_ts = m_current_ts;
 }
 
