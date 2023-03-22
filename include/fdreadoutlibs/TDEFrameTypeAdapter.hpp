@@ -66,7 +66,7 @@ struct TDEFrameTypeAdapter
 
   FrameType* end()
   {
-    return (&data+kTDEFrameSize); // NOLINT
+    return (reinterpret_cast<FrameType*>(reinterpret_cast<char*>(&data)+kTDEFrameSize)); // NOLINT
   }
 
   static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kDetectorReadout;
