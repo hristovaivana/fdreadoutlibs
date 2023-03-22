@@ -1,16 +1,15 @@
 /**
- * @file ProcessNaive.hpp Non AVX implementation of sw tpg
- * @author Philip Rodrigues (rodriges@fnal.gov)
+ * @file ProcessNaiveRS.hpp Non AVX implementation of sw absRS tpg
  *
  * This is part of the DUNE DAQ , copyright 2020.
  * Licensing/copyright details are in the COPYING file that you should have
  * received with this code.
  */
-#ifndef READOUT_SRC_WIB2_TPG_PROCESSNAIVE_HPP_
-#define READOUT_SRC_WIB2_TPG_PROCESSNAIVE_HPP_
+#ifndef READOUT_SRC_WIB2_TPG_PROCESSNAIVERS_HPP_
+#define READOUT_SRC_WIB2_TPG_PROCESSNAIVERS_HPP_
 
 #include "FrameExpand.hpp"
-#include "ProcessingInfo.hpp"
+#include "ProcessingInfoRS.hpp"
 #include "TPGConstants_wib2.hpp"
 
 #include <algorithm>
@@ -45,8 +44,11 @@ process_window_naive(ProcessingInfo<NREGISTERS>& info)
   // Start with taps as floats that add to 1. Multiply by some
   // power of two (2**N) and round to int. Before filtering, cap the
   // value of the input to INT16_MAX/(2**N)
-  const size_t NTAPS = 8;
+  const size_t  NTAPS = 8;
   const int16_t adcMax = info.adcMax;
+  const float   R = 0.7; //"deweighting factor" for running sum
+  //scaling factor to stop the ADCs from overflowing (may not needs this, depends on magnitude of FIR output) 
+  const size_t  scale = 2; 
 
   uint16_t* output_loc = info.output;           // NOLINT
   const uint16_t* input16 = info.input->data(); // NOLINT
@@ -62,12 +64,16 @@ process_window_naive(ProcessingInfo<NREGISTERS>& info)
 
     // Get all the state variables by reference so they "automatically" get saved for the next go-round
     ChanState<NREGISTERS>& state = info.chanState;
-    int16_t& median = state.pedestals[ichan];
+    int16_t& median     = state.pedestals[ichan];
+    int16_t& accum      = state.accum[ichan];
+    int16_t& RS         = state.RS[ichan]; //value of the RS for the previous sample
+    int16_t& medianRS   = state.pedestalsRS[ichan]; //median for the RS waveform needed for IQR & separate pedsub
+    int16_t& accumRS    = state.accumRS[ichan];
+    //IQR
+    int16_t& accum25    = state.accum25[ichan];
+    int16_t& accum75    = state.accum75[ichan];
     int16_t& quantile25 = state.quantile25[ichan];
     int16_t& quantile75 = state.quantile75[ichan];
-    int16_t& accum = state.accum[ichan];
-    int16_t& accum25 = state.accum25[ichan];
-    int16_t& accum75 = state.accum75[ichan];
 
     // Variables for filtering
     int16_t* prev_samp = state.prev_samp + NTAPS * ichan;
@@ -82,24 +88,18 @@ process_window_naive(ProcessingInfo<NREGISTERS>& info)
     for (size_t itime = 0; itime < info.timeWindowNumFrames; ++itime) {
       const size_t msg_index = itime / 12;
       const size_t msg_time_offset = itime % 12;
+
       // The index in uint16_t of the start of the message we want // NOLINT
-      const size_t msg_start_index = msg_index * (6144/2) / sizeof(uint16_t); // NOLINT
+      const size_t msg_start_index = msg_index * sizeof(MessageCollectionADCs) / sizeof(uint16_t); // NOLINT
       const size_t offset_within_msg = register_t0_start + SAMPLES_PER_REGISTER * msg_time_offset + register_offset;
       const size_t index = msg_start_index + offset_within_msg;
 
       // --------------------------------------------------------------
       // Pedestal finding/coherent noise removal
       // --------------------------------------------------------------
+      
       int16_t sample = input16[index];
-
-      if (sample < median)
-        frugal_accum_update(quantile25, sample, accum25, 10);
-      if (sample > median)
-        frugal_accum_update(quantile75, sample, accum75, 10);
       frugal_accum_update(median, sample, accum, 10);
-
-      const int16_t sigma = quantile75 - quantile25;
-
       sample -= median;
 
       // --------------------------------------------------------------
@@ -118,6 +118,29 @@ process_window_naive(ProcessingInfo<NREGISTERS>& info)
       absTimeModNTAPS = (absTimeModNTAPS + 1) % NTAPS;
       int16_t filt = filt_tmp;
 
+
+      //--------------------------------------------------------------
+      // Absolute Running Sum
+      //--------------------------------------------------------------
+
+      RS = (R * RS) + std::abs(filt)/scale; 
+
+      
+      // --------------------------------------------------------------
+      // Pedsub & IQR
+      // --------------------------------------------------------------
+
+      if (RS < medianRS)
+        frugal_accum_update(quantile25, RS, accum25, 10);
+      if (RS > medianRS)
+        frugal_accum_update(quantile75, RS, accum75, 10);
+      frugal_accum_update(medianRS, RS, accumRS, 10);
+
+      const int16_t sigma = quantile75 - quantile25;
+
+      RS -= medianRS;
+
+      
       // --------------------------------------------------------------
       // Hit finding
       // --------------------------------------------------------------
@@ -165,4 +188,4 @@ process_window_naive(ProcessingInfo<NREGISTERS>& info)
 
 } // namespace swtpg_wib2
 
-#endif // READOUT_SRC_WIB2_TPG_PROCESSNAIVE_HPP_
+#endif // READOUT_SRC_WIB2_TPG_PROCESSNAIVERS_HPP_

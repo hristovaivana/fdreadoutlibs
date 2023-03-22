@@ -8,9 +8,11 @@
 #ifndef FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_WIB2TPHANDLER_HPP_
 #define FDREADOUTLIBS_INCLUDE_FDREADOUTLIBS_WIB2_WIB2TPHANDLER_HPP_
 
+#include "logging/Logging.hpp"
 #include "appfwk/DAQModuleHelper.hpp"
 #include "iomanager/Sender.hpp"
 #include "readoutlibs/ReadoutIssues.hpp"
+#include "readoutlibs/ReadoutLogging.hpp"
 #include "trigger/TPSet.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 #include "fdreadoutlibs/TriggerPrimitiveTypeAdapter.hpp"
@@ -20,6 +22,19 @@
 #include <vector>
 
 namespace dunedaq {
+
+ERS_DECLARE_ISSUE(fdreadoutlibs,
+                   TPHandlerTimestampIssue,
+                  "Continuity of timestamps broken. Start ts:  " << start_ts << " ts previous tpset: " << current_ts,
+                   ((uint64_t)start_ts)((uint64_t)current_ts))
+
+ERS_DECLARE_ISSUE(fdreadoutlibs,
+                   TPHandlerConditionCheck,
+                  "Condition check. Start ts:  " << tp_buffer_time_start << " current time: " << currentTime << " window+timeout: " << window_timeout << " time_over_threshold: " << time_over_threshold, 
+                   ((uint64_t)tp_buffer_time_start)((uint64_t)currentTime)((uint64_t)window_timeout)((uint64_t)time_over_threshold))
+
+
+
 namespace fdreadoutlibs {
 
 class WIB2TPHandler
@@ -29,12 +44,14 @@ public:
                         iomanager::SenderConcept<trigger::TPSet>& tpset_sink,
                         uint64_t tp_timeout,        // NOLINT(build/unsigned)
                         uint64_t tpset_window_size, // NOLINT(build/unsigned)
-                        daqdataformats::SourceID sourceId)
+                        daqdataformats::SourceID sourceId,
+                        std::string tpset_topic)
     : m_tp_sink(tp_sink)
     , m_tpset_sink(tpset_sink)
     , m_tp_timeout(tp_timeout)
     , m_tpset_window_size(tpset_window_size)
     , m_sourceid(sourceId)
+    , m_tpset_topic(tpset_topic)
   {}
 
   void set_run_number(daqdataformats::run_number_t run_number)
@@ -64,6 +81,16 @@ public:
       tpset.run_number = m_run_number;
       tpset.start_time = (m_tp_buffer.top().time_start / m_tpset_window_size) * m_tpset_window_size;
       tpset.end_time = tpset.start_time + m_tpset_window_size;
+
+      if (tpset.start_time < m_timestamp_counter) {
+        ers::warning(TPHandlerConditionCheck(ERS_HERE, m_tp_buffer.top().time_start, currentTime, m_tpset_window_size+m_tp_timeout, m_tp_buffer.top().time_over_threshold ));        
+        //return;
+      }
+ 
+
+
+      //TLOG() << "TPHandler TPSET start time: " << tpset.start_time;
+      //TLOG() << "TPHandler TPSET end time: " << tpset.end_time;
       tpset.seqno = m_next_tpset_seqno++; // NOLINT(runtime/increment_decrement)
       tpset.type = trigger::TPSet::Type::kPayload;
       tpset.origin = m_sourceid;
@@ -83,12 +110,19 @@ public:
         m_tp_buffer.pop();
       }
 
+      if (tpset.start_time < m_timestamp_counter) {
+        ers::warning(TPHandlerTimestampIssue(ERS_HERE, tpset.start_time, m_timestamp_counter));        
+        return;
+      }
       try {
-        m_tpset_sink.send(std::move(tpset), std::chrono::milliseconds(10));
+        m_tpset_sink.send(std::move(tpset), std::chrono::milliseconds(10), m_tpset_topic);
         m_sent_tpsets++;
+        m_timestamp_counter = tpset.start_time;        
       } catch (const dunedaq::iomanager::TimeoutExpired& excpt) {
         ers::error(readoutlibs::CannotWriteToQueue(ERS_HERE, m_sourceid, "m_tpset_sink"));
       }
+      // 
+      //
     }
   }
 
@@ -114,7 +148,10 @@ private:
   uint64_t m_tpset_window_size;    // NOLINT(build/unsigned)
   uint64_t m_next_tpset_seqno = 0; // NOLINT(build/unsigned)
   daqdataformats::SourceID m_sourceid;
+  std::string m_tpset_topic;
   
+  uint64_t m_timestamp_counter=0;
+
   std::atomic<size_t> m_sent_tps{ 0 };    // NOLINT(build/unsigned)
   std::atomic<size_t> m_sent_tpsets{ 0 }; // NOLINT(build/unsigned)
 
