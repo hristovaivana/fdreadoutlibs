@@ -90,15 +90,6 @@ template<size_t NREGISTERS>
 inline void
 process_window_rs_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
 {
-  // Start with taps as floats that add to 1. Multiply by some
-  // power of two (2**N) and round to int. Before filtering, cap the
-  // value of the input to INT16_MAX/(2**N)
-  const size_t NTAPS = 8;
-  // int16_t taps[NTAPS] = {0};
-  // for (size_t i = 0; i < std::min(NTAPS, info.tapsv.size()); ++i) {
-  //  taps[i] = info.tapsv[i];
-  //}
-
 
   // Running sum scaling factor
   const __m256i R_factor = _mm256_set1_epi16(8);
@@ -107,14 +98,9 @@ process_window_rs_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
   // (may not needs this, depends on magnitude of FIR output) 
   const __m256i scale_factor = _mm256_set1_epi16(5);
 
-  const __m256i adcMax = _mm256_set1_epi16(info.adcMax);
   // The maximum value that sigma can have before the threshold overflows a 16-bit signed integer
   const __m256i sigmaMax = _mm256_set1_epi16((1 << 15) / (info.multiplier * info.threshold));
 
-  __m256i tap_256[NTAPS];
-  for (size_t i = 0; i < NTAPS; ++i) {
-    tap_256[i] = _mm256_set1_epi16(info.taps[i]);
-  }
   // Pointer to keep track of where we'll write the next output hit
   __m256i* output_loc = (__m256i*)(info.output); // NOLINT(readability/casting)
 
@@ -126,8 +112,6 @@ process_window_rs_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
 
     //printf("ireg:          "); std::cout << (ireg) << std::endl;
 
-
-    uint16_t absTimeModNTAPS = info.absTimeModNTAPS; // NOLINT(build/unsigned)
 
     // ------------------------------------
     // Variables for pedestal subtraction
@@ -151,16 +135,6 @@ process_window_rs_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
     __m256i RS = _mm256_lddqu_si256(reinterpret_cast<__m256i*>(state.RS) + ireg);     // NOLINT
     __m256i medianRS = _mm256_lddqu_si256(reinterpret_cast<__m256i*>(state.pedestalsRS) + ireg);     // NOLINT
     __m256i accumRS = _mm256_lddqu_si256(reinterpret_cast<__m256i*>(state.accumRS) + ireg);     // NOLINT
-
-
-    // ------------------------------------
-    // Variables for filtering
-
-    // The (unfiltered) samples `n` places before the current one
-    __m256i prev_samp[NTAPS];
-    for (size_t j = 0; j < NTAPS; ++j) {
-      prev_samp[j] = _mm256_lddqu_si256(reinterpret_cast<__m256i*>(state.prev_samp) + NTAPS * ireg + j); // NOLINT
-    }
 
     // ------------------------------------
     // Variables for hit finding
@@ -396,10 +370,6 @@ process_window_rs_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
     _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.accumRS) + ireg, accumRS); // NOLINT
     
 
-    for (size_t j = 0; j < NTAPS; ++j) {
-      _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.prev_samp) + NTAPS * ireg + j, prev_samp[j]); // NOLINT
-    }
-
     _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.prev_was_over) + ireg, prev_was_over); // NOLINT
     _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.hit_charge) + ireg, hit_charge);       // NOLINT
     _mm256_storeu_si256(reinterpret_cast<__m256i*>(state.hit_tover) + ireg, hit_tover);         // NOLINT
@@ -407,7 +377,6 @@ process_window_rs_avx2(ProcessingInfo<NREGISTERS>& info, size_t channel_offset)
   } // end loop over ireg (the 8 registers in this frame)
 
 
-  info.absTimeModNTAPS = (info.absTimeModNTAPS + info.timeWindowNumFrames) % NTAPS;
   // Store the output
   for (int i = 0; i < 4; ++i) {
     _mm256_storeu_si256(output_loc++, _mm256_set1_epi16(swtpg_wib2::MAGIC)); // NOLINT(runtime/increment_decrement)

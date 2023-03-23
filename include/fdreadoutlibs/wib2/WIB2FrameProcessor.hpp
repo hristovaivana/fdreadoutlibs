@@ -34,7 +34,6 @@
 #include "trigger/TPSet.hpp"
 #include "triggeralgs/TriggerPrimitive.hpp"
 
-#include "iomanager/FollyQueue.hpp"        
 #include "tpg/DesignFIR.hpp"
 #include "tpg/FrameExpand.hpp"
 #include "tpg/ProcessAVX2.hpp"
@@ -66,12 +65,12 @@ ERS_DECLARE_ISSUE(fdreadoutlibs,
 
 ERS_DECLARE_ISSUE(fdreadoutlibs,
                   FailedOpeningFile,
-                  "Failed to open the ChannelMaskFile: " << mask_file ,
+                  "Failed to open the ChannelMaskFile: " << mask_file << " . The file is not available.",
                   ((std::string)mask_file))                  
 
 ERS_DECLARE_ISSUE(fdreadoutlibs,
                   TPGAlgorithmInexistent,
-                  "The selected algorithm does not exist: " << algorithm_selection << " . Select either SWTPG or RS.",
+                  "The selected algorithm does not exist: " << algorithm_selection << " . Check your configuration file and seelect either SWTPG or AbsRS.",
                   ((std::string)algorithm_selection))
 
 
@@ -86,10 +85,14 @@ struct swtpg_output{
 };
 
 
+// Utility to parse the channel mask file
 std::set<uint> channel_mask_parser(std::string file_input) {
-    std::ifstream inputFile(file_input);
+  
+  std::set<uint> channel_mask_set;
 
-    std::set<uint> channel_mask_set;
+  // Check if the input file is not empty otherwise return an empty set
+  if (!file_input.empty()) { 
+    std::ifstream inputFile(file_input);    
     if (inputFile.is_open()) {
         uint channel_val;
         while (inputFile >> channel_val) {
@@ -98,9 +101,10 @@ std::set<uint> channel_mask_parser(std::string file_input) {
         inputFile.close();
     }
     else {
-        throw FailedOpeningFile(ERS_HERE, file_input);
-    }
-    return channel_mask_set;
+        ers::warning(FailedOpeningFile(ERS_HERE, file_input));
+    }    
+  }
+  return channel_mask_set; 
 }
 
 
@@ -187,8 +191,6 @@ private:
   const int m_tpg_multiplier = 1 << m_tpg_tap_exponent;  // 64
   std::vector<int16_t> m_tpg_taps;                       // firwin_int(7, 0.1, multiplier);
   int16_t* m_tpg_taps_p = nullptr;
-
-
 };
 
 
@@ -248,8 +250,6 @@ public:
     m_new_hits = 0;
     m_new_tps = 0;
     m_swtpg_hits_count.exchange(0);
-    m_frame_error_count = 0;
-    m_frames_processed = 0;
 
     inherited::start(args);
   }
@@ -262,8 +262,8 @@ public:
       m_wib2_frame_handler->reset();    
       m_wib2_frame_handler_second_half->reset();  
       
-      //auto runtime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_t0).count();
-      //TLOG() << "Ran for " << runtime << "ms.";
+      auto runtime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_t0).count();
+      TLOG() << "Ran for " << runtime << "ms.";
     }
 
   }
@@ -286,7 +286,7 @@ public:
   void conf(const nlohmann::json& cfg) override
   {
     // Populate the queue of primfind destinations
-    for(int i=0; i<m_capacity_dest_queue; ++i) {
+    for(size_t i=0; i<m_capacity_dest_queue; ++i) {
       uint16_t* dest = new uint16_t[100000];
       m_dest_queue.push(std::move(dest), std::chrono::milliseconds(0));    
     }
@@ -294,8 +294,6 @@ public:
     auto config = cfg["rawdataprocessorconf"].get<readoutlibs::readoutconfig::RawDataProcessorConf>();
     m_sourceid.id = config.source_id;
     m_sourceid.subsystem = types::DUNEWIBSuperChunkTypeAdapter::subsystem;
-    m_error_counter_threshold = config.error_counter_threshold;
-    m_error_reset_freq = config.error_reset_freq;
     m_tpg_algorithm = config.software_tpg_algorithm;
     m_channel_mask_file = config.channel_mask_file;
     TLOG() << "Selected software TPG algorithm: " << m_tpg_algorithm;
@@ -315,7 +313,7 @@ public:
 
 
       m_tphandler.reset(
-        new WIB2TPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, tpset_sourceid, config.tpset_topic));
+        new WIB2TPHandler(*m_tp_sink, *m_tpset_sink, config.tp_timeout, config.tpset_window_size, tpset_sourceid));
 
 
       TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::add_postprocess_task(
@@ -355,8 +353,7 @@ public:
       }
 
    }    
-
-    TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::scrap(args);
+   TaskRawDataProcessorModel<types::DUNEWIBSuperChunkTypeAdapter>::scrap(args);
   }
 
   void get_info(opmonlib::InfoCollector& ci, int level)
@@ -368,7 +365,6 @@ public:
       info.num_tpsets_sent = m_tphandler->get_and_reset_num_sent_tpsets();
       info.num_tps_dropped = m_tps_dropped.exchange(0);
     }
-    info.num_frame_errors = m_frame_error_count.exchange(0);
 
     auto now = std::chrono::high_resolution_clock::now();
     if (m_sw_tpg_enabled) {
@@ -420,12 +416,6 @@ protected:
   std::atomic<int> m_ts_error_ctr{ 0 };
 
 
-
-  void postprocess_example(const types::DUNEWIBSuperChunkTypeAdapter* fp)
-  {
-    TLOG() << "Postprocessing: " << fp->get_first_timestamp();
-  }
-
   /**
    * Pipeline Stage 1.: Check proper timestamp increments in WIB frame
    * */
@@ -475,33 +465,9 @@ protected:
     m_last_processed_daq_ts = m_current_ts;
   }
 
-  /**
-   * Pipeline Stage 2.: Check WIB headers for error flags
-   * */
-  void frame_error_check(frameptr fp)
-  {
-    if (!fp)
-      return;
-
-    auto wf = reinterpret_cast<wibframeptr>(((uint8_t*)fp)); // NOLINT
-    for (size_t i = 0; i < fp->get_num_frames(); ++i) {
-      if (m_frames_processed % 10000 == 0) {
-        for (int i = 0; i < m_num_frame_error_bits; ++i) {
-          if (m_error_occurrence_counters[i])
-            m_error_occurrence_counters[i]--;
-        }
-      }
-
-      m_current_frame_pushed = false;
-
-
-      wf++;
-      m_frames_processed++;
-    }
-  }
 
   /**
-   * Pipeline Stage 3.: Do software TPG
+   * Pipeline Stage 2.: Do software TPG
    * */
   void find_hits(constframeptr fp, WIB2FrameHandler* frame_handler)
   {
@@ -517,6 +483,7 @@ protected:
     expand_wib2_adcs(fp, &registers_array, register_selection); 
       
 
+    // Only for the first superchunk, create an offline register map 
     if (frame_handler->first_hit) {
 
       // Print thread ID and PID of the executing thread
@@ -534,18 +501,7 @@ protected:
       m_crate_no = wfptr->header.crate;
       m_slot_no = wfptr->header.slot;
       TLOG() << "Got first item, link/crate/slot=" << m_link << "/" << m_crate_no << "/" << m_slot_no;      
-
-
-      
-      //std::stringstream ss;
-      //ss << " Before_10_seconds: Channels for register selection " << register_selection << " are:\n";
-      
-      //for (size_t i = 0; i < swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::SAMPLES_PER_REGISTER; ++i) {
-        //ss << i << "\t" << frame_handler->register_channel_map.channel[i] << "\t" << frame_handler->m_tpg_processing_info->chanState.pedestals[i] << "\n";
-      //}
-      //TLOG() << ss.str();      
-      
-
+    
       // Add WIB2FrameHandler channel map to the common m_register_channels. 
       // Populate the array taking into account the position of the register selector
       for (size_t i = 0; i < swtpg_wib2::NUM_REGISTERS_PER_FRAME * swtpg_wib2::SAMPLES_PER_REGISTER; ++i) {	      
@@ -554,8 +510,6 @@ protected:
           // Set up a map of channels and number of TPs for monitoring/debug
           m_tp_channel_rate_map[frame_handler->register_channel_map.channel[i]] = 0;
       }
-
-
 
       TLOG() << "Processed the first superchunk ";
 
@@ -627,11 +581,7 @@ protected:
 
           // This channel had a hit ending here, so we can create and output the hit here
           const uint16_t offline_channel = m_register_channels[chan[i]];
-
-          // TLOG() << "Channel containing TPs: " << chan[i] << " --> " << offline_channel << " hit_charge: " << hit_charge[i] << " time_over_threshold: " << hit_tover[i];
           if (m_channel_mask_set.find(offline_channel) == m_channel_mask_set.end()) {   
-
-            //TLOG() << "Channel containing TPs: " << chan[i] << " --> " << offline_channel;                     
 
             uint64_t tp_t_begin =                                                        // NOLINT(build/unsigned)
               timestamp + clocksPerTPCTick * (int64_t(hit_end[i]) - int64_t(hit_tover[i]));       // NOLINT(build/unsigned)
@@ -669,9 +619,7 @@ protected:
             ++nhits;
 
             // Update the channel/rate map. Increment the value associated with the TP channel 
-            //m_tp_channel_rate_map[offline_channel]++;
-
-
+            m_tp_channel_rate_map[offline_channel]++;
 
           }
         }
@@ -739,12 +687,6 @@ private:
   // Mapping from expanded AVX register position to offline channel number
   std::array<uint, 256> m_register_channels;
 
-  // Frame error check
-  bool m_current_frame_pushed = false;
-  int m_error_counter_threshold;
-  const int m_num_frame_error_bits = 16;
-  int m_error_occurrence_counters[16] = { 0 };
-  int m_error_reset_freq;
 
 
   std::shared_ptr<iomanager::SenderConcept<types::TriggerPrimitiveTypeAdapter>> m_tp_sink;
@@ -759,32 +701,30 @@ private:
 
 
   // Destination queue represents the queue of primfind
-  // destinations after the execution of the SWTPG. The size
-  // was set to 1000 because a size of 10 was not enough and
-  // resulted in not keeping up with the rate. The size of each
-  // uint16_t buffer is 100000, therefore the total impact on 
-  // the memory is: 100000 * (16bit) * 100 ~ 190 MB
+  // destinations after the execution of the SWTPG. We 
+  // are using queues because we want to avoid adding a 
+  // memcpy. Previously the processing threads were also 
+  // performing the TPHandler task so this was not needed
+  // (look at ProtoWIB SWTPG implementation). The size of 
+  // the queues was set big enough for the March coldbox 
+  // tests. The size of each uint16_t buffer is 100 000, 
+  // therefore the total impact on memory is: 
+  // 100 000 * (16bit = 2 bytes) * 300 000 ~ 55 GB
   size_t m_capacity_dest_queue = m_capacity_mpmc_queue+4; 
   iomanager::FollyMPMCQueue<uint16_t*> m_dest_queue{"dest_queue", m_capacity_dest_queue};
 
 
-  // Select the registers where to process the frame expansion
-  // AAA: TODO: automatically divide the registers based on the number of processing tasks
-  // E.g.: 0 --> divide registers by 2 (= 16/2) and select the first half
+  // Select the registers where to process the frame expansion. 
+  // E.g.: 0 --> divide registers by 2 (= 16/2) and select the first half 
   // E.g.: 1 --> divide registers by 2 (= 16/2) and select the second half
   int selection_of_register = 0; 
   std::unique_ptr<WIB2FrameHandler> m_wib2_frame_handler = std::make_unique<WIB2FrameHandler>(selection_of_register, m_dest_queue);
-
   int selection_of_register_second_half = 1; 
   std::unique_ptr<WIB2FrameHandler> m_wib2_frame_handler_second_half = std::make_unique<WIB2FrameHandler>(selection_of_register_second_half, m_dest_queue);
   
 
-
-
   std::thread m_add_hits_tphandler_thread;
 
-  std::atomic<uint64_t> m_frame_error_count{ 0 }; // NOLINT(build/unsigned)
-  std::atomic<uint64_t> m_frames_processed{ 0 };  // NOLINT(build/unsigned)
   daqdataformats::SourceID m_sourceid;
 
   std::atomic<uint64_t> m_new_hits{ 0 }; // NOLINT(build/unsigned)
