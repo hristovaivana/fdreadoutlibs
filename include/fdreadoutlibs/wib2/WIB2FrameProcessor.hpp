@@ -400,6 +400,11 @@ public:
         }
       }
 
+      // Reset the counter in the channel rate map
+      for (auto& el : m_tp_channel_rate_map) {
+        el.second = 0;
+      }
+
     }
     m_t0 = now;
 
