@@ -37,7 +37,7 @@ TDEFrameProcessor::timestamp_check(frameptr fp)
   if (inherited::m_emulator_mode) {         // emulate perfectly incrementing timestamp
     auto tdef = reinterpret_cast<dunedaq::detdataformats::tde::TDE16Frame*>((uint8_t*)fp); // NOLINT
     auto tdefh = tdef->get_tde_header(); // const_cast<dunedaq::detdataformats::tde::TDE16Frame::Header*>(tdef->get_wib_header());
-    auto ts_next = m_previous_ts[tdef->get_channel()] + dunedaq::detdataformats::tde::ticks_between_adc_samples * dunedaq::detdataformats::tde::tot_adc16_samples; // NOLINT(build/unsigned)
+    auto ts_next = m_previous_ts[tdef->get_channel()] + (dunedaq::detdataformats::tde::ticks_between_adc_samples * dunedaq::detdataformats::tde::tot_adc16_samples); // NOLINT(build/unsigned)
     tdefh->set_timestamp(ts_next);
   }
 
@@ -52,7 +52,7 @@ TDEFrameProcessor::timestamp_check(frameptr fp)
   if (m_previous_ts[ch]!=0 && m_current_ts - m_previous_ts[ch] != dunedaq::detdataformats::tde::ticks_between_adc_samples * dunedaq::detdataformats::tde::tot_adc16_samples) {
     ++m_ts_error_ctr;
     m_error_registry->add_error("MISSING_FRAMES",
-                                readoutlibs::FrameErrorRegistry::ErrorInterval(m_previous_ts[ch] + dunedaq::detdataformats::tde::ticks_between_adc_samples * dunedaq::detdataformats::tde::tot_adc16_samples, m_current_ts));
+                                readoutlibs::FrameErrorRegistry::ErrorInterval(m_previous_ts[ch] + (dunedaq::detdataformats::tde::ticks_between_adc_samples * dunedaq::detdataformats::tde::tot_adc16_samples), m_current_ts));
     if (m_first_ts_missmatch) { // log once
       TLOG_DEBUG(TLVL_BOOKKEEPING) << "First timestamp MISSMATCH! -> | previous: " << std::to_string(m_previous_ts[ch])
                                    << " current: " + std::to_string(m_current_ts);
