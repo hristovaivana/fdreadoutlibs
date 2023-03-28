@@ -115,9 +115,7 @@ struct ProcessingInfo
       for (size_t itime = 0; itime < timeWindowNumFrames; ++itime) {
         const size_t msg_index = itime / 12;
         const size_t msg_time_offset = itime % 12;
-        // The index in uint16_t of the start of the message we want. 
-        // AAA: 6144 is the sizeof(MessageADCs) which is hardcoded here. TODO: put
-        // MessageADCs in a location that can be included and used in the ProcessingInfo 
+        // The index in uint16_t of the start of the message we want.         
         const size_t msg_start_index = msg_index * swtpg_wib2::ADCS_SIZE / sizeof(uint16_t); // NOLINT
         const size_t offset_within_msg = register_t0_start + SAMPLES_PER_REGISTER * msg_time_offset + register_offset;
         const size_t index = msg_start_index + offset_within_msg;
@@ -129,10 +127,14 @@ struct ProcessingInfo
         break; // breaking in order to select only the first entry
       }
 
-      // Set the pedestals and the 25/75-percentiles: everything else is just the same as in default values
+      // Set the pedestals and the 25/75-percentiles
       chanState.pedestals[j] = ped;
       chanState.pedestalsRS[j] = 0;
       chanState.RS[j] = 0;
+      // AAA: Quantiles are set to the pedestal value +/- 20 so that the IQR 
+      // becomes above the RMS value of the input ADCs. We use the frugal 
+      // streaming on the 25th/75th quantiles so that the IQR becomes
+      // a good estimate of the RMS of the input. 
       chanState.quantile25[j] = ped-20;
       chanState.quantile75[j] = ped+20;
     }
