@@ -71,7 +71,7 @@ struct TDEFrameTypeAdapter
 
   static const constexpr daqdataformats::SourceID::Subsystem subsystem = daqdataformats::SourceID::Subsystem::kDetectorReadout;
   static const constexpr daqdataformats::FragmentType fragment_type = daqdataformats::FragmentType::kTDE_AMC;
-  static const constexpr uint64_t expected_tick_difference = 32*4474; // NOLINT(build/unsigned)
+  static const constexpr uint64_t expected_tick_difference = dunedaq::detdataformats::tde::ticks_between_adc_samples * dunedaq::detdataformats::tde::tot_adc16_samples; // NOLINT(build/unsigned)
 
 };
 
