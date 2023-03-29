@@ -40,7 +40,7 @@ int main()
         // Channel
         fr.get_tde_header()->slot = amc;
         fr.get_tde_header()->link = i;
-        fr.set_adc_samples(batch,0);
+        fr.set_adc_sample(batch,0);
         v.push_back(fr);
       }
     }
