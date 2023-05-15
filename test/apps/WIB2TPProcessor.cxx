@@ -10,6 +10,8 @@
 // system
 #include "CLI/CLI.hpp"
 
+#include <type_traits>
+
 //#include <fstream>
 
 using namespace dunedaq;
@@ -21,6 +23,14 @@ struct TpSubframeOne
 {
   uint32_t word1; // NOLINT(build/unsigned)
 };
+
+template <typename T>
+T twos_complement(T val)
+{
+    //typedef std::make_unsigned<T>::type U;
+    //return T(-uintmax_t(U(val)));
+    return -std::uintmax_t(val);
+}
 
 static const constexpr std::size_t RAW_WIB_TP_SUBFRAME_SIZE = 4; // 12=multiple of 3 4B/32b words
 
@@ -44,8 +54,8 @@ static const constexpr std::size_t RAW_WIB_TP_SUBFRAME_SIZE = 4; // 12=multiple 
   static std::atomic<int> m_total_hits_count{ 0 };
   // results
   std::vector<triggeralgs::TriggerPrimitive> m_tps;
-    std::vector<triggeralgs::TriggerPrimitive> m_tps_unstitched;
-    std::vector<triggeralgs::TriggerPrimitive> m_wibts;
+    static std::vector<std::vector<int>> m_tps_unstitched;
+    static std::vector<uint64_t> m_wibts;
 
 void tp_save(std::vector<triggeralgs::TriggerPrimitive>& tps, const std::string& filename)
 {
@@ -59,7 +69,51 @@ void tp_save(std::vector<triggeralgs::TriggerPrimitive>& tps, const std::string&
   }
   fdo.close();
 }
+void tp_save_unstitched(const std::vector<std::vector<int>>& hits, const std::vector<uint64_t>& wibts, const std::string& filename) {
+  // ,start_time,peak_time,time_over_threshold,offline_ch,sum_adc,peak_adc,flag,median,accumulator
+  //ofstream fdo("hits.txt");
+  std::ofstream fdo(filename);
+  if (!fdo.is_open()) { fdo.close(); return void(); }
+  //fdo << ",start_time,peak_time,time_over_threshold,offline_ch,sum_adc,peak_adc,flag" << endl;
+  fdo << ",wibts,offline_ch,median,accumulator,start_time,end_time,peak_time,peak_adc,sum_adc,tov,hit_continue" << std::endl;
 
+  int counter = 0;
+  int tov = 0;
+  for (auto& it : hits) {  // 0:start, 1:end, 2:peaktime, 3:channel, 4:sumadc, 5:peakadcs, 6:hitcontinue
+                           // 7:median, 8:accumulator
+      tov = it[1]-it[0];
+      /*std::cout << "DBG it " << it.size() << " , 0: " << it[0]
+           << ", 1: " << it[1]
+           << ", 2: " << it[2]
+           << ", 3: " << it[3]
+           << ", 4: " << it[4]
+           << ", 5: " << it[5]
+           << ", 6: " << it[6]
+           << ", 7: " << it[7]
+           << ", 8: " << it[8]
+	   << ", counter: " << counter
+	   << ", ts: " << wibts[counter]
+	   << ", tov: " << tov
+           << std::endl;*/
+      fdo << counter << "," << wibts[counter] << "," << it[3] << "," << it[7] << "," << it[8] << "," << it[0] << "," << it[1] << "," << it[2] << "," << it[5] << "," << it[4] << "," << tov << "," << it[6] << std::endl;
+      counter++;
+  }
+  fdo.close();
+}
+/*
+template<typename Tout, typename Tin>
+Tout toInt(Tin in)
+{
+    Tout retVal = 0;
+
+    if (in > 0)
+        retVal = static_cast<Tout>(in & std::numeric_limits<Tout>::max());
+    else if (in < 0)
+        retVal = static_cast<Tout>(in | std::numeric_limits<Tout>::min());
+
+    return retVal;
+}
+*/
 void tp_stitch(rwtp_ptr rwtp)
 {
   m_tp_frames++;
@@ -99,6 +153,12 @@ void tp_stitch(rwtp_ptr rwtp)
     // unstitched 
     //m_tps.push_back(trigprim);
     m_wibts.push_back(ts_0);
+    // start, end, peak_time, channel, sum_adc, peak_adc, hitcotninue, median, accumulator
+    int8_t accumulator = static_cast<int8_t>(rwtp->m_head.m_accumulator);
+    std::vector<int> aux = {rwtp->m_blocks[i].m_start_time, rwtp->m_blocks[i].m_end_time, rwtp->m_blocks[i].m_peak_time, (int)offline_channel, rwtp->m_blocks[i].m_sum_adc, rwtp->m_blocks[i].m_peak_adc, rwtp->m_blocks[i].m_hit_continue};
+    aux.push_back(rwtp->m_head.m_median);
+    aux.push_back(accumulator);
+    m_tps_unstitched.push_back(aux);
     //continue;
 
     // stitch current hit to previous hit
@@ -309,25 +369,28 @@ int
 main(int argc, char** argv)
 {
   CLI::App app{ "Test WIB2TP processing" };
+  
   /*
   std::vector<std::string> files{
-    "/nfs/home/ivhristo/dune/rawhit/v320/tmp/350/bin/theshold350-00-180-230314-122133-1_1.bin"
-    ,"/nfs/home/ivhristo/dune/rawhit/v320/tmp/350/bin/theshold350-00-1C0-230314-122133-1_1.bin"
-    ,"/nfs/home/ivhristo/dune/rawhit/v320/tmp/350/bin/theshold350-10-180-230314-122133-1_1.bin"
-    ,"/nfs/home/ivhristo/dune/rawhit/v320/tmp/350/bin/theshold350-10-1C0-230314-122133-1_1.bin"
+    //"/nfs/home/ivhristo/dune/rawhit/v320/tmp/350/bin/theshold350-00-180-230314-122133-1_1.bin"
+    //,"/nfs/home/ivhristo/dune/rawhit/v320/tmp/350/bin/theshold350-00-1C0-230314-122133-1_1.bin"
+    //,"/nfs/home/ivhristo/dune/rawhit/v320/tmp/350/bin/theshold350-10-180-230314-122133-1_1.bin"
+    //,"/nfs/home/ivhristo/dune/rawhit/v320/tmp/350/bin/theshold350-10-1C0-230314-122133-1_1.bin"
   };*/
-  
-  std::vector<std::string> files{
-    "/nfs/home/ivhristo/dune/rawhit/v320/tmp/350/bin/fcheck/theshold350-00-180-230314-122133-1_2.dat"
-    ,"/nfs/home/ivhristo/dune/rawhit/v320/tmp/350/bin/fcheck/theshold350-00-1C0-230314-122133-1_2.dat"
-    ,"/nfs/home/ivhristo/dune/rawhit/v320/tmp/350/bin/fcheck/theshold350-10-180-230314-122133-1_2.dat"
-    ,"/nfs/home/ivhristo/dune/rawhit/v320/tmp/350/bin/fcheck/theshold350-10-1C0-230314-122133-1_2.dat"
+ 
+ 
+  std::vector<std::string> files{ // fcheck 
+    //"/nfs/home/ivhristo/dune/rawhit/v320/tmp/350/bin/fcheck/theshold350-00-180-230314-122133-1_2.dat"
+    //,"/nfs/home/ivhristo/dune/rawhit/v320/tmp/350/bin/fcheck/theshold350-00-1C0-230314-122133-1_2.dat"
+    //,"/nfs/home/ivhristo/dune/rawhit/v320/tmp/350/bin/fcheck/theshold350-10-180-230314-122133-1_2.dat"
+    //,"/nfs/home/ivhristo/dune/rawhit/v320/tmp/350/bin/fcheck/theshold350-10-1C0-230314-122133-1_2.dat"
   };
 
   int count = 0;
   for (auto& it : files) {
   std::string filename = it;
 
+  /*
   m_A[256][10][10][10].clear(); // keep track of TPs to stitch per channel/slot/fiber/ccrate
   m_T[256][10][10][10].clear(); // NOLINT // keep track of last stitched start time
   m_tps_stitched = 0; // NOLINT
@@ -339,8 +402,9 @@ main(int argc, char** argv)
   m_sent_tps = 0; // NOLINT(build/unsigned)
   m_total_hits_count = 0;
   m_tps.clear();
-
-
+  m_tps.resize(0);
+  m_tps_unstitched.resize(0);
+  */
 
   types::DUNEWIBFirmwareTriggerPrimitiveSuperChunkTypeAdapter m_payload_wrapper;
   std::unique_ptr<readoutlibs::FileSourceBuffer> m_file_source;
@@ -386,6 +450,7 @@ main(int argc, char** argv)
     cnt++;
   }
   tp_save(m_tps, "fwtp_stitched_"+std::to_string(count)+".txt");
+  tp_save_unstitched(m_tps_unstitched, m_wibts, "fwtp_unstitched_"+std::to_string(count)+".txt");
   count++;
   }
 
